@@ -22,6 +22,8 @@ import tv.cleanyour.core.flows.AppRow
 import tv.cleanyour.ui.design.component.Banner
 import tv.cleanyour.ui.design.component.BannerTone
 import tv.cleanyour.ui.design.component.CytIcon
+import tv.cleanyour.ui.design.component.ConfirmQuestion
+import tv.cleanyour.ui.design.component.CytBottomSheet
 import tv.cleanyour.ui.design.component.CytIconButton
 import tv.cleanyour.ui.design.component.CytSwitch
 import tv.cleanyour.ui.design.component.CytTextField
@@ -47,7 +49,8 @@ import tv.cleanyour.ui.design.theme.Glow
 private const val PAGE = 60
 
 // All apps: every package on the TV, system and user, with whether it runs now and a switch for
-// each. A package the planner keeps on shows its reason instead of a switch (AllAppsMachine).
+// each. A protected app is drawn in red with its reason and asks before it goes off; an app the TV
+// needs to run shows a lock instead of a switch (AllAppsMachine).
 @Composable
 fun AllAppsScreen(state: AllAppsState, onIntent: (AllAppsIntent) -> Unit, onBack: () -> Unit, modifier: Modifier = Modifier) {
     val locale = LocalConfiguration.current.locales[0]
@@ -93,6 +96,8 @@ fun AllAppsScreen(state: AllAppsState, onIntent: (AllAppsIntent) -> Unit, onBack
                 subtitle = msg(R.string.allapps_show_system_sub, "count" to state.systemCount))
         }
         if (state.showSystem) Banner(stringResource(R.string.allapps_system_warning), BannerTone.INFO, Modifier.padding(top = 12.dp))
+        if (state.protectedCount > 0 || state.criticalCount > 0)
+            Banner(stringResource(R.string.allapps_legend), BannerTone.DANGER, Modifier.padding(top = 12.dp))
 
         val rows = state.rows
         // A new filter or search starts again at the first page.
@@ -114,27 +119,57 @@ fun AllAppsScreen(state: AllAppsState, onIntent: (AllAppsIntent) -> Unit, onBack
         }
         Gap(24.dp)
     }
+    state.confirm?.let { r -> ConfirmOffSheet(r, onIntent) }
+}
+
+// The question before a protected app goes off: its reason, and "Switch it off anyway".
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+internal fun ConfirmOffSheet(r: AppRow, onIntent: (AllAppsIntent) -> Unit) {
+    CytBottomSheet({ onIntent(AllAppsIntent.CancelOff) }) {
+        ConfirmOffContent(r, onIntent)
+    }
+}
+
+@Composable
+internal fun androidx.compose.foundation.layout.ColumnScope.ConfirmOffContent(r: AppRow, onIntent: (AllAppsIntent) -> Unit) {
+    ConfirmQuestion(
+        msg(R.string.allapps_confirm_title, "name" to r.name),
+        msg(R.string.allapps_confirm_body, "reason" to (r.warning ?: "")),
+        stringResource(R.string.allapps_confirm_button), { onIntent(AllAppsIntent.ConfirmOff) },
+        stringResource(R.string.allapps_confirm_cancel), { onIntent(AllAppsIntent.CancelOff) },
+    )
 }
 
 @Composable
 private fun AppLine(r: AppRow, busy: tv.cleanyour.core.model.PackageName?, onIntent: (AllAppsIntent) -> Unit) {
+    val c = CytTheme.colors
     val tags = listOfNotNull(
         stringResource(if (r.system) R.string.allapps_tag_system else R.string.allapps_tag_user),
         if (r.running) stringResource(R.string.allapps_tag_running) else null,
         if (r.off) stringResource(R.string.allapps_tag_off) else null,
     ).joinToString(" · ")
-    val lockedLine = r.locked?.let { msg(R.string.allapps_locked, "reason" to it) }
-    val subtitle = listOfNotNull(r.pkg.value, tags, lockedLine).joinToString("\n")
+    // `locked` and `warning` are properties of another module's class: no smart cast, so let.
+    val why = r.locked?.let { msg(R.string.allapps_locked, "reason" to it) }
+        ?: r.warning?.let { msg(R.string.allapps_protected, "reason" to it) }
+    val subtitle = listOfNotNull(r.pkg.value, tags, why).joinToString("\n")
     val stateWord = stringResource(if (r.off) R.string.allapps_state_off else R.string.allapps_state_on)
     val cd = msg(R.string.allapps_switch_cd, "name" to r.name, "state" to stateWord)
+    val red = r.warning != null
     ListRow(
         r.name,
         subtitle = subtitle,
-        subtitleColor = if (r.off) CytTheme.colors.warning else CytTheme.colors.textTertiary,
+        subtitleColor = when {
+            red -> c.danger
+            r.off -> c.warning
+            else -> c.textTertiary
+        },
+        titleColor = if (red) c.danger else c.textPrimary,
         trailing = {
             when {
                 busy == r.pkg -> Box(Modifier.padding(horizontal = 16.dp)) { Spinner() }
-                r.locked != null -> CytIcon(CytIcons.Lock, null, Modifier.padding(horizontal = 12.dp), tint = CytTheme.colors.textTertiary)
+                // Needed to run and on: never a switch. One that is off can still be switched back on.
+                r.locked != null && !r.off -> CytIcon(CytIcons.Lock, null, Modifier.padding(horizontal = 12.dp), tint = c.textTertiary)
                 else -> CytSwitch(
                     checked = !r.off,
                     onCheckedChange = { on -> onIntent(AllAppsIntent.SetOff(r.pkg, off = !on)) },

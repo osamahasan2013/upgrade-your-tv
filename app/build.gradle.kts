@@ -7,9 +7,9 @@ android {
     // The app's version, in one place for every store flavour and for F-Droid's checkupdates
     // (STORES-PLAN 0 and 3): GitHub, F-Droid and Google Play ship the same versionCode and versionName.
     defaultConfig {
-        // Upgrade Your TV 1.0.0, based on Clean Your TV 0.4.8 (code 30) with the All apps screen.
-        versionCode = 1
-        versionName = "1.0.0"
+        // Upgrade Your TV, based on Clean Your TV 0.4.8 (code 30). 1.0.0 (1): All apps. 1.1.0 (2): protected apps can go off.
+        versionCode = 2
+        versionName = "1.1.0"
     }
     // STORES-PLAN 1: one codebase, two store builds, the same applicationId and signing certificate.
     // `full` (GitHub and F-Droid) checks GitHub for a newer release and offers the optional add-ons;

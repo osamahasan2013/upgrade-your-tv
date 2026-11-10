@@ -97,7 +97,7 @@ class DefaultPlanner(
         val kind = when (request) {
             is PlanRequest.Setup -> { d.setup(request); PlanKind.SETUP }
             is PlanRequest.PutBack -> { d.putBack(request.pkg); PlanKind.PUT_BACK }
-            is PlanRequest.SwitchOff -> { d.switchOff(request.pkgs); PlanKind.SWITCH_OFF }
+            is PlanRequest.SwitchOff -> { d.switchOff(request.pkgs, request.override); PlanKind.SWITCH_OFF }
             is PlanRequest.Leftovers -> { d.leftovers(request.expectedDisabled); PlanKind.LEFTOVERS }
             is PlanRequest.ApplyTheme -> { d.applyTheme(request.config, request.wallpaper); PlanKind.THEME }
             is PlanRequest.AddModule -> { d.addModule(request); PlanKind.ADD_MODULE }
@@ -192,7 +192,9 @@ class DefaultPlanner(
         // refuses a DefaultState for it, so one that is off goes back on with Enable, and one that is
         // on needs nothing; an inverse that would switch it off is never planned. Null: no step.
         fun protectedInverse(pkg: PackageName, inverse: Op): Op? {
-            if (Denylist.staticReason(pkg.value) == null) return inverse
+            // All apps: a protected app the person switched off (an override) comes back with Enable too,
+            // since the engine refuses a default-state of a protected package.
+            if (Denylist.staticReason(pkg.value) == null && Denylist.reason(pkg, state(pkg), managedProfile, snapshot) == null) return inverse
             return when (inverse) {
                 is Op.DefaultState -> if (isOff(pkg)) Op.Enable(pkg) else null
                 is Op.Disable -> null
@@ -725,17 +727,20 @@ class DefaultPlanner(
             pkg in KnownLaunchers.byPackage || managedStockLaunchers.any { it.pkg == pkg } || HomePlaceholder.stockFromRecords(journals)?.pkg == pkg ||
                 pkg.value in Denylist.vendorHomes || snapshot.home.claimants.any { it.component.pkg == pkg } || HomePlaceholder.isFactoryHome(pkg)
 
-        fun switchOff(pkgs: Set<PackageName>) {
+        fun switchOff(pkgs: Set<PackageName>, override: Boolean = false) {
             val rows = mutableListOf<RowSummary>()
             // beta4: a PatchWall feed only with PatchWall in the same request (patchWallFeedKept).
             val patchWallGoesOff = PATCHWALL in pkgs && protectedReason(PATCHWALL, managedProfile, managedStockLaunchers) == null
             for (pkg in pkgs.sortedBy { it.value }) {
                 if (!installed(pkg)) { refuse("${pkg.value} is not on this TV"); continue }
-                val why = protectedReason(pkg, managedProfile, managedStockLaunchers)   // R1 R-3: never_disable and the wizard quirk
+                // All apps override: only what the TV needs to run, and this build's kept updaters, stay on.
+                val why = (if (override) SwitchOffRule.reason(pkg, state(pkg), managedProfile, snapshot, managedStockLaunchers, override = true)
+                        ?: REASON_UPDATES.takeIf { keptUpdater(pkg, managedProfile?.groups.orEmpty()) }
+                    else protectedReason(pkg, managedProfile, managedStockLaunchers))   // R1 R-3: never_disable and the wizard quirk
                     ?: REASON_PATCHWALL_FEED.takeIf { patchWallFeedKept(pkg, patchWallGoesOff) }
                 if (why != null) { refuse("${name(pkg)} cannot be switched off: $why"); continue }
                 rows += RowSummary(pkg, name(pkg), description(pkg), off = true, protected = false, whyProtected = null)
-                if (!isOff(pkg)) disable(pkg, GROUP_SWITCH_OFF)
+                if (!isOff(pkg)) disable(pkg, if (override) GROUP_SWITCH_OFF_OVERRIDE else GROUP_SWITCH_OFF)
             }
             if (rows.isNotEmpty()) groups += GroupSummary(GROUP_SWITCH_OFF, "Switched off", rows.size, rows.size, rows)
         }
@@ -751,7 +756,13 @@ class DefaultPlanner(
                 // After a TV update the stock launcher may be enabled and HOME again (R1): a leftover
                 // that is now a home screen is never switched off outside the home screen switch.
                 val why = protectedReason(pkg, managedProfile, managedStockLaunchers)   // R1 R-3: never_disable and the wizard quirk
-                if (why != null) { refuse("${name(pkg)} cannot be switched off: $why"); continue }
+                if (why != null) {
+                    // All apps: a protected app the person had switched off (an override) that came back
+                    // stays on here; All apps shows it in red to switch off again. Only what the TV needs
+                    // to run refuses the check, as before.
+                    if (SwitchOffRule.reason(pkg, state(pkg), managedProfile, snapshot, managedStockLaunchers, override = true) == null) continue
+                    refuse("${name(pkg)} cannot be switched off: $why"); continue
+                }
                 disable(pkg, GROUP_LEFTOVERS)
             }
         }
@@ -1059,6 +1070,7 @@ class DefaultPlanner(
         const val GROUP_HOME = "home"
         const val GROUP_PUT_BACK = "put_back"
         const val GROUP_SWITCH_OFF = "switch_off"
+        const val GROUP_SWITCH_OFF_OVERRIDE = "switch_off_override"   // All apps: a confirmed switch-off of a protected app
         const val GROUP_LEFTOVERS = "leftovers"
         const val GROUP_THEME = "theme"
         const val GROUP_MODULE = "module"

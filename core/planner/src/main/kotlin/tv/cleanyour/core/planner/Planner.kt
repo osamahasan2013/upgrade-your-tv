@@ -30,7 +30,10 @@ sealed interface PlanRequest {
         val config: BlobRef? = null, val wallpaper: BlobRef? = null,   // RFC-DOCK-1: config = encode(DockLayers.applyTo(theme doc, dock)) in the BlobStore
         val curtain: LauncherArtifact? = null) : PlanRequest           // RFC-CURTAIN-1: the bundled TV curtain, from CurtainPin
     data class PutBack(val pkg: PackageName) : PlanRequest
-    data class SwitchOff(val pkgs: Set<PackageName>) : PlanRequest
+    // Upgrade Your TV (All apps): `override` switches off a protected app the person confirmed; only
+    // SwitchOffRule.criticalReason still keeps one on. Its steps carry GROUP_SWITCH_OFF_OVERRIDE so the
+    // engine applies the same rule at run time.
+    data class SwitchOff(val pkgs: Set<PackageName>, val override: Boolean = false) : PlanRequest
     data class Leftovers(val expectedDisabled: Set<PackageName>) : PlanRequest
     data class ApplyTheme(val doc: LauncherConfigDoc, val config: BlobRef, val wallpaper: BlobRef?) : PlanRequest   // R0: 14 renamed from Theme; config = encode(doc) in the BlobStore
     data class AddModule(val module: Module, val version: ModuleVersion, val apk: BlobRef,

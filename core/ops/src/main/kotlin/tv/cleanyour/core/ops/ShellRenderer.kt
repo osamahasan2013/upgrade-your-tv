@@ -46,7 +46,7 @@ class ShellRenderer(private val watchdogVariant: WatchdogVariant = WatchdogVaria
     }
 
     private fun renderOrThrow(op: Op): Rendered = when (op) {
-        is Op.Disable -> Rendered(op, lines(line(PM, "disable-user", USER, "0", writePkg(op.pkg))), null, Privilege.PROFILE_STEP,
+        is Op.Disable -> Rendered(op, lines(line(PM, "disable-user", USER, "0", disablePkg(op.pkg))), null, Privilege.PROFILE_STEP,
             Op.Read(ProbeKind.DISABLED), T_PM, CAP_DEFAULT)
         is Op.Enable -> Rendered(op, lines(line(PM, "enable", USER, "0", pkg(op.pkg))), null, Privilege.PROFILE_STEP,
             Op.Read(ProbeKind.DISABLED), T_PM, CAP_DEFAULT)
@@ -348,6 +348,16 @@ class ShellRenderer(private val watchdogVariant: WatchdogVariant = WatchdogVaria
     }
     // Disable, DefaultState, Uninstall and the installs: the static denylist is refused here as well
     // as in the planner and the executor.
+    // Upgrade Your TV (All apps): a switch-off is refused here only for the packages the TV needs to run
+    // (Critical). The rest of the denylist is the planner's and the engine's to hold, and the person
+    // may override it for one app; installs, uninstalls and default-state still refuse the whole list.
+    private fun disablePkg(p: PackageName): String {
+        val v = pkg(p)
+        val reason = Critical.staticReason(v)
+        require(reason == null) { "package the TV needs $v: $reason" }
+        return v
+    }
+
     private fun writePkg(p: PackageName): String {
         val v = pkg(p)
         val reason = Denylist.staticReason(v)

@@ -14,17 +14,23 @@ import tv.cleanyour.core.probe.RunningApps
 // "All apps": every package on the TV, system and user, with whether it is on and whether it has a
 // process running right now, and a switch for each. A switch-off is the ordinary PlanRequest.SwitchOff
 // and a switch-on the ordinary PlanRequest.PutBack, so every change goes through the planner and the
-// engine like Switched off's: the protected denylist and SwitchOffRule still hold (the Wi-Fi, the
-// remote, the inputs, Play services, the home screen), each change is journalled for Undo and the
-// restore point, and nothing is ever uninstalled. A package those rules keep on shows its reason and
-// no switch, so a tap never runs into a refusal.
+// engine like Switched off's: each change is journalled for Undo and the restore point, and nothing
+// is ever uninstalled. Three kinds of row:
+// - an ordinary app: a switch;
+// - a protected app (the denylist and SwitchOffRule: Play services, a TV input, a setup wizard, a
+//   home screen not in use...): in red with its reason, and a switch whose switch-off asks first and
+//   then runs as an override (PlanRequest.SwitchOff with override = true);
+// - an app the TV needs to run (SwitchOffRule.criticalReason: the framework, the system UI, Settings,
+//   the remote, the Wi-Fi, the debugging service, persistent apps, the home screen in use): a lock
+//   and its reason, never a switch.
 data class AppRow(
     val pkg: PackageName,
     val name: String,
     val system: Boolean,
     val off: Boolean,
     val running: Boolean,
-    val locked: String?,          // why it cannot be switched off, or null
+    val locked: String?,          // the TV needs it to run: why it can never be switched off, or null
+    val warning: String? = null,  // protected: why it is normally kept on; it can go off after a confirmation
 )
 
 enum class AppFilter { ALL, RUNNING, OFF }
@@ -41,6 +47,7 @@ data class AllAppsState(
     val runningKnown: Boolean = false,  // the TV answered the process list on the last read
     val readAtMs: Long? = null,         // when the package list was read from the TV
     val failed: Boolean = false,        // no snapshot at all: the TV could not be read and none is stored
+    val confirm: AppRow? = null,        // the protected app waiting for "Switch it off anyway"
 ) {
     // What the screen shows: the filter, the system toggle and the search, by name.
     val rows: List<AppRow> get() {
@@ -55,10 +62,14 @@ data class AllAppsState(
     val runningCount: Int get() = all.count { it.running }
     val offCount: Int get() = all.count { it.off }
     val systemCount: Int get() = all.count { it.system }
+    val protectedCount: Int get() = all.count { it.warning != null }
+    val criticalCount: Int get() = all.count { it.locked != null }
 }
 
 sealed interface AllAppsIntent {
     data class SetOff(val pkg: PackageName, val off: Boolean) : AllAppsIntent
+    data object ConfirmOff : AllAppsIntent    // the confirmation's "Switch it off anyway"
+    data object CancelOff : AllAppsIntent
     data class Filter(val filter: AppFilter) : AllAppsIntent
     data class ShowSystem(val on: Boolean) : AllAppsIntent
     data class Query(val text: String) : AllAppsIntent
@@ -76,6 +87,7 @@ class AllAppsMachine(
     private data class BusyOn(val pkg: PackageName?)
     private data class Refreshing(val on: Boolean)
     private data class Flip(val pkg: PackageName, val off: Boolean)
+    private data class AskConfirm(val row: AppRow)
 
     // What this screen changed since the last full read: the stored snapshot can still say the old
     // state until the next read, so these win over it, and the next write for such a package plans
@@ -89,8 +101,10 @@ class AllAppsMachine(
         is Loaded -> state.copy(all = event.all, tvName = event.tvName, runningKnown = event.runningKnown, readAtMs = event.readAtMs,
             failed = event.failed, loading = false, refreshing = false)
         is BusyOn -> state.copy(busy = event.pkg)
+        is AskConfirm -> state.copy(confirm = event.row)
         is Refreshing -> state.copy(refreshing = event.on)
-        is Flip -> state.copy(all = state.all.map { if (it.pkg == event.pkg) it.copy(off = event.off, locked = null) else it })
+        is Flip -> state.copy(all = state.all.map { if (it.pkg == event.pkg) it.copy(off = event.off) else it })
+        AllAppsIntent.ConfirmOff, AllAppsIntent.CancelOff -> state.copy(confirm = null)
         is AllAppsIntent.Filter -> state.copy(filter = event.filter)
         is AllAppsIntent.ShowSystem -> state.copy(showSystem = event.on)
         is AllAppsIntent.Query -> state.copy(query = event.text.take(80))
@@ -104,7 +118,14 @@ class AllAppsMachine(
                 val row = before.all.firstOrNull { it.pkg == event.pkg } ?: return
                 if (row.off == event.off) return
                 if (event.off && row.locked != null) return
+                // A protected app asks first (its reason in red), then goes off as an override.
+                if (event.off && row.warning != null) { send(AskConfirm(row)); return }
                 scope.launch { change(row, event.off) }
+            }
+            AllAppsIntent.ConfirmOff -> {
+                val row = before.confirm ?: return
+                if (before.busy != null || before.refreshing) return
+                scope.launch { change(row, off = true) }
             }
             AllAppsIntent.Refresh -> if (before.busy == null && !before.refreshing) scope.launch { load(fromTv = true) }
             else -> {}
@@ -114,7 +135,7 @@ class AllAppsMachine(
     private suspend fun change(row: AppRow, off: Boolean) {
         val pkg = row.pkg
         send(BusyOn(pkg))
-        val request = if (off) PlanRequest.SwitchOff(setOf(pkg)) else PlanRequest.PutBack(pkg)
+        val request = if (off) PlanRequest.SwitchOff(setOf(pkg), override = row.warning != null) else PlanRequest.PutBack(pkg)
         val r = writer.write(tvId, request, fresh = pkg in changed)
         send(BusyOn(null))
         when (r) {
@@ -166,8 +187,10 @@ class AllAppsMachine(
         val live = running
         val rows = snap.packages.map { (pkg, st) ->
             val off = changed[pkg] ?: (st.enabled == EnabledState.DISABLED || st.enabled == EnabledState.DISABLED_USER)
-            val locked = if (off) null else attempt { SwitchOffRule.reason(pkg, st, profile, snap, stock) }.getOrNull()
-            AppRow(pkg, d.nameOf(pkg, st.label), st.system, off, live?.contains(pkg) == true, locked)
+            // Needed to run: a lock, whatever its state (one that is off can still be switched back on).
+            val critical = attempt { SwitchOffRule.criticalReason(pkg, st, snap) }.getOrNull()
+            val guarded = if (critical != null) null else attempt { SwitchOffRule.reason(pkg, st, profile, snap, stock) }.getOrNull()
+            AppRow(pkg, d.nameOf(pkg, st.label), st.system, off, live?.contains(pkg) == true, locked = critical, warning = guarded)
         }.sortedWith(compareBy<AppRow>({ it.name.lowercase() }, { it.pkg.value }))
         send(Loaded(rows, tv.nickname, live != null, snap.takenAtMs, failed = false))
     }

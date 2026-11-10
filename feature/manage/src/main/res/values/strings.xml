@@ -319,7 +319,13 @@
     <string name="allapps_tag_user">Installed</string>
     <string name="allapps_tag_running">Running</string>
     <string name="allapps_tag_off">Off</string>
-    <string name="allapps_locked">Kept on: {reason}</string>
+    <string name="allapps_locked">Needed by the TV: {reason}</string>
+    <string name="allapps_protected">Protected: {reason}</string>
+    <string name="allapps_legend">Red apps are protected: you can switch them off, but a TV feature may stop working. Apps with a lock are needed by the TV to run and always stay on.</string>
+    <string name="allapps_confirm_title">Switch off {name}?</string>
+    <string name="allapps_confirm_body">This app is protected because {reason}. Switching it off can stop part of the TV from working. Nothing is deleted, and you can switch it back on here at any time.</string>
+    <string name="allapps_confirm_button">Switch it off anyway</string>
+    <string name="allapps_confirm_cancel">Keep it on</string>
     <string name="allapps_switch_cd">{name}, {state}</string>
     <string name="allapps_state_on">on</string>
     <string name="allapps_state_off">off</string>

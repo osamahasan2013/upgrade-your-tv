@@ -662,8 +662,11 @@ class DefaultEngine(
     // HDMI, AV and tuner inputs, so it stays on, inside the takeover too (RF-LAUNCHER-250 F2).
     private fun switchOffReason(run: Run, step: Step, target: PackageName, live: PackageState?, dump: String): String? {
         val inSection = run.plan.sections.any { it.name in run.openSections && step.index in it.from..it.to }
+        // Upgrade Your TV (All apps): a switch-off the person confirmed for a protected app keeps only
+        // what the TV needs to run on (SwitchOffRule.criticalReason), with these live facts.
+        val override = step.group == DefaultPlanner.GROUP_SWITCH_OFF_OVERRIDE
         return SwitchOffRule.reason(target, live, run.profile, run.snapshot, run.stockLaunchers, inHomeSwitch = inSection,
-            requestsTvInputHardware = PackageDump.requestsTvInputHardware(dump))
+            requestsTvInputHardware = PackageDump.requestsTvInputHardware(dump), override = override)
     }
 
     // A refusal that leaves the package as it was: the live check's (nothing was sent), or a package

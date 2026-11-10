@@ -5,6 +5,7 @@ import tv.cleanyour.core.model.PackageName
 import tv.cleanyour.core.model.PackageState
 import tv.cleanyour.core.model.Profile
 import tv.cleanyour.core.model.Snapshot
+import tv.cleanyour.core.ops.Critical
 import tv.cleanyour.core.ops.Denylist
 import tv.cleanyour.core.ops.HomePlaceholder
 import tv.cleanyour.core.spec.KnownLaunchers
@@ -43,7 +44,11 @@ object SwitchOffRule {
         stockLaunchers: List<Component>,
         inHomeSwitch: Boolean = false,
         requestsTvInputHardware: Boolean = false,
+        override: Boolean = false,
     ): String? {
+        // Upgrade Your TV (All apps): the person chose to switch off a protected app. Only what the TV
+        // needs to run stays on (criticalReason); every other rule below is set aside for this app.
+        if (override) return criticalReason(pkg, state, snapshot)
         Denylist.reason(pkg, state, profile, snapshot)?.let { return it }
         if (requestsTvInputHardware) return Denylist.REASON_TV_INPUT
         if (FireOs.isHome(pkg)) return DefaultPlanner.REASON_FIRE_OS_HOME
@@ -52,6 +57,24 @@ object SwitchOffRule {
         if (inHomeSwitch) return null
         if (stock || (snapshot != null && isHomeScreen(pkg, snapshot))) return DefaultPlanner.REASON_HOME_SCREEN
         if (pkg.value in Denylist.setupWizards || profile?.setupWraith == pkg) return DefaultPlanner.REASON_WIZARD_SECTION_ONLY
+        return null
+    }
+
+    const val REASON_HOME_NOW = "it is the home screen the TV uses now; without it the TV would show no home screen"
+
+    // What stays on even when the person overrides the protected list (All apps): the packages the
+    // TV needs to run (Critical: static names and persistent apps), Fire OS's own home screens (the
+    // firmware refuses them), and the home screen the TV uses now (with the HOME answer undecided,
+    // every HOME claimant), since the TV would be left on a black screen.
+    fun criticalReason(pkg: PackageName, state: PackageState?, snapshot: Snapshot?): String? {
+        Critical.reason(pkg, state)?.let { return it }
+        if (FireOs.isHome(pkg)) return DefaultPlanner.REASON_FIRE_OS_HOME
+        if (snapshot != null) {
+            val resolved = snapshot.home.resolved
+            if (resolved?.pkg == pkg) return REASON_HOME_NOW
+            val undecided = resolved == null || StockHome.isPlaceholder(resolved)
+            if (undecided && snapshot.home.claimants.any { it.component.pkg == pkg }) return REASON_HOME_NOW
+        }
         return null
     }
 
