@@ -757,10 +757,11 @@ class DefaultPlanner(
                 // that is now a home screen is never switched off outside the home screen switch.
                 val why = protectedReason(pkg, managedProfile, managedStockLaunchers)   // R1 R-3: never_disable and the wizard quirk
                 if (why != null) {
-                    // All apps: a protected app the person had switched off (an override) that came back
-                    // stays on here; All apps shows it in red to switch off again. Only what the TV needs
-                    // to run refuses the check, as before.
-                    if (SwitchOffRule.reason(pkg, state(pkg), managedProfile, snapshot, managedStockLaunchers, override = true) == null) continue
+                    // All apps: a protected app this phone switched off before (an override: the journal has its
+                    // Disable) that came back stays on here, and All apps shows it in red to switch off
+                    // again. What the TV needs to run, and anything never switched off by us, refuses as before.
+                    val ourOverride = journals.any { (it.op as? Op.Disable)?.pkg == pkg }
+                    if (ourOverride && SwitchOffRule.reason(pkg, state(pkg), managedProfile, snapshot, managedStockLaunchers, override = true) == null) continue
                     refuse("${name(pkg)} cannot be switched off: $why"); continue
                 }
                 disable(pkg, GROUP_LEFTOVERS)
