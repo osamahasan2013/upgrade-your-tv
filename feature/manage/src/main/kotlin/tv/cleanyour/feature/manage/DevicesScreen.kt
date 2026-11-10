@@ -85,7 +85,8 @@ private fun KnownRow(dev: KnownDevice, state: DevicesState, onIntent: (DevicesIn
         dev.online -> R.string.devices_status_online
         else -> R.string.devices_status_offline
     })
-    val line = msg(R.string.devices_line, "model" to dev.model, "status" to status)
+    val line = msg(R.string.devices_line, "model" to dev.model, "status" to status) +
+        if (dev.connected) " · " + stringResource(R.string.devices_tap_to_open) else ""
     val failed = if (state.failed == dev.id) stringResource(R.string.devices_failed) else null
     val title = dev.room?.let { "${dev.name}, $it" } ?: dev.name
     ListRow(
@@ -93,14 +94,13 @@ private fun KnownRow(dev: KnownDevice, state: DevicesState, onIntent: (DevicesIn
         subtitle = listOfNotNull(line, dev.host, failed).joinToString("\n"),
         subtitleColor = if (failed != null) c.danger else c.textTertiary,
         leading = { Dot(when { dev.connected -> c.success; dev.online -> c.primary; else -> c.outlineStrong }) },
+        onClick = if (dev.connected && state.busy == null) ({ onIntent(DevicesIntent.Open(dev.id)) }) else null,
         trailing = {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 when {
                     busy -> Box(Modifier.padding(horizontal = 16.dp)) { Spinner() }
-                    dev.connected -> {
-                        TertiaryButton(stringResource(R.string.devices_open), { onIntent(DevicesIntent.Open(dev.id)) }, enabled = state.busy == null)
-                        TertiaryButton(stringResource(R.string.devices_disconnect), { onIntent(DevicesIntent.Disconnect(dev.id)) }, enabled = state.busy == null, quiet = true)
-                    }
+                    // The row itself opens a connected device, so one button fits beside a long name.
+                    dev.connected -> TertiaryButton(stringResource(R.string.devices_disconnect), { onIntent(DevicesIntent.Disconnect(dev.id)) }, enabled = state.busy == null, quiet = true)
                     else -> TertiaryButton(stringResource(R.string.devices_connect), { onIntent(DevicesIntent.Connect(dev.id)) }, enabled = state.busy == null)
                 }
             }

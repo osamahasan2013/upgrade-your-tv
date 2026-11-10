@@ -436,6 +436,7 @@
     <string name="devices_connect">Connect</string>
     <string name="devices_disconnect">Disconnect</string>
     <string name="devices_open">Open</string>
+    <string name="devices_tap_to_open">tap to open</string>
     <string name="devices_failed">Could not connect. Is it on, and is debugging switched on?</string>
     <string name="devices_new_sub_open">{model} · ready to set up</string>
     <string name="devices_new_sub_closed">{model} · debugging is off; Setup shows how to switch it on</string>
