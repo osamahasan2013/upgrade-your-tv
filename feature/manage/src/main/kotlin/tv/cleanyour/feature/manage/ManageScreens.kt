@@ -191,6 +191,10 @@ fun ManageScreen(state: ManageState, onIntent: (ManageIntent) -> Unit, modifier:
                 ListRow(msg(R.string.manage_row_switched_off, "count" to tv.switchedOff), subtitle = stringResource(R.string.manage_row_switched_off_sub),
                     onClick = { onIntent(ManageIntent.Open(ManageSection.SWITCHED_OFF)) })
                 ListDivider()
+                // All apps: every package on the TV with a switch for each (AllAppsScreen).
+                ListRow(stringResource(R.string.manage_row_all_apps), subtitle = stringResource(R.string.manage_row_all_apps_sub),
+                    onClick = { onIntent(ManageIntent.Open(ManageSection.ALL_APPS)) })
+                ListDivider()
                 ListRow(stringResource(R.string.manage_row_leftovers), subtitle = stringResource(R.string.manage_row_leftovers_sub),
                     onClick = { onIntent(ManageIntent.Open(ManageSection.LEFTOVERS)) })
                 ListDivider()

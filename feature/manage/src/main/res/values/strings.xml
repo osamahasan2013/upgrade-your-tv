@@ -289,4 +289,41 @@
     <string name="report_issue_error">That isn\'t a link to an issue of this app on GitHub.</string>
     <string name="report_issue_save">Remember it</string>
     <string name="report_issue_open">Open the issue</string>
+
+    <!-- All apps: every package on the TV with a switch for each (AllAppsMachine). -->
+    <string name="manage_row_all_apps">All apps</string>
+    <string name="manage_row_all_apps_sub">See what is installed and running, and switch any app off or on</string>
+    <string name="allapps_title">All apps</string>
+    <string name="allapps_refresh_cd">Read the TV again</string>
+    <string name="allapps_intro">Every app on the TV, system apps included. Switching one off puts it to sleep; nothing is deleted, and each change can be undone here or from the restore point.</string>
+    <string name="allapps_counts">{total, plural, other {# apps}} · {running, plural, other {# running}} · {off, plural, other {# off}}</string>
+    <string name="allapps_counts_no_running">{total, plural, other {# apps}} · {off, plural, other {# off}}</string>
+    <string name="allapps_read_at">Read from the TV at {time}</string>
+    <string name="allapps_reading">Reading the TV…</string>
+    <string name="allapps_failed">We could not read this TV. Make sure it is on and on the same Wi-Fi, then try again.</string>
+    <string name="allapps_try_again">Try again</string>
+    <string name="allapps_search">Search by name or package</string>
+    <string name="allapps_filter_all">All</string>
+    <string name="allapps_filter_all_cd">Show every app</string>
+    <string name="allapps_filter_running">Running</string>
+    <string name="allapps_filter_running_cd">Show only apps running now</string>
+    <string name="allapps_filter_off">Off</string>
+    <string name="allapps_filter_off_cd">Show only apps that are switched off</string>
+    <string name="allapps_filter_label">Which apps</string>
+    <string name="allapps_show_system">Show system apps</string>
+    <string name="allapps_show_system_sub">{count, plural, other {# system apps on this TV}}</string>
+    <string name="allapps_system_warning">Switching off a system app can stop a TV feature from working. If something breaks, switch it back on here.</string>
+    <string name="allapps_running_unknown">This TV did not say which apps are running.</string>
+    <string name="allapps_empty">No apps match.</string>
+    <string name="allapps_tag_system">System</string>
+    <string name="allapps_tag_user">Installed</string>
+    <string name="allapps_tag_running">Running</string>
+    <string name="allapps_tag_off">Off</string>
+    <string name="allapps_locked">Kept on: {reason}</string>
+    <string name="allapps_switch_cd">{name}, {state}</string>
+    <string name="allapps_state_on">on</string>
+    <string name="allapps_state_off">off</string>
+    <string name="allapps_show_more">{count, plural, other {Show # more}}</string>
+    <string name="allapps_snackbar_off">{name} is switched off.</string>
+    <string name="allapps_snackbar_refused">{name} stays on: the app keeps it on to protect the TV.</string>
 </resources>

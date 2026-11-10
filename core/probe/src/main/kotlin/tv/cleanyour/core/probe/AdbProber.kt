@@ -45,7 +45,7 @@ class AdbProber(
     private val clock: Clock,
     private val signed: Set<PackageName> = SIGNED_PACKAGES,
     private val known: Map<Sha256, Sha256> = emptyMap(),
-) : Prober, LaunchableApps, SavedWifiOwners, InstalledApkReader, AccessibilityRead {
+) : Prober, LaunchableApps, SavedWifiOwners, InstalledApkReader, AccessibilityRead, RunningApps {
 
     private suspend fun run(
         session: TvSession, line: ShellLine, stage: ProbeStage, cap: Int, timeoutMs: Long = 30_000, retry: RetryClass = RetryClass.IDEMPOTENT_READ,
@@ -184,6 +184,12 @@ class AdbProber(
         val r = run(session, ProbeScripts.LAUNCHABLE, ProbeStage.LAUNCHER, 256 * 1024)
         val s = sections(ProbeStage.LAUNCHER, r.stdout, listOf("launcher"))
         return LaunchableParser.parse(s.getValue("").asSequence()) + LaunchableParser.parse(s.getValue("launcher").asSequence())
+    }
+
+    // All apps screen: the packages with a running process (RunningApps), from the existing PS_ARGS line.
+    override suspend fun runningPackages(session: TvSession): Set<PackageName> {
+        val r = run(session, ProbeScripts.PS_ARGS, ProbeStage.HOME, 1024 * 1024)
+        return RunningParser.parse(lines(r.stdout))
     }
 
     // The SETTINGS stage's script, of which only the secure table's two accessibility keys are kept.

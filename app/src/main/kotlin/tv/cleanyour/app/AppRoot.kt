@@ -76,6 +76,7 @@ import tv.cleanyour.feature.manage.ManageScreen
 import tv.cleanyour.feature.manage.OpenWriteSheet
 import tv.cleanyour.feature.manage.ReportScreen
 import tv.cleanyour.feature.manage.SwitchedOffScreen
+import tv.cleanyour.feature.manage.AllAppsScreen
 import tv.cleanyour.feature.manage.TvSettingsScreen
 import tv.cleanyour.feature.modules.ModulesFlow
 import tv.cleanyour.feature.setup.SetupFlow
@@ -86,6 +87,7 @@ import tv.cleanyour.feature.setup.SetupFlow
     @Serializable data class Setup(val tvId: String? = null, val planId: String? = null) : Dest
     @Serializable data class Manage(val tvId: String? = null) : Dest
     @Serializable data class SwitchedOff(val tvId: String) : Dest
+    @Serializable data class AllApps(val tvId: String) : Dest
     @Serializable data class Leftovers(val tvId: String) : Dest
     // 0.4.8: `again`, from Done's "Not right? Send it again": the page sends the saved look once it has loaded.
     @Serializable data class Home(val tvId: String, val again: Boolean = false) : Dest
@@ -120,6 +122,7 @@ internal fun applyRoute(stack: MutableList<NavKey>, route: String, noTvs: Boolea
         "modules" -> if (addOns) id?.let { Dest.Modules(it) } else null
         "home" -> if (id != null) Dest.Home(id, again = parts.getOrNull(2) == "again") else null
         "switchedoff" -> id?.let { Dest.SwitchedOff(it) }
+        "allapps" -> id?.let { Dest.AllApps(it) }
         "leftovers" -> id?.let { Dest.Leftovers(it) }
         "restore" -> id?.let { Dest.Restore(it) }
         "tvsettings" -> id?.let { Dest.TvSettings(it) }
@@ -309,6 +312,19 @@ fun AppRoot(graph: AppGraph, start: Dest, onExit: () -> Unit) {
                     }
                     SwitchedOffScreen(state, m::dispatch, onBack = { go("back") })
                 }
+                entry<Dest.AllApps> { key ->
+                    val m = rememberMachine("apps:${key.tvId}") { graph.allApps(it, TvId(key.tvId)) }
+                    val state by m.state.collectAsStateWithLifecycle()
+                    // Undo flips the change back: an app switched off goes back on, and the reverse.
+                    LaunchedEffect(m) {
+                        m.effects.collect { e ->
+                            onManageEffect(e, onUndo = { s ->
+                                s.pkg?.let { m.dispatch(tv.cleanyour.core.flows.AllAppsIntent.SetOff(it, off = s.kind != SnackKind.APP_OFF)) }
+                            })
+                        }
+                    }
+                    AllAppsScreen(state, m::dispatch, onBack = { go("back") })
+                }
                 entry<Dest.Leftovers> { key ->
                     val m = rememberMachine("left:${key.tvId}") { graph.leftovers(it, TvId(key.tvId)) }
                     val state by m.state.collectAsStateWithLifecycle()
@@ -416,6 +432,8 @@ object SnackText {
         SnackKind.KEPT_ON -> tv.cleanyour.feature.setup.R.string.done_skipped to mapOf("name" to e.name)
         SnackKind.RUN_BUSY -> tv.cleanyour.feature.manage.R.string.tvsettings_forget_busy to emptyMap()
         SnackKind.RUN_BUSY_ANY -> tv.cleanyour.feature.manage.R.string.appsettings_delete_all_busy to mapOf("tv" to e.name)
+        SnackKind.APP_OFF -> tv.cleanyour.feature.manage.R.string.allapps_snackbar_off to mapOf("name" to e.name)
+        SnackKind.APP_REFUSED -> tv.cleanyour.feature.manage.R.string.allapps_snackbar_refused to mapOf("name" to e.name)
     }
 }
 

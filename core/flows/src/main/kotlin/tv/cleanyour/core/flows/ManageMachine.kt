@@ -73,6 +73,7 @@ data class ManageState(
 enum class ManageSection(val key: String) {
     HOME_SCREEN("home"), MODULES("modules"), SWITCHED_OFF("switchedoff"), LEFTOVERS("leftovers"),
     RESTORE_POINT("restore"), TV_SETTINGS("tvsettings"),
+    ALL_APPS("allapps"),   // every package on the TV, with a switch for each (AllAppsMachine)
 }
 
 sealed interface ManageIntent {

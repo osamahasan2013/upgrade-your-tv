@@ -58,6 +58,7 @@ import tv.cleanyour.core.flows.SetupDeps
 import tv.cleanyour.core.flows.SetupMachine
 import tv.cleanyour.core.flows.SetupStart
 import tv.cleanyour.core.flows.SwitchedOffMachine
+import tv.cleanyour.core.flows.AllAppsMachine
 import tv.cleanyour.core.flows.TvAccess
 import tv.cleanyour.core.flows.TvSettingsMachine
 import tv.cleanyour.core.model.TvId
@@ -243,6 +244,7 @@ class AppGraph(context: Context, val appVersion: String = versionOf(context), va
     fun setup(scope: CoroutineScope, start: SetupStart) = SetupMachine(setupDeps, scope, start)
     fun manage(scope: CoroutineScope, tvId: TvId?) = ManageMachine(manageDeps, scope, tvId)
     fun switchedOff(scope: CoroutineScope, tvId: TvId) = SwitchedOffMachine(manageDeps, scope, tvId)
+    fun allApps(scope: CoroutineScope, tvId: TvId) = AllAppsMachine(manageDeps, scope, tvId)
     fun leftovers(scope: CoroutineScope, tvId: TvId) = LeftoversMachine(manageDeps, scope, tvId)
     fun homeScreen(scope: CoroutineScope, tvId: TvId, again: Boolean = false) = HomeScreenMachine(manageDeps, scope, tvId, again)
     fun modules(scope: CoroutineScope, tvId: TvId) = ModulesMachine(manageDeps, scope, tvId)
