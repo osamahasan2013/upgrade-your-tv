@@ -6,7 +6,7 @@ answer them first.
 ## Reporting a vulnerability
 
 Please report privately through GitHub:
-[Report a vulnerability](https://github.com/udhaykumarbala/cleanyourtv-app/security/advisories/new)
+[Report a vulnerability](https://github.com/osamahasan2013/upgrade-your-tv/security/advisories/new)
 (Security tab, "Report a vulnerability"). Do not open a public issue, pull request or discussion
 for a security problem.
 

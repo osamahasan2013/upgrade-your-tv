@@ -82,8 +82,8 @@ object Store : StorePorts {
 
     override fun addOnFetcher(make: () -> ArtifactFetcher): ArtifactFetcher = make()
 
-    const val RELEASES_URL = "https://api.github.com/repos/udhaykumarbala/cleanyourtv-app/releases/latest"
-    const val FEED_URL = "https://github.com/udhaykumarbala/cleanyourtv-app/releases.atom"
+    const val RELEASES_URL = "https://api.github.com/repos/osamahasan2013/upgrade-your-tv/releases/latest"
+    const val FEED_URL = "https://github.com/osamahasan2013/upgrade-your-tv/releases.atom"
     private const val MAX_BODY = 2 * 1024 * 1024
-    const val RELEASE_PAGE = "https://github.com/udhaykumarbala/cleanyourtv-app/releases"
+    const val RELEASE_PAGE = "https://github.com/osamahasan2013/upgrade-your-tv/releases"
 }

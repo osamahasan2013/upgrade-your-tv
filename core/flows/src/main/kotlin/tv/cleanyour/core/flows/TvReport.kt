@@ -503,7 +503,7 @@ object TvReport {
 // the preview screen says before it opens GitHub. The short fields are cut to MAX_VALUE each; the
 // report is all or nothing, never cut.
 object IssueLinks {
-    const val REPO = "https://github.com/udhaykumarbala/cleanyourtv-app"
+    const val REPO = "https://github.com/osamahasan2013/upgrade-your-tv"
     // 0.4.7: the TV list page, which TVs get the new home screen now, in the test build, soon, the
     // clean-up only (and why) or not at all.
     const val TV_LIST = "https://udhaykumarbala.github.io/cleanyourtv-app/tvs/"

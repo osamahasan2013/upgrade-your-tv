@@ -66,7 +66,7 @@ class FullStoreTest {
         assertEquals(listOf(Store.RELEASES_URL), newer.urls)
         assertEquals("", Store.updateChecker(OneAnswer(200, """{"tag_name":"v0.3.0"}""")).latestNewerThan("0.3.0"))
         assertEquals(null, Store.updateChecker(OneAnswer(404, "")).latestNewerThan("0.3.0"))
-        assertEquals("https://github.com/udhaykumarbala/cleanyourtv-app/releases", Store.releasePage)
+        assertEquals("https://github.com/osamahasan2013/upgrade-your-tv/releases", Store.releasePage)
     }
 
     // 0.4.7 (issue #818): the API's 60 requests an hour per address run out behind a shared address (CGNAT, a VPN),
@@ -83,9 +83,9 @@ class FullStoreTest {
             }
         }
     }
-    private val feed = """<feed><entry><link rel="alternate" type="text/html" href="https://github.com/udhaykumarbala/cleanyourtv-app/releases/tag/v0.4.7-beta1"/></entry>
-        <entry><link rel="alternate" type="text/html" href="https://github.com/udhaykumarbala/cleanyourtv-app/releases/tag/v0.4.6"/></entry>
-        <entry><link rel="alternate" type="text/html" href="https://github.com/udhaykumarbala/cleanyourtv-app/releases/tag/v0.4.5"/></entry></feed>"""
+    private val feed = """<feed><entry><link rel="alternate" type="text/html" href="https://github.com/osamahasan2013/upgrade-your-tv/releases/tag/v0.4.7-beta1"/></entry>
+        <entry><link rel="alternate" type="text/html" href="https://github.com/osamahasan2013/upgrade-your-tv/releases/tag/v0.4.6"/></entry>
+        <entry><link rel="alternate" type="text/html" href="https://github.com/osamahasan2013/upgrade-your-tv/releases/tag/v0.4.5"/></entry></feed>"""
 
     @Test fun aRateLimitedApiFallsBackToTheReleasesFeed() = runBlocking {
         val lines = mutableListOf<String>()

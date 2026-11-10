@@ -204,7 +204,7 @@ class TvReportTest {
     @Test fun theTvSupportLinkPrefillsTheFormFields() {
         val link = IssueLinks.tvSupport(input())
         val url = link.url
-        assertTrue(url.startsWith("https://github.com/udhaykumarbala/cleanyourtv-app/issues/new?template=tv_support.yml&"), url)
+        assertTrue(url.startsWith("https://github.com/osamahasan2013/upgrade-your-tv/issues/new?template=tv_support.yml&"), url)
         val q = query(url)
         assertEquals("Hisense 55A6H", q["model"])
         assertEquals("Android 11, RTM6.230109.155", q["android"])

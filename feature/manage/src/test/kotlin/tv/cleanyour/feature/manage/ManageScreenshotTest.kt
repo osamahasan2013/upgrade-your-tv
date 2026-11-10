@@ -210,7 +210,7 @@ private fun held(n: Int, told: Long? = null) = RestartTally(bootId = "b", answer
     build = "0.4.8 (full, test build)", toldAtMs = told, toldHeld = if (told != null) n else 0)
 
 private fun report(kind: ReportKind, text: String = when (kind) { ReportKind.TV -> tvReport; ReportKind.CONFIRM -> confirmation; else -> problemReport }, inLink: Boolean = true) =
-    ReportState(kind, loading = false, text = text, url = "https://github.com/udhaykumarbala/cleanyourtv-app/issues/new", available = true, inLink = inLink)
+    ReportState(kind, loading = false, text = text, url = "https://github.com/osamahasan2013/upgrade-your-tv/issues/new", available = true, inLink = inLink)
 
 private val tall = 1100.dp
 
@@ -272,7 +272,7 @@ object ManageShots {
         Shot("report_tv_too_long", tall) { ReportScreen(report(ReportKind.TV, inLink = false), {}, {}) },
         // 0.4.7 (must 4): the report sent before, without and with the issue's link.
         Shot("report_tv_sent", tall) { ReportScreen(report(ReportKind.TV).copy(sent = SentReport(NOW - 86_400_000)), {}, {}) },
-        Shot("report_tv_sent_issue", tall) { ReportScreen(report(ReportKind.TV).copy(sent = SentReport(NOW - 86_400_000, "https://github.com/udhaykumarbala/cleanyourtv-app/issues/1368")), {}, {}) },
+        Shot("report_tv_sent_issue", tall) { ReportScreen(report(ReportKind.TV).copy(sent = SentReport(NOW - 86_400_000, "https://github.com/osamahasan2013/upgrade-your-tv/issues/1368")), {}, {}) },
         // 0.4.8: "Tell us it worked", the confirmation's preview, and before a restart was counted.
         Shot("report_confirm", tall) { ReportScreen(report(ReportKind.CONFIRM), {}, {}) },
         Shot("report_confirm_unavailable") { ReportScreen(ReportState(ReportKind.CONFIRM, loading = false, available = false), {}, {}) },

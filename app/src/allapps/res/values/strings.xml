@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- The All apps build (-Pcleanyourtv.allApps=true) installs beside the official app, so it has its own name. -->
-<resources>
-    <string name="app_name" translatable="false">Clean Your TV (All apps)</string>
-</resources>

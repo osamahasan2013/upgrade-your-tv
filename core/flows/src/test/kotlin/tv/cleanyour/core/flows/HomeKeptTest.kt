@@ -276,12 +276,12 @@ class HomeKeptTest {
         assertNull(store.load(id))
         store.save(id, SentReport(1_700_000_000_000))
         assertEquals(SentReport(1_700_000_000_000), store.load(id))
-        store.save(id, SentReport(1_700_000_000_000, "https://github.com/udhaykumarbala/cleanyourtv-app/issues/1368"))
-        assertEquals(SentReport(1_700_000_000_000, "https://github.com/udhaykumarbala/cleanyourtv-app/issues/1368"), store.load(id))
-        assertEquals("https://github.com/udhaykumarbala/cleanyourtv-app/issues/1368", SentReports.issueUrl(" https://github.com/udhaykumarbala/cleanyourtv-app/issues/1368#issuecomment-1 "))
-        assertEquals("#1368", SentReports.issueNumber("https://github.com/udhaykumarbala/cleanyourtv-app/issues/1368"))
+        store.save(id, SentReport(1_700_000_000_000, "https://github.com/osamahasan2013/upgrade-your-tv/issues/1368"))
+        assertEquals(SentReport(1_700_000_000_000, "https://github.com/osamahasan2013/upgrade-your-tv/issues/1368"), store.load(id))
+        assertEquals("https://github.com/osamahasan2013/upgrade-your-tv/issues/1368", SentReports.issueUrl(" https://github.com/osamahasan2013/upgrade-your-tv/issues/1368#issuecomment-1 "))
+        assertEquals("#1368", SentReports.issueNumber("https://github.com/osamahasan2013/upgrade-your-tv/issues/1368"))
         assertNull(SentReports.issueUrl("https://github.com/someone/else/issues/1"))
-        assertNull(SentReports.issueUrl("https://github.com/udhaykumarbala/cleanyourtv-app/pull/12"))
+        assertNull(SentReports.issueUrl("https://github.com/osamahasan2013/upgrade-your-tv/pull/12"))
         assertNull(SentReports.issueUrl("1368"))
     }
 
@@ -301,17 +301,17 @@ class HomeKeptTest {
         m.dispatch(ReportIntent.SaveIssue("https://example.com")); settle()
         assertTrue(m.state.value.issueError)
         assertNull(m.state.value.sent?.issueUrl)
-        m.dispatch(ReportIntent.SaveIssue("https://github.com/udhaykumarbala/cleanyourtv-app/issues/1368")); settle()
+        m.dispatch(ReportIntent.SaveIssue("https://github.com/osamahasan2013/upgrade-your-tv/issues/1368")); settle()
         assertFalse(m.state.value.issueError)
-        assertEquals("https://github.com/udhaykumarbala/cleanyourtv-app/issues/1368", m.state.value.sent?.issueUrl)
+        assertEquals("https://github.com/osamahasan2013/upgrade-your-tv/issues/1368", m.state.value.sent?.issueUrl)
         m.effects.test {
             m.dispatch(ReportIntent.OpenIssue); settle()
-            assertEquals(listOf<ManageEffect>(ManageEffect.OpenUrl("https://github.com/udhaykumarbala/cleanyourtv-app/issues/1368")), drain())
+            assertEquals(listOf<ManageEffect>(ManageEffect.OpenUrl("https://github.com/osamahasan2013/upgrade-your-tv/issues/1368")), drain())
         }
         // Sending again keeps the link and moves the date.
         h.clock.setWall(Samples.NOW_MS + 5_000)
         m.effects.test { m.dispatch(ReportIntent.Share); settle(); assertEquals(1, drain().size) }
-        assertEquals(SentReport(Samples.NOW_MS + 5_000, "https://github.com/udhaykumarbala/cleanyourtv-app/issues/1368"), SentReports(h.documents).load(tv.id))
+        assertEquals(SentReport(Samples.NOW_MS + 5_000, "https://github.com/osamahasan2013/upgrade-your-tv/issues/1368"), SentReports(h.documents).load(tv.id))
         // The Home screen page and Manage carry the date.
         assertEquals(Samples.NOW_MS + 5_000, HomeScreenMachine(h.manageDeps(), backgroundScope, tv.id).also { settle() }.state.value.notOnTv?.reportSentAtMs)
         assertEquals(Samples.NOW_MS + 5_000, assertNotNull(ManageMachine(h.manageDeps(), backgroundScope, tv.id).also { settle() }.state.value.current).reportSentAtMs)

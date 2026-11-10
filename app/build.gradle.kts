@@ -3,16 +3,13 @@ plugins {
     id("cleanyourtv.serialization")
 }
 
-val allAppsBuild = providers.gradleProperty("cleanyourtv.allApps").map { it.toBoolean() }.getOrElse(false)
-
 android {
     // The app's version, in one place for every store flavour and for F-Droid's checkupdates
     // (STORES-PLAN 0 and 3): GitHub, F-Droid and Google Play ship the same versionCode and versionName.
     defaultConfig {
-        // The 0.4.8 release: code 30 installs over the test builds 0.4.8-beta1 and beta2 (28, 29), 0.4.7 (27)
-        // and every earlier build with the same key.
-        versionCode = 30
-        versionName = "0.4.8"
+        // Upgrade Your TV 1.0.0, based on Clean Your TV 0.4.8 (code 30) with the All apps screen.
+        versionCode = 1
+        versionName = "1.0.0"
     }
     // STORES-PLAN 1: one codebase, two store builds, the same applicationId and signing certificate.
     // `full` (GitHub and F-Droid) checks GitHub for a newer release and offers the optional add-ons;
@@ -28,18 +25,6 @@ android {
         create("play") {
             dimension = "store"
         }
-    }
-    // The All apps build (-Pcleanyourtv.allApps=true, .github/workflows/allapps-apk.yml): its own
-    // applicationId and name, so it installs beside the official release (whose key it does not
-    // have, so it could never update it) and keeps its own TVs and restore points. Off by default:
-    // every other build is the upstream one, byte for byte.
-    if (allAppsBuild) {
-        defaultConfig {
-            applicationIdSuffix = ".allapps"
-            versionNameSuffix = "-allapps"
-        }
-        sourceSets.getByName("debug").res.srcDir("src/allapps/res")
-        sourceSets.getByName("release").res.srcDir("src/allapps/res")
     }
     testOptions { unitTests { isIncludeAndroidResources = true } }
     // A text report per linted variant (build/reports/lint-results-<variant>.txt). No shared

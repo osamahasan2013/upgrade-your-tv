@@ -18,7 +18,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "cleanyourtv-app"
+rootProject.name = "upgrade-your-tv"
 
 // Every module of the module graph (ARCHITECTURE 1.2 and PRODUCT-SPEC 6). Layers and allowed
 // edges live in build-logic ModuleRules.kt and are enforced by checkModuleGraph.

@@ -123,8 +123,8 @@ class PlayStoreTest {
         assertTrue(Store.hosts.isEmpty())
         val g = graph()
         // Every GitHub URL, the release check's among them, is refused before a connection opens.
-        val urls = DownloadHosts.ALL.map { "https://$it/udhaykumarbala/cleanyourtv-app/releases/latest" } +
-            "https://api.github.com/repos/udhaykumarbala/cleanyourtv-app/releases/latest"
+        val urls = DownloadHosts.ALL.map { "https://$it/osamahasan2013/upgrade-your-tv/releases/latest" } +
+            "https://api.github.com/repos/osamahasan2013/upgrade-your-tv/releases/latest"
         for (url in urls) {
             val e = assertFailsWith<FetchException>(url) { g.seams.http.get(url, null, null) }
             assertEquals(FetchFailure.HOST_NOT_ALLOWED, e.failure, url)

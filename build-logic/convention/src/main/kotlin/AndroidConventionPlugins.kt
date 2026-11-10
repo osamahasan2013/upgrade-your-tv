@@ -77,7 +77,7 @@ class AndroidAppConventionPlugin : Plugin<Project> {
             namespace = "tv.cleanyour.app"
             compileSdk = Toolchain.COMPILE_SDK
             defaultConfig {
-                applicationId = "tv.cleanyour.app"
+                applicationId = "io.github.osamahasan2013.upgradeyourtv"   // Upgrade Your TV (based on Clean Your TV, tv.cleanyour.app)
                 minSdk = Toolchain.MIN_SDK
                 targetSdk = Toolchain.TARGET_SDK
                 // versionCode and versionName live in app/build.gradle.kts (STORES-PLAN 3), the one

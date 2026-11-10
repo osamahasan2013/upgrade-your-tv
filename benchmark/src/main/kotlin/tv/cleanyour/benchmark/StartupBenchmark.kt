@@ -10,7 +10,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-const val TARGET_PACKAGE = "tv.cleanyour.app"
+const val TARGET_PACKAGE = "io.github.osamahasan2013.upgradeyourtv"
 
 // ARCHITECTURE 4 startup rows: cold TTID P50 400 ms target (500 ms ceiling, P90 700 ms), cold
 // TTFD from reportFullyDrawn, warm 150 ms (250 ms ceiling). 15 iterations each. In 0.1 these

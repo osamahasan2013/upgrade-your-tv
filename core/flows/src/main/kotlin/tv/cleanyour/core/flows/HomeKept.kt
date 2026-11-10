@@ -66,9 +66,9 @@ class SentReports(private val store: DocumentStore) {
     companion object {
         // A GitHub issue link of this app's repository, as the person pastes it: the issue's own
         // page, with or without a fragment or a trailing slash; nothing else is kept.
-        private val ISSUE = Regex("^https://github\\.com/udhaykumarbala/cleanyourtv-app/issues/(\\d+)/?(#.*)?$")
+        private val ISSUE = Regex("^https://github\\.com/osamahasan2013/upgrade-your-tv/issues/(\\d+)/?(#.*)?$")
 
-        fun issueUrl(text: String): String? = ISSUE.matchEntire(text.trim())?.let { "https://github.com/udhaykumarbala/cleanyourtv-app/issues/${it.groupValues[1]}" }
+        fun issueUrl(text: String): String? = ISSUE.matchEntire(text.trim())?.let { "https://github.com/osamahasan2013/upgrade-your-tv/issues/${it.groupValues[1]}" }
 
         // "#1234" for the banner, from the saved link.
         fun issueNumber(url: String): String? = ISSUE.matchEntire(url)?.let { "#${it.groupValues[1]}" }
