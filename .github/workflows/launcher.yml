@@ -1,0 +1,90 @@
+# The Upgrade Your TV launcher: upstream's launcher (third_party/cleanyourtv at its pinned commit)
+# with this repo's patches (patches/launcher/*.patch: the video background), built and signed with
+# this repo's key (the KEYSTORE_B64 and KEYSTORE_PASSWORD secrets, the same key as the phone app).
+# The signed APK and its pin (sha256, size, signer, versionCode) are pushed to the launcher-out
+# branch; bringing them into the app is a reviewed commit (android/platform assets and
+# core/trust Pins.kt), never done by this workflow.
+# Run it from the Actions tab, or push to the launcher-build branch.
+name: launcher
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["launcher-build"]
+
+permissions:
+  contents: write   # push the launcher-out branch
+
+concurrency:
+  group: launcher
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          submodules: true
+
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Apply the patches
+        run: |
+          cd third_party/cleanyourtv
+          for p in ../../patches/launcher/*.patch; do echo "applying $p"; git apply --whitespace=nowarn "$p"; done
+          git status --short
+
+      - name: Build the launcher (release, R8)
+        run: |
+          cd third_party/cleanyourtv/launcher
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease --console=plain
+          ls -l app/build/outputs/apk/release/
+
+      - name: Sign with this repo's key
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then echo "::error::The KEYSTORE_B64 and KEYSTORE_PASSWORD secrets are needed"; exit 1; fi
+          mkdir -p "$RUNNER_TEMP/key" out
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/key/release.p12"
+          printf '%s' "$KEYSTORE_PASSWORD" > "$RUNNER_TEMP/key/pw.txt"
+          bt=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)
+          echo "build-tools: $bt"
+          "$bt/apksigner" sign --ks "$RUNNER_TEMP/key/release.p12" --ks-pass "file:$RUNNER_TEMP/key/pw.txt" \
+            --ks-key-alias cleanyourtv --v1-signing-enabled false --v2-signing-enabled true --v3-signing-enabled true \
+            --out out/cleanyourtv-launcher.apk third_party/cleanyourtv/launcher/app/build/outputs/apk/release/app-release.apk
+          "$bt/apksigner" verify --print-certs out/cleanyourtv-launcher.apk | tee out/certs.txt
+          signer=$(grep -m1 'certificate SHA-256 digest' out/certs.txt | awk '{print $NF}')
+          sha=$(sha256sum out/cleanyourtv-launcher.apk | awk '{print $1}')
+          size=$(stat -c %s out/cleanyourtv-launcher.apk)
+          aapt=$(ls "$bt"/aapt2 2>/dev/null || true)
+          badging=$("$bt/aapt2" dump badging out/cleanyourtv-launcher.apk 2>/dev/null | head -n 1 || true)
+          {
+            echo "SHA256=$sha"
+            echo "SIZE=$size"
+            echo "SIGNER_SHA256=$signer"
+            echo "BADGING=$badging"
+            echo "UPSTREAM_COMMIT=$(git -C third_party/cleanyourtv rev-parse HEAD)"
+            echo "PATCHES=$(ls patches/launcher | tr '\n' ' ')"
+          } | tee out/launcher-pin.txt
+          rm -rf "$RUNNER_TEMP/key"
+
+      - name: Push the launcher-out branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cp out/cleanyourtv-launcher.apk out/launcher-pin.txt "$RUNNER_TEMP/"
+          git checkout --orphan launcher-out
+          git rm -rq --cached . || true
+          mkdir -p launcher-out
+          cp "$RUNNER_TEMP/cleanyourtv-launcher.apk" "$RUNNER_TEMP/launcher-pin.txt" launcher-out/
+          git add -f launcher-out
+          git commit -q -m "Launcher build of ${GITHUB_SHA::8}"
+          git push -f origin launcher-out
