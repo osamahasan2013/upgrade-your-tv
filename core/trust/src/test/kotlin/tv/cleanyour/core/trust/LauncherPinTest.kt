@@ -46,7 +46,7 @@ class LauncherPinTest {
         assertEquals(PackageName("com.gathin.tvhome"), artifact.pkg)
         assertEquals(PinnedLauncher.VERSION_CODE, artifact.versionCode)
         assertEquals(1001L, artifact.versionCode)
-        assertEquals("3.0", artifact.versionName)
+        assertEquals(PinnedLauncher.VERSION_NAME, artifact.versionName)
         assertEquals(Sha256(PinnedLauncher.SHA256), artifact.sha256)
         assertEquals(Sha256(PinnedLauncher.SIGNER_SHA256), artifact.signer)
         assertEquals(artifact.sha256, artifact.blob.sha256)

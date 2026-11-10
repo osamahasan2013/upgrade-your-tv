@@ -398,8 +398,8 @@ object ManageShots {
         Shot("devices_list", tall) { DevicesScreen(DevicesState(
             known = listOf(
                 KnownDevice(tvId, "TCL C645", "Living room", "55C645", "192.168.1.20", online = true, connected = true, connecting = false),
-                KnownDevice(TvId("tv-bedroom"), "Xiaomi TV Box S", "Bedroom", "MDZ-28-AA", "192.168.1.31", online = true, connected = false, connecting = false),
-                KnownDevice(TvId("tv-office"), "TCL P635", "Office", "43P635", "192.168.1.44", online = false, connected = false, connecting = false),
+                KnownDevice(TvId("00000000000000b1"), "Xiaomi TV Box S", "Bedroom", "MDZ-28-AA", "192.168.1.31", online = true, connected = false, connecting = false),
+                KnownDevice(TvId("00000000000000c2"), "TCL P635", "Office", "43P635", "192.168.1.44", online = false, connected = false, connecting = false),
             ),
             found = listOf(NewDevice("192.168.1.52", "Kitchen TV", "Mi TV 4A", true)),
             searching = false), {}, {}) },
