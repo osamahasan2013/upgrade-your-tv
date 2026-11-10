@@ -16,7 +16,10 @@ import org.robolectric.ParameterizedRobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import tv.cleanyour.core.engine.PauseReason
+import tv.cleanyour.core.flows.AllAppsState
 import tv.cleanyour.core.flows.AppConfirm
+import tv.cleanyour.core.flows.AppFilter
+import tv.cleanyour.core.flows.AppRow
 import tv.cleanyour.core.flows.AppPrefsValue
 import tv.cleanyour.core.flows.AppSettingsState
 import tv.cleanyour.core.flows.ChipState
@@ -229,6 +232,27 @@ private val betterGroups = listOf(
 )
 private val playAskGroups = askGroups.filter { it.id != "updates" }
 
+// All apps: a TCL Google TV's mix of system and installed apps, running and off.
+private fun app(pkg: String, name: String, system: Boolean = true, off: Boolean = false, running: Boolean = false, locked: String? = null) =
+    AppRow(PackageName(pkg), name, system, off, running, locked)
+private val allAppRows = listOf(
+    app("com.android.tv.settings", "Settings", running = true, locked = "it is the TV's Settings app"),
+    app("com.google.android.apps.tv.launcherx", "Google TV Home", running = true, locked = "it is this TV's home screen"),
+    app("com.google.android.youtube.tv", "YouTube", running = true),
+    app("com.netflix.ninja", "Netflix", running = true),
+    app("com.tcl.tvweishi", "TCL Channel", off = true),
+    app("com.tcl.gamecenter", "TCL Game Center", off = true),
+    app("com.google.android.tvrecommendations", "TV recommendations", running = true),
+    app("com.google.android.katniss", "Google app for Android TV", running = true),
+    app("com.tcl.suspension", "Inputs panel", running = true, locked = "it provides a TV input (HDMI, tuner or CEC)"),
+    app("com.amazon.amazonvideo.livingroom", "Prime Video", system = false),
+    app("org.videolan.vlc", "VLC", system = false, running = true),
+    app("com.wolf.launcher", "Wolf Launcher", system = false, locked = "it is a home screen app you installed, and we never switch those off"),
+)
+private fun allApps(filter: AppFilter = AppFilter.ALL, showSystem: Boolean = true, query: String = "", busy: String? = null) =
+    AllAppsState("Living room TV", allAppRows, filter, showSystem, query, busy?.let(::PackageName), loading = false,
+        runningKnown = true, readAtMs = NOW)
+
 object ManageShots {
     val all: List<Shot> = listOf(
         // M1 Manage
@@ -323,6 +347,14 @@ object ManageShots {
 
         // M4 Switched off
         Shot("switchedoff_groups", tall) { SwitchedOffScreen(switchedOff(), {}, {}) },
+        // All apps
+        Shot("allapps_all", 1700.dp) { AllAppsScreen(allApps(), {}, {}) },
+        Shot("allapps_running", 1500.dp) { AllAppsScreen(allApps(filter = AppFilter.RUNNING), {}, {}) },
+        Shot("allapps_off", tall) { AllAppsScreen(allApps(filter = AppFilter.OFF), {}, {}) },
+        Shot("allapps_installed_only", tall) { AllAppsScreen(allApps(showSystem = false), {}, {}) },
+        Shot("allapps_busy", 1700.dp) { AllAppsScreen(allApps(busy = "com.google.android.youtube.tv"), {}, {}) },
+        Shot("allapps_loading") { AllAppsScreen(AllAppsState(), {}, {}) },
+        Shot("allapps_failed") { AllAppsScreen(AllAppsState(loading = false, failed = true), {}, {}) },
         Shot("switchedoff_busy", tall) { SwitchedOffScreen(switchedOff(busy = "com.glance.tv"), {}, {}) },
         Shot("switchedoff_custom", tall) { SwitchedOffScreen(switchedOff(Level.CUSTOM, ask = askGroups), {}, {}) },
         // WP4 (C6): "Better back on" at the top, each row with its reason and "Switch back on".
