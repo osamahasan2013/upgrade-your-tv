@@ -21,11 +21,13 @@ class SignerAndWifiTest {
     private val prober = AdbProber(ProbeFixtures.clock())
     private val bundled = File(Fixtures.repoRoot, "android/platform/src/main/assets/bundled")
     // SHA-256 of the launcher key K1's certificate, as PinnedLauncher.SIGNER_SHA256 holds it.
-    private val k1 = Sha256("576418154bec6505bfc709ccaa6ae85b6e09d98eb89f4a25147ca1b4b0505132")
+    // Upgrade Your TV: the bundled launcher is signed with this repo's key; the curtain keeps the original launcher key.
+    private val k1 = Sha256("bc3d58326548f5b2da4bfec975586d8641bb3f27e33e6956a3f479976ba9176e")
+    private val upstreamKey = Sha256("576418154bec6505bfc709ccaa6ae85b6e09d98eb89f4a25147ca1b4b0505132")
 
     @Test fun signerOfTheBundledApks() {
         assertEquals(k1, ApkSigners.signerSha256(File(bundled, "cleanyourtv-launcher.apk").readBytes()))
-        assertEquals(k1, ApkSigners.signerSha256(File(bundled, "cleanyourtv-curtain.apk").readBytes()))
+        assertEquals(upstreamKey, ApkSigners.signerSha256(File(bundled, "cleanyourtv-curtain.apk").readBytes()))
     }
 
     // RF-LAUNCHER-240 F2: Android 8 ignores a v3 block, and the APK Signing Block is not covered by

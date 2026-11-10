@@ -26,13 +26,13 @@ class CurtainPinTest {
         tmp.writeBytes(bytes)
         val problems = PinCheck.problems(PinCheck.curtain, tmp)
         assertTrue(problems.toString(), problems.any { it.startsWith("sha256") })
-        // The launcher's bytes are not the curtain, even with the same signer.
+        // The launcher's bytes are not the curtain. Upgrade Your TV: nor is its signer (this repo's key).
         val launcher = PinCheck.problems(PinCheck.curtain, File(Repo.bundled, PinnedLauncher.ASSET_NAME))
-        assertTrue(launcher.toString(), launcher.any { it.startsWith("sha256") } && launcher.none { it.startsWith("signer") })
+        assertTrue(launcher.toString(), launcher.any { it.startsWith("sha256") } && launcher.any { it.startsWith("signer") })
     }
 
-    @Test fun oneSignerForBothTvApps() {
-        assertEquals(PinnedLauncher.SIGNER_SHA256, PinnedCurtain.SIGNER_SHA256)
+    @Test fun theCurtainKeepsTheOriginalLauncherKey() {
+        assertEquals(PinnedLauncher.UPSTREAM_SIGNER_SHA256, PinnedCurtain.SIGNER_SHA256)
         assertEquals("tv.cleanyour.curtain", PinnedCurtain.PACKAGE)
         assertTrue(PinnedCurtain.SIZE < 200L * 1024)
     }
@@ -42,7 +42,7 @@ class CurtainPinTest {
         assertEquals(PackageName("tv.cleanyour.curtain"), artifact.pkg)
         assertEquals(PinnedCurtain.VERSION_CODE, artifact.versionCode)
         assertEquals(Sha256(PinnedCurtain.SHA256), artifact.sha256)
-        assertEquals(Sha256(PinnedLauncher.SIGNER_SHA256), artifact.signer)
+        assertEquals(Sha256(PinnedCurtain.SIGNER_SHA256), artifact.signer)
         assertEquals(artifact.sha256, artifact.blob.sha256)
     }
 

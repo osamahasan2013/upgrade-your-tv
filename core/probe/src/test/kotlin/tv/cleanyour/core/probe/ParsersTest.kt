@@ -31,7 +31,8 @@ class ParsersTest {
         assertEquals(golden, actual)
         // Printable ASCII only, and no write verb outside the lines that must write (all of them in
         // the app's TMP folder, or the no-op package).
-        val writers = setOf("SCREENSHOT", "SCREENSHOT_CLEANUP", "MKDIR_TMP", "NOOP_INSTALL", "NOOP_UNINSTALL", "NOOP_CLEANUP",
+        // Upgrade Your TV: the video background's lines write the launcher's theme folder and restart Home.
+        val writers = setOf("VIDEO_FROM_STAGED", "VIDEO_REMOVE", "HOME_RESTART", "SCREENSHOT", "SCREENSHOT_CLEANUP", "MKDIR_TMP", "NOOP_INSTALL", "NOOP_UNINSTALL", "NOOP_CLEANUP",
             "copyApk(com.gathin.tvhome, signer-0123456789abcdef.apk, 16777216)", "signerCleanup(signer-0123456789abcdef.apk)")
         for ((k, v) in actual) {
             assertTrue(v.all { it in ' '..'~' }, k)

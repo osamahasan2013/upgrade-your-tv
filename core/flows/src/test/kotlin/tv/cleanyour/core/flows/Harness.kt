@@ -194,6 +194,7 @@ class Harness(val clock: FakeClock = FakeClock(Samples.NOW_MS), val facts: tv.cl
         is tv.cleanyour.core.planner.PlanRequest.ApplyTheme -> PlanKind.THEME
         is tv.cleanyour.core.planner.PlanRequest.AddModule -> PlanKind.ADD_MODULE
         is tv.cleanyour.core.planner.PlanRequest.RemoveModule -> PlanKind.REMOVE_MODULE
+        is tv.cleanyour.core.planner.PlanRequest.UninstallApp -> PlanKind.UNINSTALL_APP
         is tv.cleanyour.core.planner.PlanRequest.UseStockHome -> PlanKind.USE_STOCK_HOME
         is tv.cleanyour.core.planner.PlanRequest.UndoEverything -> PlanKind.UNDO_EVERYTHING
         tv.cleanyour.core.planner.PlanRequest.BeforeFactoryReset -> PlanKind.BEFORE_FACTORY_RESET
