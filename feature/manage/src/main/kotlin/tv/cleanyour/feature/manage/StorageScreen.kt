@@ -153,9 +153,9 @@ internal fun ColumnScope.OfferContent(o: ApkOffer, onIntent: (StorageIntent) -> 
     val installed = o.installedVersion
     val state = when {
         installed == null -> stringResource(R.string.storage_offer_new)
-        o.isDowngrade -> msg(R.string.storage_offer_downgrade, "from" to (installed ?: 0L))
+        o.isDowngrade -> msg(R.string.storage_offer_downgrade, "from" to (installed ?: 0L).toString())
         o.isSame -> stringResource(R.string.storage_offer_same)
-        else -> msg(R.string.storage_offer_update, "from" to (installed ?: 0L), "to" to o.info.versionCode)
+        else -> msg(R.string.storage_offer_update, "from" to (installed ?: 0L).toString(), "to" to o.info.versionCode.toString())
     }
     ConfirmQuestion(
         msg(R.string.storage_offer_title, "name" to o.name), "$what $state",
