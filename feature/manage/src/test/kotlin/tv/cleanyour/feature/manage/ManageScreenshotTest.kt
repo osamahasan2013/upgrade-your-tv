@@ -21,6 +21,9 @@ import tv.cleanyour.core.flows.ApkOffer
 import tv.cleanyour.core.flows.FileTransfer
 import tv.cleanyour.core.flows.StorageNote
 import tv.cleanyour.core.flows.StorageState
+import tv.cleanyour.core.flows.VideoBackgroundState
+import tv.cleanyour.core.flows.VideoHome
+import tv.cleanyour.core.flows.VideoNote
 import tv.cleanyour.core.model.ApkInfo
 import tv.cleanyour.core.model.BlobRef
 import tv.cleanyour.core.model.Sha256
@@ -388,6 +391,14 @@ object ManageShots {
                 OfferContent(ApkOffer("content://x", "vlc.apk", vlcApk, BlobRef(Sha256("a".repeat(64)), 41_943_040, "/x"), "VLC", 13_050_100), {}, { "40 MB" })
             }
         },
+        // Video background
+        Shot("video_on") { VideoBackgroundScreen(VideoBackgroundState("Living room TV", loading = false, home = VideoHome.READY, present = true), {}, {}, {}) },
+        Shot("video_off") { VideoBackgroundScreen(VideoBackgroundState("Living room TV", loading = false, home = VideoHome.READY, present = false), {}, {}, {}) },
+        Shot("video_sending") { VideoBackgroundScreen(VideoBackgroundState("Living room TV", loading = false, home = VideoHome.READY, present = false,
+            sending = 12_000_000L to 31_457_280L), {}, {}, {}) },
+        Shot("video_sent") { VideoBackgroundScreen(VideoBackgroundState("Living room TV", loading = false, home = VideoHome.READY, present = true,
+            note = VideoNote.Sent), {}, {}, {}) },
+        Shot("video_other_key") { VideoBackgroundScreen(VideoBackgroundState("Living room TV", loading = false, home = VideoHome.OTHER_KEY), {}, {}, {}) },
         Shot("storage_loading") { StorageScreen(StorageState(), {}, {}, {}, {}) },
         Shot("allapps_failed") { AllAppsScreen(AllAppsState(loading = false, failed = true), {}, {}) },
         Shot("allapps_uninstall") { SheetOver({ AllAppsScreen(allApps(), {}, {}) }) { ConfirmUninstallContent(allAppRows.first { it.pkg.value == "org.videolan.vlc" }, {}) } },

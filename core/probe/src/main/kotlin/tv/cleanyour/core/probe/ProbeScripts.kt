@@ -75,6 +75,19 @@ object ProbeScripts {
     val STORAGE = ShellLine("df -k 2>/dev/null; true")
     val DOWNLOADS = ShellLine("stat -c '%F|%s|%Y|%n' ${RemoteDir.DOWNLOAD.path}/* 2>/dev/null; true")
 
+    // Upgrade Your TV (Video background): wallpaper.mp4 in the launcher's theme folder. Android 10 and
+    // later reach the folder only through the launcher's ThemeProvider (`content`), from a copy staged in
+    // TMP; older TVs take the sync push straight into the folder. All constant lines.
+    const val VIDEO_NAME = "wallpaper.mp4"
+    private const val THEME_URI = "content://com.gathin.tvhome.theme"
+    val videoStaged = RemotePath(RemoteDir.TMP, listOf(VIDEO_NAME))
+    val videoInFolder = RemotePath(RemoteDir.OVERLAY, listOf(VIDEO_NAME))
+    val VIDEO_PRESENT = ShellLine("(content read --uri $THEME_URI/$VIDEO_NAME 2>/dev/null || cat '${RemoteDir.OVERLAY.path}/$VIDEO_NAME' 2>/dev/null) | head -c 16 | wc -c")
+    val VIDEO_FROM_STAGED = ShellLine("content write --uri $THEME_URI/$VIDEO_NAME < '${RemoteDir.TMP.path}/$VIDEO_NAME'; r=\$?; rm -f '${RemoteDir.TMP.path}/$VIDEO_NAME'; exit \$r")
+    val VIDEO_REMOVE = ShellLine("content delete --uri $THEME_URI/$VIDEO_NAME 2>/dev/null; rm -f '${RemoteDir.OVERLAY.path}/$VIDEO_NAME' 2>/dev/null; true")
+    // The launcher reads its theme folder when it starts, as a look's RestartHome does it.
+    val HOME_RESTART = ShellLine("am force-stop com.gathin.tvhome; am start -a android.intent.action.MAIN -c android.intent.category.HOME >/dev/null 2>&1; true")
+
     // Storage and files: one file of the Download folder removed. The name is the TV's own (any
     // language), so it is checked here instead of by RemotePath: one path segment, no quote, no control
     // character, never "." or "..". Single quotes keep everything else literal; `--` ends the options.
@@ -143,6 +156,7 @@ object ProbeScripts {
         "HOME_RESOLVED" to HOME_RESOLVED, "LAUNCHABLE" to LAUNCHABLE, "INPUTS" to INPUTS, "SETTINGS" to SETTINGS, "HOME_FOCUS" to HOME_FOCUS, "BOOT_ID" to BOOT_ID,
         "FREE_DATA" to FREE_DATA, "SCREENSHOT" to SCREENSHOT, "SCREENSHOT_CLEANUP" to SCREENSHOT_CLEANUP, "MKDIR_TMP" to MKDIR_TMP,
         "NOOP_INSTALL" to NOOP_INSTALL, "NOOP_UNINSTALL" to NOOP_UNINSTALL, "NOOP_CLEANUP" to NOOP_CLEANUP, "PS_ARGS" to PS_ARGS, "STORAGE" to STORAGE, "DOWNLOADS" to DOWNLOADS,
+        "VIDEO_PRESENT" to VIDEO_PRESENT, "VIDEO_FROM_STAGED" to VIDEO_FROM_STAGED, "VIDEO_REMOVE" to VIDEO_REMOVE, "HOME_RESTART" to HOME_RESTART,
         "WIFI_OWNERS" to WIFI_OWNERS,
     )
 }

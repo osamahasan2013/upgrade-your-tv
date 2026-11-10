@@ -75,6 +75,7 @@ enum class ManageSection(val key: String) {
     RESTORE_POINT("restore"), TV_SETTINGS("tvsettings"),
     ALL_APPS("allapps"),   // every package on the TV, with a switch for each (AllAppsMachine)
     STORAGE("storage"),    // the TV's storage, files from the phone, APK installs (StorageMachine)
+    VIDEO("video"),        // the home screen's video background (VideoBackgroundMachine)
 }
 
 sealed interface ManageIntent {

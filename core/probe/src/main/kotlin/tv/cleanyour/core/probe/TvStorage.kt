@@ -23,6 +23,14 @@ interface StorageRead {
     suspend fun removeDownload(session: TvSession, name: String): Boolean
 }
 
+// Upgrade Your TV (Video background): wallpaper.mp4 in the launcher's theme folder. `send` pushes the
+// file from the phone (streamed) and puts it in place; `remove` takes it out; both restart Home after.
+interface VideoBackground {
+    suspend fun videoPresent(session: TvSession): Boolean
+    suspend fun sendVideo(session: TvSession, sdk: Int, open: () -> java.io.InputStream, size: Long, onProgress: (Long) -> Unit)
+    suspend fun removeVideo(session: TvSession)
+}
+
 // `df -k` as toybox prints it (Android 8 to 14): "Filesystem 1K-blocks Used Available Use% Mounted on",
 // one mount a line. Internal storage is /data (the shared storage under /storage/emulated is the same
 // space). A USB drive or SD card is /storage/<id> or /mnt/media_rw/<id>; each id is listed once.

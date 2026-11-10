@@ -22,6 +22,7 @@ import tv.cleanyour.core.model.ShellLine
 import tv.cleanyour.core.model.Snapshot
 import tv.cleanyour.core.model.SnapshotReason
 import tv.cleanyour.core.ops.ShellRenderer
+import tv.cleanyour.core.ops.ThemeProviderLines
 import tv.cleanyour.core.session.ExecResult
 import tv.cleanyour.core.session.ExecSpec
 import tv.cleanyour.core.session.RetryClass
@@ -45,7 +46,7 @@ class AdbProber(
     private val clock: Clock,
     private val signed: Set<PackageName> = SIGNED_PACKAGES,
     private val known: Map<Sha256, Sha256> = emptyMap(),
-) : Prober, LaunchableApps, SavedWifiOwners, InstalledApkReader, AccessibilityRead, RunningApps, StorageRead {
+) : Prober, LaunchableApps, SavedWifiOwners, InstalledApkReader, AccessibilityRead, RunningApps, StorageRead, VideoBackground {
 
     private suspend fun run(
         session: TvSession, line: ShellLine, stage: ProbeStage, cap: Int, timeoutMs: Long = 30_000, retry: RetryClass = RetryClass.IDEMPOTENT_READ,
@@ -197,6 +198,29 @@ class AdbProber(
         val df = run(session, ProbeScripts.STORAGE, ProbeStage.FACTS, 256 * 1024)
         val dl = run(session, ProbeScripts.DOWNLOADS, ProbeStage.FACTS, 1024 * 1024)
         return TvStorage(StorageParser.parseDf(lines(df.stdout)), StorageParser.parseDownloads(lines(dl.stdout)))
+    }
+
+    // Video background (VideoBackground).
+    override suspend fun videoPresent(session: TvSession): Boolean {
+        val r = run(session, ProbeScripts.VIDEO_PRESENT, ProbeStage.LAUNCHER, 4096)
+        return (r.stdout.trim().toIntOrNull() ?: 0) > 0
+    }
+
+    override suspend fun sendVideo(session: TvSession, sdk: Int, open: () -> java.io.InputStream, size: Long, onProgress: (Long) -> Unit) {
+        if (sdk >= ThemeProviderLines.MIN_SDK) {
+            session.exec(ProbeScripts.MKDIR_TMP, ExecSpec(timeoutMs = 15_000, stdoutCap = 4096, retry = RetryClass.IDEMPOTENT_WRITE))
+            session.pushStream(open, size, ProbeScripts.videoStaged, onProgress)
+            val r = session.exec(ProbeScripts.VIDEO_FROM_STAGED, ExecSpec(timeoutMs = 120_000, stdoutCap = 4096, retry = RetryClass.NEVER))
+            if (r.exit != 0) throw ProbeException(ProbeStage.LAUNCHER, "the home screen did not take the video (exit ${r.exit}); update the home screen first")
+        } else {
+            session.pushStream(open, size, ProbeScripts.videoInFolder, onProgress)
+        }
+        session.exec(ProbeScripts.HOME_RESTART, ExecSpec(timeoutMs = 30_000, stdoutCap = 4096, retry = RetryClass.NEVER))
+    }
+
+    override suspend fun removeVideo(session: TvSession) {
+        session.exec(ProbeScripts.VIDEO_REMOVE, ExecSpec(timeoutMs = 30_000, stdoutCap = 4096, retry = RetryClass.IDEMPOTENT_WRITE))
+        session.exec(ProbeScripts.HOME_RESTART, ExecSpec(timeoutMs = 30_000, stdoutCap = 4096, retry = RetryClass.NEVER))
     }
 
     override suspend fun removeDownload(session: TvSession, name: String): Boolean {

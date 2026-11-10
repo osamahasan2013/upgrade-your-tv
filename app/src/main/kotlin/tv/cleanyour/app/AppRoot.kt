@@ -78,6 +78,7 @@ import tv.cleanyour.feature.manage.ReportScreen
 import tv.cleanyour.feature.manage.SwitchedOffScreen
 import tv.cleanyour.feature.manage.AllAppsScreen
 import tv.cleanyour.feature.manage.StorageScreen
+import tv.cleanyour.feature.manage.VideoBackgroundScreen
 import tv.cleanyour.feature.manage.TvSettingsScreen
 import tv.cleanyour.feature.modules.ModulesFlow
 import tv.cleanyour.feature.setup.SetupFlow
@@ -90,6 +91,7 @@ import tv.cleanyour.feature.setup.SetupFlow
     @Serializable data class SwitchedOff(val tvId: String) : Dest
     @Serializable data class AllApps(val tvId: String) : Dest
     @Serializable data class Storage(val tvId: String) : Dest
+    @Serializable data class Video(val tvId: String) : Dest
     @Serializable data class Leftovers(val tvId: String) : Dest
     // 0.4.8: `again`, from Done's "Not right? Send it again": the page sends the saved look once it has loaded.
     @Serializable data class Home(val tvId: String, val again: Boolean = false) : Dest
@@ -126,6 +128,7 @@ internal fun applyRoute(stack: MutableList<NavKey>, route: String, noTvs: Boolea
         "switchedoff" -> id?.let { Dest.SwitchedOff(it) }
         "allapps" -> id?.let { Dest.AllApps(it) }
         "storage" -> id?.let { Dest.Storage(it) }
+        "video" -> id?.let { Dest.Video(it) }
         "leftovers" -> id?.let { Dest.Leftovers(it) }
         "restore" -> id?.let { Dest.Restore(it) }
         "tvsettings" -> id?.let { Dest.TvSettings(it) }
@@ -348,6 +351,15 @@ fun AppRoot(graph: AppGraph, start: Dest, onExit: () -> Unit) {
                             // Some file managers label APKs as octet-stream, so any file is offered and the APK is checked.
                             runCatching { pickApk.launch(arrayOf("application/vnd.android.package-archive", "application/octet-stream", "*/*")) }
                         })
+                }
+                entry<Dest.Video> { key ->
+                    val m = rememberMachine("video:${key.tvId}") { graph.video(it, TvId(key.tvId)) }
+                    val state by m.state.collectAsStateWithLifecycle()
+                    LaunchedEffect(m) { m.effects.collect { onManageEffect(it) } }
+                    VideoBackgroundScreen(state, m::dispatch, onBack = { go("back") }, onPickVideo = {
+                        onApk = { uri -> m.dispatch(tv.cleanyour.core.flows.VideoBackgroundIntent.Picked(uri.toString())) }
+                        runCatching { pickApk.launch(arrayOf("video/mp4")) }
+                    })
                 }
                 entry<Dest.Leftovers> { key ->
                     val m = rememberMachine("left:${key.tvId}") { graph.leftovers(it, TvId(key.tvId)) }

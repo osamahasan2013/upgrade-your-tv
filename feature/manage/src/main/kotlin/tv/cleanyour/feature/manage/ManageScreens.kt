@@ -176,6 +176,10 @@ fun ManageScreen(state: ManageState, onIntent: (ManageIntent) -> Unit, modifier:
                     },
                     onClick = { onIntent(ManageIntent.Open(ManageSection.HOME_SCREEN)) })
                 ListDivider()
+                // Upgrade Your TV: the home screen's video background (VideoBackgroundScreen).
+                ListRow(stringResource(R.string.manage_row_video), subtitle = stringResource(R.string.manage_row_video_sub),
+                    onClick = { onIntent(ManageIntent.Open(ManageSection.VIDEO)) })
+                ListDivider()
                 // STORES-PLAN 1: the Play build has no add-ons, so no row that leads to them.
                 // UX finding 9: without the new home screen a card shows as an app, and the row says so.
                 if (state.addOns) {

@@ -389,4 +389,31 @@
     <string name="storage_delete_cancel">Keep it</string>
     <string name="storage_note_deleted">{name} was deleted from the TV.</string>
     <string name="storage_note_delete_failed">{name} could not be deleted.</string>
+
+    <!-- Video background (VideoBackgroundMachine). -->
+    <string name="manage_row_video">Video background</string>
+    <string name="manage_row_video_sub">A short MP4 from this phone as the home screen\'s moving background</string>
+    <string name="video_title">Video background</string>
+    <string name="video_intro">Pick a short MP4 on this phone. The new home screen plays it behind your apps, without sound and on a loop, only while the home screen is on screen. A few seconds to a minute at 1080p works best; the look\'s dim still applies.</string>
+    <string name="video_reading">Reading the TV…</string>
+    <string name="video_ready_on">A video background is on.</string>
+    <string name="video_ready_off">No video background yet; the look\'s picture shows.</string>
+    <string name="video_unknown">The TV did not say whether a video is set.</string>
+    <string name="video_choose">Choose an MP4</string>
+    <string name="video_replace">Choose another MP4</string>
+    <string name="video_remove">Remove the video</string>
+    <string name="video_sending">Sending the video ({sent} of {size})…</string>
+    <string name="video_removing">Removing the video…</string>
+    <string name="video_not_installed">The new home screen is not on this TV. Run Setup again to put it on, then come back here.</string>
+    <string name="video_old_launcher">The home screen on this TV is an older version without video backgrounds. Run Setup again to update it.</string>
+    <string name="video_other_key">The home screen on this TV was installed by the original Clean Your TV app, with another key. Run Setup again: it asks before it replaces it with the Upgrade Your TV home screen, which plays videos.</string>
+    <string name="video_not_home">The new home screen is on the TV but not in charge, so a video background would not show. Run Setup again to make it the home screen.</string>
+    <string name="video_set_up_again">Run Setup again</string>
+    <string name="video_note_sent">The video is on. Press Home on the remote to see it.</string>
+    <string name="video_note_removed">The video is removed; the look\'s picture is back.</string>
+    <string name="video_note_failed">That did not work: {detail}</string>
+    <string name="video_note_too_big">That video is too big (more than 200 MB) or empty. A short loop is best.</string>
+    <string name="video_note_not_mp4">Pick an .mp4 file.</string>
+    <string name="video_note_unreadable">That file could not be read on this phone.</string>
+    <string name="video_note_no_tv">The TV could not be reached. Make sure it is on and on the same Wi-Fi.</string>
 </resources>

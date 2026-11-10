@@ -18,6 +18,14 @@ TVs, and keeps a restore point for every change. Thank you to both projects and 
   cut the app off from it (Wi-Fi, the remote, the TV inputs, Google Play services, the home screen
   in use, the debugging service) show a lock and the reason instead of a switch.
 
+- **Storage, files and apps**: the TV's free space (internal and USB), files sent from the phone to the
+  TV's Download folder and deleted again, and APKs installed on the TV from the phone. Apps you installed
+  can be uninstalled from All apps.
+- **Video background**: a short MP4 from the phone plays behind your apps on the new home screen, muted
+  and looping, only while Home is on screen. The bundled home screen is the Clean Your TV launcher with
+  [this patch](patches/launcher/0001-video-background.patch), signed with this project's key; a TV set up
+  by the original app gets it through **Run Setup again**, which asks before it replaces the old one.
+
 ## Download
 
 Get the APK from [Releases](https://github.com/osamahasan2013/upgrade-your-tv/releases/latest) and open it on your phone
