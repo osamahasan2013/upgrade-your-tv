@@ -1,9 +1,10 @@
 # Upgrade Your TV: a signed release APK (full flavour, R8).
 #
-# Run workflow (Actions tab): builds the APK; it is the run's artifact "upgrade-your-tv-apk".
-# Push a tag such as v1.0.1 (the same as versionName in app/build.gradle.kts), or make a Release
-# with a new tag on GitHub's Releases page: builds it and puts the APK on that Release, which the
-# app's update check finds.
+# Releases are automatic: when a push to main carries a versionName (app/build.gradle.kts) that has no
+# Release yet, this builds the APK and publishes Release v<versionName> with it, which the app's
+# update check finds. A push that keeps the same versionName builds nothing here.
+# Also: Run workflow (Actions tab) builds the APK as the artifact "upgrade-your-tv-apk"; a tag v1.2.3
+# pushed by hand, or a Release made on GitHub's page, gets the APK added to it.
 #
 # Signing: two repository secrets (Settings > Secrets and variables > Actions > New repository secret):
 #   KEYSTORE_B64       the keystore (PKCS#12), base64 on one line
@@ -16,16 +17,41 @@ name: apk
 on:
   workflow_dispatch:
   push:
+    branches: ["main"]
     tags: ["v*"]
 
 permissions:
-  contents: write   # the Release on a tag
+  contents: write   # the Release
 
 env:
   GRADLE_OPTS: -Dorg.gradle.daemon=false
 
 jobs:
+  # On a push to main: is this versionName released already? Then nothing more runs.
+  decide:
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.d.outputs.build }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - id: d
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          name=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          if [ "${GITHUB_REF_TYPE}" = "branch" ] && [ "${GITHUB_EVENT_NAME}" = "push" ] && \
+             gh release view "v$name" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            echo "v$name is already released; nothing to build."
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          fi
+
   apk:
+    needs: decide
+    if: needs.decide.outputs.build == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -106,15 +132,17 @@ jobs:
           retention-days: 3
 
       - name: Release
-        if: github.ref_type == 'tag'
+        if: github.ref_type == 'tag' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
         env:
           GH_TOKEN: ${{ github.token }}
         # A Release made on GitHub's page ("Create a new release" with a new tag) already exists when
         # its tag starts this run: the APK is added to it. A tag pushed from git gets a new Release.
+        # On main the tag is made here, on this commit.
         run: |
-          if gh release view "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
-            gh release upload "${GITHUB_REF_NAME}" out/*.apk out/SHA256SUMS --repo "${GITHUB_REPOSITORY}" --clobber
+          tag="v${{ steps.v.outputs.name }}"
+          if gh release view "$tag" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release upload "$tag" out/*.apk out/SHA256SUMS --repo "${GITHUB_REPOSITORY}" --clobber
           else
-            gh release create "${GITHUB_REF_NAME}" out/*.apk out/SHA256SUMS \
+            gh release create "$tag" out/*.apk out/SHA256SUMS --target "${GITHUB_SHA}" \
               --repo "${GITHUB_REPOSITORY}" --title "Upgrade Your TV ${{ steps.v.outputs.name }}" --generate-notes
           fi
