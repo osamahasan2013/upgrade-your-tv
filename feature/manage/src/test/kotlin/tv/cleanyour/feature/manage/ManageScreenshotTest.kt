@@ -21,6 +21,9 @@ import tv.cleanyour.core.flows.ApkOffer
 import tv.cleanyour.core.flows.FileTransfer
 import tv.cleanyour.core.flows.StorageNote
 import tv.cleanyour.core.flows.StorageState
+import tv.cleanyour.core.flows.DevicesState
+import tv.cleanyour.core.flows.KnownDevice
+import tv.cleanyour.core.flows.NewDevice
 import tv.cleanyour.core.flows.VideoBackgroundState
 import tv.cleanyour.core.flows.VideoHome
 import tv.cleanyour.core.flows.VideoNote
@@ -391,6 +394,16 @@ object ManageShots {
                 OfferContent(ApkOffer("content://x", "vlc.apk", vlcApk, BlobRef(Sha256("a".repeat(64)), 41_943_040, "/x"), "VLC", 13_050_100), {}, { "40 MB" })
             }
         },
+        // Devices
+        Shot("devices_list", tall) { DevicesScreen(DevicesState(
+            known = listOf(
+                KnownDevice(tvId, "TCL C645", "Living room", "55C645", "192.168.1.20", online = true, connected = true, connecting = false),
+                KnownDevice(TvId("tv-bedroom"), "Xiaomi TV Box S", "Bedroom", "MDZ-28-AA", "192.168.1.31", online = true, connected = false, connecting = false),
+                KnownDevice(TvId("tv-office"), "TCL P635", "Office", "43P635", "192.168.1.44", online = false, connected = false, connecting = false),
+            ),
+            found = listOf(NewDevice("192.168.1.52", "Kitchen TV", "Mi TV 4A", true)),
+            searching = false), {}, {}) },
+        Shot("devices_searching", tall) { DevicesScreen(DevicesState(), {}, {}) },
         // Video background
         Shot("video_on") { VideoBackgroundScreen(VideoBackgroundState("Living room TV", loading = false, home = VideoHome.READY, present = true), {}, {}, {}) },
         Shot("video_off") { VideoBackgroundScreen(VideoBackgroundState("Living room TV", loading = false, home = VideoHome.READY, present = false), {}, {}, {}) },

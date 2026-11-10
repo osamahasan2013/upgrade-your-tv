@@ -11,8 +11,9 @@ android {
         // 1.2.0 (3): Storage, files and apps (the TV's storage, files from the phone, APK installs).
         // 1.3.0 (4): delete files on the TV, uninstall installed apps from All apps.
         // 1.4.0 (5): video backgrounds; the bundled launcher is the Upgrade Your TV build (3.0-uytv1, this repo's key).
-        versionCode = 5
-        versionName = "1.4.0"
+        // 1.5.0 (6): a new icon and colours, and the Devices screen (several TVs and boxes, connect and disconnect).
+        versionCode = 6
+        versionName = "1.5.0"
     }
     // STORES-PLAN 1: one codebase, two store builds, the same applicationId and signing certificate.
     // `full` (GitHub and F-Droid) checks GitHub for a newer release and offers the optional add-ons;

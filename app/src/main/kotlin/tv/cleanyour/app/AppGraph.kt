@@ -247,6 +247,7 @@ class AppGraph(context: Context, val appVersion: String = versionOf(context), va
     fun switchedOff(scope: CoroutineScope, tvId: TvId) = SwitchedOffMachine(manageDeps, scope, tvId)
     fun allApps(scope: CoroutineScope, tvId: TvId) = AllAppsMachine(manageDeps, scope, tvId)
     fun storage(scope: CoroutineScope, tvId: TvId) = tv.cleanyour.core.flows.StorageMachine(manageDeps, scope, tvId)
+    fun devices(scope: CoroutineScope) = tv.cleanyour.core.flows.DevicesMachine(manageDeps, scope)
     fun video(scope: CoroutineScope, tvId: TvId) = tv.cleanyour.core.flows.VideoBackgroundMachine(manageDeps, scope, tvId)
     fun leftovers(scope: CoroutineScope, tvId: TvId) = LeftoversMachine(manageDeps, scope, tvId)
     fun homeScreen(scope: CoroutineScope, tvId: TvId, again: Boolean = false) = HomeScreenMachine(manageDeps, scope, tvId, again)

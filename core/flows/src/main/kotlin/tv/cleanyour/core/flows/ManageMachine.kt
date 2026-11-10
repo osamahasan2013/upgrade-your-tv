@@ -84,6 +84,7 @@ sealed interface ManageIntent {
     data object RefreshThumbnail : ManageIntent
     data class Open(val section: ManageSection) : ManageIntent
     data object SetUpAnother : ManageIntent
+    data object Devices : ManageIntent        // Upgrade Your TV: the Devices screen (DevicesMachine)
     data object CleanAgain : ManageIntent
     data object AppSettings : ManageIntent
     data object HelpAddTv : ManageIntent
@@ -312,6 +313,7 @@ class ManageMachine(
             ManageIntent.SwitchStockHomeOn -> if (id != null && !before.switchingHome && after.current?.wizardHome == true) scope.launch { switchStockHomeOn(id) }
             is ManageIntent.Open -> if (event.section != ManageSection.MODULES || d.store.addOns) id?.let { effect(ManageEffect.Navigate("${event.section.key}/${it.value}")) }
             ManageIntent.SetUpAnother -> effect(ManageEffect.Navigate("setup"))
+            ManageIntent.Devices -> effect(ManageEffect.Navigate("devices"))
             ManageIntent.CleanAgain -> id?.let { effect(ManageEffect.Navigate("setup/${it.value}")) }
             ManageIntent.AppSettings -> effect(ManageEffect.Navigate("appsettings"))
             ManageIntent.HelpAddTv -> id?.let { effect(ManageEffect.Navigate("report/tv/${it.value}")) }

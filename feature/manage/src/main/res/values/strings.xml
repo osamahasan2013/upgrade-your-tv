@@ -416,4 +416,30 @@
     <string name="video_note_not_mp4">Pick an .mp4 file.</string>
     <string name="video_note_unreadable">That file could not be read on this phone.</string>
     <string name="video_note_no_tv">The TV could not be reached. Make sure it is on and on the same Wi-Fi.</string>
+
+    <!-- Devices (DevicesMachine). -->
+    <string name="manage_row_devices">Devices</string>
+    <string name="manage_row_devices_sub">{count, plural, one {# device set up. Connect, disconnect or add another} other {# devices set up. Connect, disconnect or add another}}</string>
+    <string name="devices_title">Devices</string>
+    <string name="devices_refresh_cd">Search the Wi-Fi again</string>
+    <string name="devices_intro">Every TV and box you set up keeps its own settings. Connect to the one you want to work on; Disconnect closes the connection and forgets nothing.</string>
+    <string name="devices_not_on_wifi">This phone is not on Wi-Fi, so devices cannot be found.</string>
+    <string name="devices_searching">Searching this Wi-Fi…</string>
+    <string name="devices_known_title">Your devices</string>
+    <string name="devices_known_empty">No device is set up yet.</string>
+    <string name="devices_found_title">Found on this Wi-Fi</string>
+    <string name="devices_found_empty">No other device found. Make sure it is on and on this Wi-Fi, then search again.</string>
+    <string name="devices_status_connected">Connected</string>
+    <string name="devices_status_online">Online</string>
+    <string name="devices_status_offline">Not seen on this Wi-Fi</string>
+    <string name="devices_status_connecting">Connecting…</string>
+    <string name="devices_connect">Connect</string>
+    <string name="devices_disconnect">Disconnect</string>
+    <string name="devices_open">Open</string>
+    <string name="devices_failed">Could not connect. Is it on, and is debugging switched on?</string>
+    <string name="devices_new_sub_open">{model} · ready to set up</string>
+    <string name="devices_new_sub_closed">{model} · debugging is off; Setup shows how to switch it on</string>
+    <string name="devices_set_up">Set up</string>
+    <string name="devices_add">Set up a new device</string>
+    <string name="devices_line">{model} · {status}</string>
 </resources>

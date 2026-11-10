@@ -162,6 +162,11 @@ fun ManageScreen(state: ManageState, onIntent: (ManageIntent) -> Unit, modifier:
                 )
                 if (state.switchingHome) LiveLine(stringResource(R.string.manage_wizard_home_working))
             }
+            // Upgrade Your TV: every device set up or found on this Wi-Fi, with Connect and Disconnect (DevicesScreen).
+            ListGroup(Modifier.padding(top = 16.dp)) {
+                ListRow(stringResource(R.string.manage_row_devices), subtitle = msg(R.string.manage_row_devices_sub, "count" to state.cards.size),
+                    onClick = { onIntent(ManageIntent.Devices) })
+            }
             ListGroup(Modifier.padding(top = 16.dp)) {
                 // 0.3.3 D2: without the new home screen there is no dock to name; the row opens the reason.
                 // 0.4.7 (UX finding 8): installed but not in use says the TV's own is in use; and when the

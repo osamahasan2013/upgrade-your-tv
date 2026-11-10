@@ -79,6 +79,7 @@ import tv.cleanyour.feature.manage.SwitchedOffScreen
 import tv.cleanyour.feature.manage.AllAppsScreen
 import tv.cleanyour.feature.manage.StorageScreen
 import tv.cleanyour.feature.manage.VideoBackgroundScreen
+import tv.cleanyour.feature.manage.DevicesScreen
 import tv.cleanyour.feature.manage.TvSettingsScreen
 import tv.cleanyour.feature.modules.ModulesFlow
 import tv.cleanyour.feature.setup.SetupFlow
@@ -92,6 +93,7 @@ import tv.cleanyour.feature.setup.SetupFlow
     @Serializable data class AllApps(val tvId: String) : Dest
     @Serializable data class Storage(val tvId: String) : Dest
     @Serializable data class Video(val tvId: String) : Dest
+    @Serializable data object Devices : Dest
     @Serializable data class Leftovers(val tvId: String) : Dest
     // 0.4.8: `again`, from Done's "Not right? Send it again": the page sends the saved look once it has loaded.
     @Serializable data class Home(val tvId: String, val again: Boolean = false) : Dest
@@ -133,6 +135,7 @@ internal fun applyRoute(stack: MutableList<NavKey>, route: String, noTvs: Boolea
         "restore" -> id?.let { Dest.Restore(it) }
         "tvsettings" -> id?.let { Dest.TvSettings(it) }
         "appsettings" -> Dest.AppSettings
+        "devices" -> Dest.Devices
         "report" -> id?.let { k -> ReportKind.of(k) }?.let { k -> if (k != ReportKind.PROBLEM && parts.getOrNull(2) == null) null else Dest.Report(k.key, parts.getOrNull(2)) }
         "back" -> return if (stack.size > 1) { stack.removeAt(stack.lastIndex); true } else false
         else -> null
@@ -351,6 +354,17 @@ fun AppRoot(graph: AppGraph, start: Dest, onExit: () -> Unit) {
                             // Some file managers label APKs as octet-stream, so any file is offered and the APK is checked.
                             runCatching { pickApk.launch(arrayOf("application/vnd.android.package-archive", "application/octet-stream", "*/*")) }
                         })
+                }
+                entry<Dest.Devices> {
+                    val m = rememberMachine("devices") { graph.devices(it) }
+                    val state by m.state.collectAsStateWithLifecycle()
+                    LaunchedEffect(m) { m.effects.collect { onManageEffect(it) } }
+                    // Each time the screen comes back on (the app reopened, a page above closed) the search starts again.
+                    androidx.lifecycle.compose.LifecycleResumeEffect(m) {
+                        m.dispatch(tv.cleanyour.core.flows.DevicesIntent.Refresh)
+                        onPauseOrDispose { }
+                    }
+                    DevicesScreen(state, m::dispatch, onBack = { go("back") })
                 }
                 entry<Dest.Video> { key ->
                     val m = rememberMachine("video:${key.tvId}") { graph.video(it, TvId(key.tvId)) }
