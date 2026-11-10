@@ -395,6 +395,43 @@ class AdbTvSession internal constructor(
         }
     }
 
+    // Upgrade Your TV (Storage and files): sync SEND of the person's file, read from the phone as it goes,
+    // hashed while streaming; the TV's copy is hashed back up to HASH_CHECK_MAX_BYTES, and beyond that
+    // adbd's OKAY to the sync DONE (sent after the last byte is written) stands for it.
+    override suspend fun pushStream(open: () -> InputStream, size: Long, dest: RemotePath, onProgress: (Long) -> Unit): PushResult {
+        if (size <= 0 || size > SessionConfig.MAX_STREAM_PUSH_BYTES) throw protocolError("a file must be 1 byte to 8 GiB")
+        return call(RetryClass.NEVER) { conn ->
+            val start = clock.monotonicMs()
+            val stream = conn.openBounded(AdbService.Sync, SessionConfig.PUSH_IDLE_MS)
+            val sync = SyncClient(stream, SessionConfig.PUSH_IDLE_MS, "push")
+            val hasher = Hasher()
+            var sent = 0L
+            val total = SessionConfig.PUSH_TOTAL_MS + size * 1000 / SessionConfig.STREAM_PUSH_BYTES_PER_SECOND
+            try {
+                bounded(total, "push") {
+                    withContext(blobIo) { open() }.use { input ->
+                        val buf = ByteArray(SessionConfig.FILE_CHUNK_BYTES)
+                        try {
+                            sync.send(dest.absolute, SessionConfig.PUSH_MODE, (clock.nowMs() / 1000).toInt(),
+                                chunks = { readChunk(input, buf)?.also { hasher.digest.update(it); sent += it.size } },
+                                onProgress = { onProgress(it) })
+                        } catch (e: SyncFailedException) {
+                            throw AdbException(AdbError.NonZeroExit(1, e.reason.take(512)))
+                        }
+                    }
+                }
+                sync.quit()
+            } finally {
+                stream.close()
+            }
+            if (sent != size) throw protocolError("the file on the phone changed while it was sent")
+            val local = Sha256(hasher.hex())
+            val remote = if (size <= SessionConfig.HASH_CHECK_MAX_BYTES) remoteSha256(conn, dest) else null
+            if (remote != null && remote != local) throw protocolError("the file on the TV does not match what was sent")
+            PushResult(sent, clock.monotonicMs() - start, remote ?: local)
+        }
+    }
+
     private suspend fun remoteSha256(conn: AdbConnection, path: RemotePath): Sha256? {
         val r = Exec.run(conn, SessionLines.sha256sum(path), ExecSpec(timeoutMs = SessionConfig.HASH_EXEC_TIMEOUT_MS), clock)
         if (r.exit != 0) return null

@@ -29,6 +29,11 @@ interface TvSession {
     suspend fun push(src: BlobRef, dest: RemotePath, onProgress: (Long) -> Unit = {}): PushResult
     suspend fun pull(src: RemotePath, maxBytes: Long): ByteArray     // R0: 3
     suspend fun installStream(apk: BlobRef, size: Long, onProgress: (Long) -> Unit = {}): InstallOutcome
+    // Upgrade Your TV (Storage and files): one of the person's files from the phone to the TV, `size` bytes
+    // read from `open` as they are sent (no copy on the phone), checked against the TV's copy after. Only
+    // the real ADB session sends it; any other session refuses.
+    suspend fun pushStream(open: () -> java.io.InputStream, size: Long, dest: RemotePath, onProgress: (Long) -> Unit = {}): PushResult =
+        throw UnsupportedOperationException("this session cannot send files")
     suspend fun reboot()
     suspend fun awaitBoot(timeoutMs: Long): BootOutcome              // R0: 16 relative to the call, not a wall-clock deadline
     fun hold(): SessionHold                           // keeps the socket open; last hold closed starts the 60 s idle close

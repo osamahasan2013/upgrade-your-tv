@@ -230,6 +230,7 @@ class AppGraph(context: Context, val appVersion: String = versionOf(context), va
         log = FlowLog { CytLog.i(it) },                 // 0.4.7: Manage's re-check lines (StockHomeBack)
         restarts = restarts,                            // 0.4.8: the restart count (Restarts)
         phoneNetwork = AndroidPhoneNetwork(app),        // RFC-REACH-1: "Copy connection details"
+        phoneFiles = AndroidPhoneFiles(app),            // Storage, files and apps: picked files
     )
 
     init {
@@ -245,6 +246,7 @@ class AppGraph(context: Context, val appVersion: String = versionOf(context), va
     fun manage(scope: CoroutineScope, tvId: TvId?) = ManageMachine(manageDeps, scope, tvId)
     fun switchedOff(scope: CoroutineScope, tvId: TvId) = SwitchedOffMachine(manageDeps, scope, tvId)
     fun allApps(scope: CoroutineScope, tvId: TvId) = AllAppsMachine(manageDeps, scope, tvId)
+    fun storage(scope: CoroutineScope, tvId: TvId) = tv.cleanyour.core.flows.StorageMachine(manageDeps, scope, tvId)
     fun leftovers(scope: CoroutineScope, tvId: TvId) = LeftoversMachine(manageDeps, scope, tvId)
     fun homeScreen(scope: CoroutineScope, tvId: TvId, again: Boolean = false) = HomeScreenMachine(manageDeps, scope, tvId, again)
     fun modules(scope: CoroutineScope, tvId: TvId) = ModulesMachine(manageDeps, scope, tvId)

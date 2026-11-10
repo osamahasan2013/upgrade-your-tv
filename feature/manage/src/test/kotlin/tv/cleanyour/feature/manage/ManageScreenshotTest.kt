@@ -17,6 +17,16 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import tv.cleanyour.core.engine.PauseReason
 import tv.cleanyour.core.flows.AllAppsState
+import tv.cleanyour.core.flows.ApkOffer
+import tv.cleanyour.core.flows.FileTransfer
+import tv.cleanyour.core.flows.StorageNote
+import tv.cleanyour.core.flows.StorageState
+import tv.cleanyour.core.model.ApkInfo
+import tv.cleanyour.core.model.BlobRef
+import tv.cleanyour.core.model.Sha256
+import tv.cleanyour.core.probe.StorageVolume
+import tv.cleanyour.core.probe.TvFile
+import tv.cleanyour.core.probe.TvStorage
 import tv.cleanyour.core.flows.AppConfirm
 import tv.cleanyour.core.flows.AppFilter
 import tv.cleanyour.core.flows.AppRow
@@ -251,6 +261,19 @@ private val allAppRows = listOf(
     app("org.videolan.vlc", "VLC", system = false, running = true),
     app("com.wolf.launcher", "Wolf Launcher", system = false, warning = "it is a home screen app you installed, and we never switch those off"),
 )
+// Storage, files and apps: a TV with 16 GB inside and a 32 GB USB drive.
+private val tvStorage = TvStorage(
+    listOf(
+        StorageVolume(StorageVolume.Kind.INTERNAL, "data", "/data", 10_913_648, 8_718_232, 2_195_416),
+        StorageVolume(StorageVolume.Kind.EXTERNAL, "1A2B-3C4D", "/storage/1A2B-3C4D", 30_553_088, 9_048_576, 21_504_512),
+    ),
+    listOf(TvFile("Holiday_2026.mp4", 734_003_200, NOW / 1000), TvFile("menu.pdf", 2_310_144, NOW / 1000 - 86_400)),
+)
+private val vlcApk = ApkInfo(PackageName("org.videolan.vlc"), 13_050_408, "3.6.5", Sha256("b".repeat(64)), Sha256("a".repeat(64)), 41_943_040, "pm")
+private fun storageShot(transfer: FileTransfer? = null, offer: ApkOffer? = null, note: StorageNote? = null, installing: Long? = null) =
+    StorageState("Living room TV", tvStorage, loading = false, transfer = transfer, offer = offer, note = note, installing = installing,
+        installingName = installing?.let { "VLC" })
+
 private fun allApps(filter: AppFilter = AppFilter.ALL, showSystem: Boolean = true, query: String = "", busy: String? = null) =
     AllAppsState("Living room TV", allAppRows, filter, showSystem, query, busy?.let(::PackageName), loading = false,
         runningKnown = true, readAtMs = NOW)
@@ -356,6 +379,16 @@ object ManageShots {
         Shot("allapps_installed_only", tall) { AllAppsScreen(allApps(showSystem = false), {}, {}) },
         Shot("allapps_busy", 2000.dp) { AllAppsScreen(allApps(busy = "com.google.android.youtube.tv"), {}, {}) },
         Shot("allapps_loading") { AllAppsScreen(AllAppsState(), {}, {}) },
+        // Storage, files and apps
+        Shot("storage_overview", tall) { StorageScreen(storageShot(), {}, {}, {}, {}) },
+        Shot("storage_sending", tall) { StorageScreen(storageShot(transfer = FileTransfer("Holiday_2026.mp4", 312_000_000, 734_003_200, 1, 2)), {}, {}, {}, {}) },
+        Shot("storage_installed", tall) { StorageScreen(storageShot(note = StorageNote.Installed("VLC")), {}, {}, {}, {}) },
+        Shot("storage_offer") {
+            SheetOver({ StorageScreen(storageShot(), {}, {}, {}, {}) }) {
+                OfferContent(ApkOffer("content://x", "vlc.apk", vlcApk, BlobRef(Sha256("a".repeat(64)), 41_943_040, "/x"), "VLC", 13_050_100), {}, { "40 MB" })
+            }
+        },
+        Shot("storage_loading") { StorageScreen(StorageState(), {}, {}, {}, {}) },
         Shot("allapps_failed") { AllAppsScreen(AllAppsState(loading = false, failed = true), {}, {}) },
         Shot("allapps_confirm_off") { SheetOver({ AllAppsScreen(allApps(), {}, {}) }) { ConfirmOffContent(allAppRows[2], {}) } },
         Shot("switchedoff_busy", tall) { SwitchedOffScreen(switchedOff(busy = "com.glance.tv"), {}, {}) },

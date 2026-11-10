@@ -332,4 +332,47 @@
     <string name="allapps_show_more">{count, plural, other {Show # more}}</string>
     <string name="allapps_snackbar_off">{name} is switched off.</string>
     <string name="allapps_snackbar_refused">{name} stays on: the app keeps it on to protect the TV.</string>
+
+    <!-- Storage, files and apps (StorageMachine). -->
+    <string name="manage_row_storage">Storage, files and apps</string>
+    <string name="manage_row_storage_sub">See the TV\'s free space, send files and install apps from this phone</string>
+    <string name="storage_title">Storage, files and apps</string>
+    <string name="storage_refresh_cd">Read the TV\'s storage again</string>
+    <string name="storage_reading">Reading the TV\'s storage…</string>
+    <string name="storage_failed">We could not read this TV\'s storage. Make sure it is on and on the same Wi-Fi, then try again.</string>
+    <string name="storage_try_again">Try again</string>
+    <string name="storage_internal">Internal storage</string>
+    <string name="storage_external">USB drive or SD card ({id})</string>
+    <string name="storage_free_of">{free} free of {total}</string>
+    <string name="storage_used">{used} used · {percent}%</string>
+    <string name="storage_send_title">Send files to the TV</string>
+    <string name="storage_send_body">Files go to the TV\'s Download folder, where its file manager, players and galleries can open them. A file with the same name is replaced.</string>
+    <string name="storage_send_button">Choose files</string>
+    <string name="storage_sending">{done, plural, other {Sending {name} (# of {of})}}</string>
+    <string name="storage_sending_progress">{sent} of {size}</string>
+    <string name="storage_install_title">Install an app on the TV</string>
+    <string name="storage_install_body">Pick an APK on this phone. We read its name and version first and install it only after you confirm. Use apps from sources you trust.</string>
+    <string name="storage_install_button">Choose an APK</string>
+    <string name="storage_reading_apk">Reading the APK…</string>
+    <string name="storage_installing">Installing {name} on the TV…</string>
+    <string name="storage_offer_title">Install {name}?</string>
+    <string name="storage_offer_body">{pkg}, version {version}, {size}.</string>
+    <string name="storage_offer_new">It is not on the TV yet.</string>
+    <string name="storage_offer_update">It updates the copy on the TV (version code {from} to {to}).</string>
+    <string name="storage_offer_same">The same version is already on the TV; it will be installed again.</string>
+    <string name="storage_offer_downgrade">The TV has a newer version ({from}). Android does not install an older one over it; uninstall the app on the TV first.</string>
+    <string name="storage_offer_install">Install</string>
+    <string name="storage_offer_cancel">Cancel</string>
+    <string name="storage_downloads_title">In the TV\'s Download folder</string>
+    <string name="storage_downloads_empty">Nothing there yet.</string>
+    <string name="storage_file_line">{size} · {date}</string>
+    <string name="storage_note_sent">{count, plural, one {Sent to the TV\'s Download folder: {names}} other {# files sent to the TV\'s Download folder: {names}}}</string>
+    <string name="storage_note_send_failed">{name} was not sent: {detail}</string>
+    <string name="storage_note_installed">{name} is installed on the TV.</string>
+    <string name="storage_note_install_failed">{name} was not installed: {code}</string>
+    <string name="storage_note_not_apk">That file is not an APK this phone can read. Split APKs (.apks, .xapk) are not supported yet.</string>
+    <string name="storage_note_too_big">That APK is too big (more than 1 GB) or empty.</string>
+    <string name="storage_note_unreadable">That file could not be read on this phone.</string>
+    <string name="storage_note_no_tv">The TV could not be reached. Make sure it is on and on the same Wi-Fi.</string>
+    <string name="storage_note_ok">OK</string>
 </resources>

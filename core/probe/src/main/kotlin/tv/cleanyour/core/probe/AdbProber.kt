@@ -45,7 +45,7 @@ class AdbProber(
     private val clock: Clock,
     private val signed: Set<PackageName> = SIGNED_PACKAGES,
     private val known: Map<Sha256, Sha256> = emptyMap(),
-) : Prober, LaunchableApps, SavedWifiOwners, InstalledApkReader, AccessibilityRead, RunningApps {
+) : Prober, LaunchableApps, SavedWifiOwners, InstalledApkReader, AccessibilityRead, RunningApps, StorageRead {
 
     private suspend fun run(
         session: TvSession, line: ShellLine, stage: ProbeStage, cap: Int, timeoutMs: Long = 30_000, retry: RetryClass = RetryClass.IDEMPOTENT_READ,
@@ -190,6 +190,20 @@ class AdbProber(
     override suspend fun runningPackages(session: TvSession): Set<PackageName> {
         val r = run(session, ProbeScripts.PS_ARGS, ProbeStage.HOME, 1024 * 1024)
         return RunningParser.parse(lines(r.stdout))
+    }
+
+    // Storage and files (StorageRead): the mounts' space and the Download folder, two read-only lines.
+    override suspend fun storage(session: TvSession): TvStorage {
+        val df = run(session, ProbeScripts.STORAGE, ProbeStage.FACTS, 256 * 1024)
+        val dl = run(session, ProbeScripts.DOWNLOADS, ProbeStage.FACTS, 1024 * 1024)
+        return TvStorage(StorageParser.parseDf(lines(df.stdout)), StorageParser.parseDownloads(lines(dl.stdout)))
+    }
+
+    override suspend fun mediaScan(session: TvSession, file: RemotePath) {
+        try {
+            session.exec(ProbeScripts.mediaScan(file), ExecSpec(timeoutMs = 15_000, stdoutCap = 4096, retry = RetryClass.IDEMPOTENT_WRITE))
+        } catch (_: AdbException) {
+        }
     }
 
     // The SETTINGS stage's script, of which only the secure table's two accessibility keys are kept.

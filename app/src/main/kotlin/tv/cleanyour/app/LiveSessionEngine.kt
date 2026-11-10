@@ -139,6 +139,8 @@ class CurrentSession(private val sessions: SessionManager, private val initial: 
     override suspend fun push(src: BlobRef, dest: RemotePath, onProgress: (Long) -> Unit): PushResult = current().push(src, dest, onProgress)
     override suspend fun pull(src: RemotePath, maxBytes: Long): ByteArray = current().pull(src, maxBytes)
     override suspend fun installStream(apk: BlobRef, size: Long, onProgress: (Long) -> Unit): InstallOutcome = current().installStream(apk, size, onProgress)
+    override suspend fun pushStream(open: () -> java.io.InputStream, size: Long, dest: RemotePath, onProgress: (Long) -> Unit): PushResult =
+        current().pushStream(open, size, dest, onProgress)
     override suspend fun reboot() = current().reboot()
     override suspend fun awaitBoot(timeoutMs: Long): BootOutcome = current().awaitBoot(timeoutMs)
     override fun hold(): SessionHold = current().hold()

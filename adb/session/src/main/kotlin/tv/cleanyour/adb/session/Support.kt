@@ -54,6 +54,12 @@ object SessionConfig {
     const val REBOOT_EXEC_TIMEOUT_MS = 10_000L
     const val HASH_EXEC_TIMEOUT_MS = 60_000L
     const val MAX_PUSH_BYTES = 200L * 1024 * 1024
+    // Storage and files (pushStream): up to 8 GiB, with time for at least 1 MB/s on top of the push total;
+    // the TV's copy is hashed back only up to HASH_CHECK_MAX_BYTES; beyond that the sync DONE answer
+    // (adbd's OKAY after the last byte is written) is the check.
+    const val MAX_STREAM_PUSH_BYTES = 8L * 1024 * 1024 * 1024
+    const val STREAM_PUSH_BYTES_PER_SECOND = 1_000_000L
+    const val HASH_CHECK_MAX_BYTES = 200L * 1024 * 1024
     const val LINE_CAP_BYTES = 8 * 1024
     const val FILE_CHUNK_BYTES = 64 * 1024
     const val PUSH_MODE = 0x1A4   // 0644

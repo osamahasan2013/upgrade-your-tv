@@ -195,6 +195,10 @@ fun ManageScreen(state: ManageState, onIntent: (ManageIntent) -> Unit, modifier:
                 ListRow(stringResource(R.string.manage_row_all_apps), subtitle = stringResource(R.string.manage_row_all_apps_sub),
                     onClick = { onIntent(ManageIntent.Open(ManageSection.ALL_APPS)) })
                 ListDivider()
+                // Storage, files and apps: the TV's free space, files from this phone, APK installs (StorageScreen).
+                ListRow(stringResource(R.string.manage_row_storage), subtitle = stringResource(R.string.manage_row_storage_sub),
+                    onClick = { onIntent(ManageIntent.Open(ManageSection.STORAGE)) })
+                ListDivider()
                 ListRow(stringResource(R.string.manage_row_leftovers), subtitle = stringResource(R.string.manage_row_leftovers_sub),
                     onClick = { onIntent(ManageIntent.Open(ManageSection.LEFTOVERS)) })
                 ListDivider()

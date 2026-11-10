@@ -7,7 +7,9 @@ package tv.cleanyour.core.model
 // R0: 1 the vocabulary moved here from :core:ops: :adb:session (RemotePath, BlobRef), :core:probe (ProbeKind),
 // :core:planner and :core:backup (Op, Prior, ChangeRecord) and the module index (postInstall) all name these types
 
-enum class RemoteDir(val path: String) { TMP("/data/local/tmp/cleanyourtv"), OVERLAY("/sdcard/Android/data/com.gathin.tvhome/files"), RESTORE("/sdcard/cleanyourtv") }
+// Upgrade Your TV: DOWNLOAD is where Storage and files sends the person's own files (TvSession.pushStream); no plan writes there.
+enum class RemoteDir(val path: String) { TMP("/data/local/tmp/cleanyourtv"), OVERLAY("/sdcard/Android/data/com.gathin.tvhome/files"), RESTORE("/sdcard/cleanyourtv"),
+    DOWNLOAD("/sdcard/Download") }
 data class RemotePath(val dir: RemoteDir, val segments: List<String>) {
     init { require(segments.size in 1..3 && segments.all { FILE_NAME_RE.matches(it) && !it.contains("..") }) }   // R0: 3
     val absolute: String get() = dir.path + "/" + segments.joinToString("/") }

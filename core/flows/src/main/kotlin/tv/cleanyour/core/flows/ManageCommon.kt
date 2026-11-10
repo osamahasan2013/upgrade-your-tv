@@ -136,6 +136,8 @@ class ManageDeps(
     val restarts: Restarts = Restarts(documents),
     // RFC-REACH-1: how the phone is connected, for "Copy connection details" (the app reads ConnectivityManager).
     val phoneNetwork: PhoneNetwork = PhoneNetwork { PhoneNetworkFacts.UNKNOWN },
+    // Upgrade Your TV (Storage, files and apps): the files the person picks on the phone (the app reads content URIs).
+    val phoneFiles: PhoneFiles = PhoneFiles.NONE,
 ) {
     fun tv(id: TvId): Tv? = tvs.tvs.value.firstOrNull { it.id == id }
 

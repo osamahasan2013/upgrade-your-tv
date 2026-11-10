@@ -77,6 +77,7 @@ import tv.cleanyour.feature.manage.OpenWriteSheet
 import tv.cleanyour.feature.manage.ReportScreen
 import tv.cleanyour.feature.manage.SwitchedOffScreen
 import tv.cleanyour.feature.manage.AllAppsScreen
+import tv.cleanyour.feature.manage.StorageScreen
 import tv.cleanyour.feature.manage.TvSettingsScreen
 import tv.cleanyour.feature.modules.ModulesFlow
 import tv.cleanyour.feature.setup.SetupFlow
@@ -88,6 +89,7 @@ import tv.cleanyour.feature.setup.SetupFlow
     @Serializable data class Manage(val tvId: String? = null) : Dest
     @Serializable data class SwitchedOff(val tvId: String) : Dest
     @Serializable data class AllApps(val tvId: String) : Dest
+    @Serializable data class Storage(val tvId: String) : Dest
     @Serializable data class Leftovers(val tvId: String) : Dest
     // 0.4.8: `again`, from Done's "Not right? Send it again": the page sends the saved look once it has loaded.
     @Serializable data class Home(val tvId: String, val again: Boolean = false) : Dest
@@ -123,6 +125,7 @@ internal fun applyRoute(stack: MutableList<NavKey>, route: String, noTvs: Boolea
         "home" -> if (id != null) Dest.Home(id, again = parts.getOrNull(2) == "again") else null
         "switchedoff" -> id?.let { Dest.SwitchedOff(it) }
         "allapps" -> id?.let { Dest.AllApps(it) }
+        "storage" -> id?.let { Dest.Storage(it) }
         "leftovers" -> id?.let { Dest.Leftovers(it) }
         "restore" -> id?.let { Dest.Restore(it) }
         "tvsettings" -> id?.let { Dest.TvSettings(it) }
@@ -241,6 +244,12 @@ fun AppRoot(graph: AppGraph, start: Dest, onExit: () -> Unit) {
         }
     }
 
+    // Storage, files and apps: the system's file picker (no storage permission), any files, or one APK.
+    var onFiles by remember { mutableStateOf<((List<android.net.Uri>) -> Unit)?>(null) }
+    val pickFiles = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris -> if (uris.isNotEmpty()) onFiles?.invoke(uris); onFiles = null }
+    var onApk by remember { mutableStateOf<((android.net.Uri) -> Unit)?>(null) }
+    val pickApk = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) onApk?.invoke(uri); onApk = null }
+
     suspend fun onSetupEffect(e: SetupEffect) = when (e) {
         SetupEffect.HapticLight -> haptic(HapticFeedbackConstants.CLOCK_TICK)
         SetupEffect.HapticDouble -> haptic(if (Build.VERSION.SDK_INT >= 30) HapticFeedbackConstants.CONFIRM else HapticFeedbackConstants.VIRTUAL_KEY)
@@ -324,6 +333,21 @@ fun AppRoot(graph: AppGraph, start: Dest, onExit: () -> Unit) {
                         }
                     }
                     AllAppsScreen(state, m::dispatch, onBack = { go("back") })
+                }
+                entry<Dest.Storage> { key ->
+                    val m = rememberMachine("storage:${key.tvId}") { graph.storage(it, TvId(key.tvId)) }
+                    val state by m.state.collectAsStateWithLifecycle()
+                    LaunchedEffect(m) { m.effects.collect { onManageEffect(it) } }
+                    StorageScreen(state, m::dispatch, onBack = { go("back") },
+                        onPickFiles = {
+                            onFiles = { uris -> m.dispatch(tv.cleanyour.core.flows.StorageIntent.FilesPicked(uris.map { it.toString() })) }
+                            runCatching { pickFiles.launch(arrayOf("*/*")) }
+                        },
+                        onPickApk = {
+                            onApk = { uri -> m.dispatch(tv.cleanyour.core.flows.StorageIntent.ApkPicked(uri.toString())) }
+                            // Some file managers label APKs as octet-stream, so any file is offered and the APK is checked.
+                            runCatching { pickApk.launch(arrayOf("application/vnd.android.package-archive", "application/octet-stream", "*/*")) }
+                        })
                 }
                 entry<Dest.Leftovers> { key ->
                     val m = rememberMachine("left:${key.tvId}") { graph.leftovers(it, TvId(key.tvId)) }
