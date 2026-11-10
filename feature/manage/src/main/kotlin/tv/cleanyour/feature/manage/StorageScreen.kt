@@ -103,12 +103,18 @@ fun StorageScreen(
         else ListGroup {
             files.forEachIndexed { i, f ->
                 if (i > 0) ListDivider()
-                ListRow(f.name, subtitle = msg(R.string.storage_file_line, "size" to bytes(f.size), "date" to shortDateTime(f.modifiedSeconds * 1000, locale)))
+                val cd = msg(R.string.storage_delete_cd, "name" to f.name)
+                ListRow(f.name, subtitle = msg(R.string.storage_file_line, "size" to bytes(f.size), "date" to shortDateTime(f.modifiedSeconds * 1000, locale)),
+                    trailing = {
+                        if (state.deleting == f.name) Box(Modifier.padding(horizontal = 16.dp)) { Spinner() }
+                        else CytIconButton(CytIcons.Delete, cd, { onIntent(StorageIntent.AskDelete(f.name)) }, tint = CytTheme.colors.danger)
+                    })
             }
         }
         Gap(24.dp)
     }
     state.offer?.let { o -> CytBottomSheet({ onIntent(StorageIntent.CancelInstall) }) { OfferContent(o, onIntent, ::bytes) } }
+    state.delete?.let { f -> CytBottomSheet({ onIntent(StorageIntent.CancelDelete) }) { DeleteContent(f.name, bytes(f.size), onIntent) } }
 }
 
 @Composable
@@ -138,6 +144,8 @@ private fun NoteBanner(n: StorageNote, onIntent: (StorageIntent) -> Unit) {
         is StorageNote.Sent -> msg(R.string.storage_note_sent, "count" to n.count, "names" to n.names.joinToString(", ")) to BannerTone.SUCCESS
         is StorageNote.SendFailed -> msg(R.string.storage_note_send_failed, "name" to n.name, "detail" to n.detail) to BannerTone.DANGER
         is StorageNote.Installed -> msg(R.string.storage_note_installed, "name" to n.name) to BannerTone.SUCCESS
+        is StorageNote.Deleted -> msg(R.string.storage_note_deleted, "name" to n.name) to BannerTone.SUCCESS
+        is StorageNote.DeleteFailed -> msg(R.string.storage_note_delete_failed, "name" to n.name) to BannerTone.DANGER
         is StorageNote.InstallFailed -> msg(R.string.storage_note_install_failed, "name" to n.name, "code" to n.code) to BannerTone.DANGER
         StorageNote.NotAnApk -> stringResource(R.string.storage_note_not_apk) to BannerTone.WARNING
         StorageNote.TooBig -> stringResource(R.string.storage_note_too_big) to BannerTone.WARNING
@@ -145,6 +153,15 @@ private fun NoteBanner(n: StorageNote, onIntent: (StorageIntent) -> Unit) {
         StorageNote.NoTv -> stringResource(R.string.storage_note_no_tv) to BannerTone.WARNING
     }
     Banner(text, tone, Modifier.padding(top = 16.dp), actionLabel = stringResource(R.string.storage_note_ok), onAction = { onIntent(StorageIntent.DismissNote) })
+}
+
+@Composable
+internal fun ColumnScope.DeleteContent(name: String, size: String, onIntent: (StorageIntent) -> Unit) {
+    ConfirmQuestion(
+        msg(R.string.storage_delete_title, "name" to name), msg(R.string.storage_delete_body, "size" to size),
+        stringResource(R.string.storage_delete_button), { onIntent(StorageIntent.ConfirmDelete) },
+        stringResource(R.string.storage_delete_cancel), { onIntent(StorageIntent.CancelDelete) },
+    )
 }
 
 @Composable

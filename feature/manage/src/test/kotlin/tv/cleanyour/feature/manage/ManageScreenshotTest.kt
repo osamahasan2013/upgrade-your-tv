@@ -244,7 +244,7 @@ private val playAskGroups = askGroups.filter { it.id != "updates" }
 
 // All apps: a TCL Google TV's mix of system and installed apps, running and off.
 private fun app(pkg: String, name: String, system: Boolean = true, off: Boolean = false, running: Boolean = false, locked: String? = null, warning: String? = null) =
-    AppRow(PackageName(pkg), name, system, off, running, locked, warning)
+    AppRow(PackageName(pkg), name, system, off, running, locked, warning, canUninstall = !system && locked == null)
 private val allAppRows = listOf(
     app("com.android.tv.settings", "Settings", running = true, locked = "it is the TV's Settings app, the way to switch debugging back on"),
     app("com.google.android.apps.tv.launcherx", "Google TV Home", running = true, locked = "it is the home screen the TV uses now; without it the TV would show no home screen"),
@@ -390,6 +390,8 @@ object ManageShots {
         },
         Shot("storage_loading") { StorageScreen(StorageState(), {}, {}, {}, {}) },
         Shot("allapps_failed") { AllAppsScreen(AllAppsState(loading = false, failed = true), {}, {}) },
+        Shot("allapps_uninstall") { SheetOver({ AllAppsScreen(allApps(), {}, {}) }) { ConfirmUninstallContent(allAppRows.first { it.pkg.value == "org.videolan.vlc" }, {}) } },
+        Shot("storage_delete") { SheetOver({ StorageScreen(storageShot(), {}, {}, {}, {}) }) { DeleteContent("Holiday_2026.mp4", "734 MB", {}) } },
         Shot("allapps_confirm_off") { SheetOver({ AllAppsScreen(allApps(), {}, {}) }) { ConfirmOffContent(allAppRows[2], {}) } },
         Shot("switchedoff_busy", tall) { SwitchedOffScreen(switchedOff(busy = "com.glance.tv"), {}, {}) },
         Shot("switchedoff_custom", tall) { SwitchedOffScreen(switchedOff(Level.CUSTOM, ask = askGroups), {}, {}) },

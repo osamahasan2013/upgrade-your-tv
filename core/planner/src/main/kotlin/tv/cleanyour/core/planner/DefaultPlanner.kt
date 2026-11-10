@@ -102,6 +102,7 @@ class DefaultPlanner(
             is PlanRequest.ApplyTheme -> { d.applyTheme(request.config, request.wallpaper); PlanKind.THEME }
             is PlanRequest.AddModule -> { d.addModule(request); PlanKind.ADD_MODULE }
             is PlanRequest.RemoveModule -> { d.removeModule(request.pkg); PlanKind.REMOVE_MODULE }
+            is PlanRequest.UninstallApp -> { d.uninstallApp(request.pkg, request.override); PlanKind.UNINSTALL_APP }
             is PlanRequest.UseStockHome -> { d.useStockHome(request.stock, null); PlanKind.USE_STOCK_HOME }
             is PlanRequest.UndoEverything -> { d.undoEverything(request.changes, request.removeLauncher); PlanKind.UNDO_EVERYTHING }
             PlanRequest.BeforeFactoryReset -> { d.beforeFactoryReset(); PlanKind.BEFORE_FACTORY_RESET }
@@ -857,6 +858,18 @@ class DefaultPlanner(
             step(Op.PressHome, null, GROUP_MODULE, "Showing the home screen", FailurePolicy.CONTINUE)
         }
 
+        // All apps: an app the person installed goes, after the same checks as a switch-off. Uninstalling
+        // cannot be undone from here (the APK is gone), so a system app is never a target: switch it off.
+        fun uninstallApp(pkg: PackageName, override: Boolean) {
+            val current = state(pkg) ?: run { refuse("${pkg.value} is not on this TV"); return }
+            if (current.system) { refuse("${name(pkg)} is part of the TV's system; switch it off instead"); return }
+            if (pkg == launcher.pkg || pkg.value == CURTAIN_PACKAGE) { refuse("${name(pkg)} belongs to this app; remove it from the home screen settings"); return }
+            SwitchOffRule.criticalReason(pkg, current, snapshot)?.let { refuse("${name(pkg)} cannot be uninstalled: $it"); return }
+            if (!override) protectedReason(pkg, managedProfile, managedStockLaunchers)?.let { refuse("${name(pkg)} cannot be uninstalled: $it"); return }
+            step(Op.Uninstall(pkg), Prior(present = true), if (override) GROUP_UNINSTALL_OVERRIDE else GROUP_UNINSTALL,
+                "Uninstalling ${name(pkg)}", FailurePolicy.STOP_AND_ROLLBACK)
+        }
+
         fun removeModule(pkg: PackageName) {
             val current = state(pkg) ?: return   // already gone
             if (current.system) { refuse("${name(pkg)} is part of the TV's system and cannot be removed"); return }
@@ -1075,6 +1088,8 @@ class DefaultPlanner(
         const val GROUP_LEFTOVERS = "leftovers"
         const val GROUP_THEME = "theme"
         const val GROUP_MODULE = "module"
+        const val GROUP_UNINSTALL = "uninstall_app"                       // All apps: an installed app removed
+        const val GROUP_UNINSTALL_OVERRIDE = "uninstall_app_override"     // All apps: a protected installed app, confirmed
         const val GROUP_UNDO = "undo"
         const val GROUP_SESSION_END = "session_end"
         const val GROUP_RESTORE = "restore"

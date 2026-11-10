@@ -19,6 +19,8 @@ data class TvStorage(val volumes: List<StorageVolume>, val downloads: List<TvFil
 interface StorageRead {
     suspend fun storage(session: TvSession): TvStorage
     suspend fun mediaScan(session: TvSession, file: RemotePath)
+    // One file of the Download folder removed; true when the TV said it is gone.
+    suspend fun removeDownload(session: TvSession, name: String): Boolean
 }
 
 // `df -k` as toybox prints it (Android 8 to 14): "Filesystem 1K-blocks Used Available Use% Mounted on",

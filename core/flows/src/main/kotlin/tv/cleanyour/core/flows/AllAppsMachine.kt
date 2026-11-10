@@ -7,6 +7,7 @@ import tv.cleanyour.core.model.Op
 import tv.cleanyour.core.model.PackageName
 import tv.cleanyour.core.model.Snapshot
 import tv.cleanyour.core.model.TvId
+import tv.cleanyour.core.planner.DefaultPlanner
 import tv.cleanyour.core.planner.PlanRequest
 import tv.cleanyour.core.planner.SwitchOffRule
 import tv.cleanyour.core.probe.RunningApps
@@ -31,6 +32,7 @@ data class AppRow(
     val running: Boolean,
     val locked: String?,          // the TV needs it to run: why it can never be switched off, or null
     val warning: String? = null,  // protected: why it is normally kept on; it can go off after a confirmation
+    val canUninstall: Boolean = false,   // an app the person installed (not a system app, not this app's own)
 )
 
 enum class AppFilter { ALL, RUNNING, OFF }
@@ -48,6 +50,7 @@ data class AllAppsState(
     val readAtMs: Long? = null,         // when the package list was read from the TV
     val failed: Boolean = false,        // no snapshot at all: the TV could not be read and none is stored
     val confirm: AppRow? = null,        // the protected app waiting for "Switch it off anyway"
+    val uninstall: AppRow? = null,      // the installed app waiting for "Uninstall"
 ) {
     // What the screen shows: the filter, the system toggle and the search, by name.
     val rows: List<AppRow> get() {
@@ -70,6 +73,9 @@ sealed interface AllAppsIntent {
     data class SetOff(val pkg: PackageName, val off: Boolean) : AllAppsIntent
     data object ConfirmOff : AllAppsIntent    // the confirmation's "Switch it off anyway"
     data object CancelOff : AllAppsIntent
+    data class AskUninstall(val pkg: PackageName) : AllAppsIntent
+    data object ConfirmUninstall : AllAppsIntent
+    data object CancelUninstall : AllAppsIntent
     data class Filter(val filter: AppFilter) : AllAppsIntent
     data class ShowSystem(val on: Boolean) : AllAppsIntent
     data class Query(val text: String) : AllAppsIntent
@@ -88,6 +94,7 @@ class AllAppsMachine(
     private data class Refreshing(val on: Boolean)
     private data class Flip(val pkg: PackageName, val off: Boolean)
     private data class AskConfirm(val row: AppRow)
+    private data class Gone(val pkg: PackageName)
 
     // What this screen changed since the last full read: the stored snapshot can still say the old
     // state until the next read, so these win over it, and the next write for such a package plans
@@ -105,6 +112,10 @@ class AllAppsMachine(
         is Refreshing -> state.copy(refreshing = event.on)
         is Flip -> state.copy(all = state.all.map { if (it.pkg == event.pkg) it.copy(off = event.off) else it })
         AllAppsIntent.ConfirmOff, AllAppsIntent.CancelOff -> state.copy(confirm = null)
+        AllAppsIntent.ConfirmUninstall, AllAppsIntent.CancelUninstall -> state.copy(uninstall = null)
+        is AllAppsIntent.AskUninstall -> if (state.busy != null || state.refreshing) state
+            else state.copy(uninstall = state.all.firstOrNull { it.pkg == event.pkg && it.canUninstall })
+        is Gone -> state.copy(all = state.all.filterNot { it.pkg == event.pkg })
         is AllAppsIntent.Filter -> state.copy(filter = event.filter)
         is AllAppsIntent.ShowSystem -> state.copy(showSystem = event.on)
         is AllAppsIntent.Query -> state.copy(query = event.text.take(80))
@@ -126,6 +137,11 @@ class AllAppsMachine(
                 val row = before.confirm ?: return
                 if (before.busy != null || before.refreshing) return
                 scope.launch { change(row, off = true) }
+            }
+            AllAppsIntent.ConfirmUninstall -> {
+                val row = before.uninstall ?: return
+                if (before.busy != null || before.refreshing) return
+                scope.launch { uninstall(row) }
             }
             AllAppsIntent.Refresh -> if (before.busy == null && !before.refreshing) scope.launch { load(fromTv = true) }
             else -> {}
@@ -166,6 +182,25 @@ class AllAppsMachine(
         }
     }
 
+    // All apps: uninstall an app the person installed; a protected one (red) goes as an override.
+    private suspend fun uninstall(row: AppRow) {
+        val pkg = row.pkg
+        send(BusyOn(pkg))
+        val r = writer.write(tvId, PlanRequest.UninstallApp(pkg, override = row.warning != null), fresh = true)
+        send(BusyOn(null))
+        when (r) {
+            is WriteResult.Done -> {
+                val planned = r.plan.steps.any { (it.op as? Op.Uninstall)?.pkg == pkg }
+                val skipped = r.finished.skipped.any { (it.op as? Op.Uninstall)?.pkg == pkg }
+                if (planned && !skipped) { send(Gone(pkg)); effect(ManageEffect.Snackbar(SnackKind.APP_UNINSTALLED, row.name, false)) }
+                else effect(ManageEffect.Snackbar(SnackKind.APP_REFUSED, row.name, false))
+            }
+            is WriteResult.Refused -> effect(ManageEffect.Snackbar(SnackKind.APP_REFUSED, row.name, false))
+            WriteResult.GateCancelled, WriteResult.NoTv, is WriteResult.Paused -> {}
+            is WriteResult.Failed -> effect(ManageEffect.Snackbar(SnackKind.FAILED, row.name, false))
+        }
+    }
+
     // `fromTv`: connect (the debugging step if needed) and read the package list and the processes
     // now; when the TV cannot be reached, the last stored read is shown instead.
     private suspend fun load(fromTv: Boolean) {
@@ -190,7 +225,9 @@ class AllAppsMachine(
             // Needed to run: a lock, whatever its state (one that is off can still be switched back on).
             val critical = attempt { SwitchOffRule.criticalReason(pkg, st, snap) }.getOrNull()
             val guarded = if (critical != null) null else attempt { SwitchOffRule.reason(pkg, st, profile, snap, stock) }.getOrNull()
-            AppRow(pkg, d.nameOf(pkg, st.label), st.system, off, live?.contains(pkg) == true, locked = critical, warning = guarded)
+            val ours = pkg == SwitchOffRule.OUR_LAUNCHER || pkg.value == DefaultPlanner.CURTAIN_PACKAGE
+            AppRow(pkg, d.nameOf(pkg, st.label), st.system, off, live?.contains(pkg) == true, locked = critical, warning = guarded,
+                canUninstall = !st.system && !ours && critical == null)
         }.sortedWith(compareBy<AppRow>({ it.name.lowercase() }, { it.pkg.value }))
         send(Loaded(rows, tv.nickname, live != null, snap.takenAtMs, failed = false))
     }

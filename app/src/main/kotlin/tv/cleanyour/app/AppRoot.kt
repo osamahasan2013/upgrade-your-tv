@@ -458,6 +458,7 @@ object SnackText {
         SnackKind.RUN_BUSY_ANY -> tv.cleanyour.feature.manage.R.string.appsettings_delete_all_busy to mapOf("tv" to e.name)
         SnackKind.APP_OFF -> tv.cleanyour.feature.manage.R.string.allapps_snackbar_off to mapOf("name" to e.name)
         SnackKind.APP_REFUSED -> tv.cleanyour.feature.manage.R.string.allapps_snackbar_refused to mapOf("name" to e.name)
+        SnackKind.APP_UNINSTALLED -> tv.cleanyour.feature.manage.R.string.allapps_snackbar_uninstalled to mapOf("name" to e.name)
     }
 }
 

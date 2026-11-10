@@ -58,6 +58,8 @@ sealed interface StorageNote {
     data class Sent(val count: Int, val names: List<String>) : StorageNote
     data class SendFailed(val name: String, val detail: String) : StorageNote
     data class Installed(val name: String) : StorageNote
+    data class Deleted(val name: String) : StorageNote
+    data class DeleteFailed(val name: String) : StorageNote
     data class InstallFailed(val name: String, val code: String) : StorageNote
     data object NotAnApk : StorageNote
     data object TooBig : StorageNote
@@ -77,8 +79,10 @@ data class StorageState(
     val installing: Long? = null,          // bytes sent of the APK being installed
     val installingName: String? = null,
     val note: StorageNote? = null,
+    val delete: TvFile? = null,            // the file waiting for "Delete"
+    val deleting: String? = null,          // the name being deleted now
 ) {
-    val busy: Boolean get() = transfer != null || reading || installing != null || offer != null
+    val busy: Boolean get() = transfer != null || reading || installing != null || offer != null || delete != null || deleting != null
 }
 
 sealed interface StorageIntent {
@@ -88,6 +92,9 @@ sealed interface StorageIntent {
     data object ConfirmInstall : StorageIntent
     data object CancelInstall : StorageIntent
     data object DismissNote : StorageIntent
+    data class AskDelete(val name: String) : StorageIntent
+    data object ConfirmDelete : StorageIntent
+    data object CancelDelete : StorageIntent
 }
 
 class StorageMachine(
@@ -107,6 +114,8 @@ class StorageMachine(
             loading = false, refreshing = false)
         is Update -> event.f(state)
         StorageIntent.DismissNote -> state.copy(note = null)
+        is StorageIntent.AskDelete -> if (state.busy) state else state.copy(delete = state.storage?.downloads?.firstOrNull { it.name == event.name })
+        StorageIntent.CancelDelete, StorageIntent.ConfirmDelete -> state.copy(delete = null)
         else -> state
     }
 
@@ -116,6 +125,7 @@ class StorageMachine(
             is StorageIntent.FilesPicked -> if (!before.busy && event.refs.isNotEmpty()) scope.launch { sendFiles(event.refs) }
             is StorageIntent.ApkPicked -> if (!before.busy) scope.launch { readApk(event.ref) }
             StorageIntent.ConfirmInstall -> before.offer?.let { o -> scope.launch { install(o) } }
+            StorageIntent.ConfirmDelete -> before.delete?.let { f -> scope.launch { deleteFile(f) } }
             StorageIntent.CancelInstall -> before.offer?.let { o -> send(Update { it.copy(offer = null) }); scope.launch { attempt { d.blobs.delete(o.blob.sha256) } } }
             else -> {}
         }
@@ -204,6 +214,18 @@ class StorageMachine(
             is InstallOutcome.Failed -> note(StorageNote.InstallFailed(o.name, out.code))
             null -> note(StorageNote.InstallFailed(o.name, r.exceptionOrNull()?.message ?: "failed"))
         }
+    }
+
+    // One file of the Download folder, after "Delete" and the screen lock.
+    private suspend fun deleteFile(f: TvFile) {
+        val tv = d.tv(tvId) ?: return note(StorageNote.NoTv)
+        d.gate.pass(tvId, tv.nickname) ?: return
+        val session = session() ?: return note(StorageNote.NoTv)
+        send(Update { it.copy(deleting = f.name) })
+        val ok = (d.prober as? StorageRead)?.let { q -> attempt { q.removeDownload(session, f.name) }.getOrDefault(false) } ?: false
+        send(Update { it.copy(deleting = null) })
+        note(if (ok) StorageNote.Deleted(f.name) else StorageNote.DeleteFailed(f.name))
+        load()
     }
 
     private fun note(n: StorageNote) { send(Update { it.copy(note = n) }) }

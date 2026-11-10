@@ -9,8 +9,9 @@ android {
     defaultConfig {
         // Upgrade Your TV, based on Clean Your TV 0.4.8 (code 30). 1.0.0 (1): All apps. 1.1.0 (2): protected apps can go off.
         // 1.2.0 (3): Storage, files and apps (the TV's storage, files from the phone, APK installs).
-        versionCode = 3
-        versionName = "1.2.0"
+        // 1.3.0 (4): delete files on the TV, uninstall installed apps from All apps.
+        versionCode = 4
+        versionName = "1.3.0"
     }
     // STORES-PLAN 1: one codebase, two store builds, the same applicationId and signing certificate.
     // `full` (GitHub and F-Droid) checks GitHub for a newer release and offers the optional add-ons;

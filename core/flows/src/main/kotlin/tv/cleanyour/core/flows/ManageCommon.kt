@@ -71,7 +71,8 @@ enum class SnackKind { PUT_BACK, SWITCHED_OFF, HOME_SAVED, MODULE_REMOVED, EXPOR
     RUN_BUSY,         // Forget this TV refused: setup is still working on this TV
     RUN_BUSY_ANY,     // Delete everything refused: setup is still working on the TV named
     APP_OFF,          // All apps: an app was switched off (Undo puts it back)
-    APP_REFUSED }     // All apps: the planner refused the change (a protected package); nothing changed
+    APP_REFUSED,      // All apps: the planner refused the change (a protected package); nothing changed
+    APP_UNINSTALLED } // All apps: an installed app was uninstalled
 
 // What a write in the Manage family is doing, for the narration row and the disabled buttons.
 sealed interface Busy {

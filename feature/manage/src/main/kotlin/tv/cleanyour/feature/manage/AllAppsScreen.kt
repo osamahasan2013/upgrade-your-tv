@@ -1,3 +1,6 @@
+// CytBottomSheet takes the Material 3 sheet state, which is still marked experimental.
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package tv.cleanyour.feature.manage
 
 import androidx.compose.foundation.layout.Box
@@ -120,6 +123,18 @@ fun AllAppsScreen(state: AllAppsState, onIntent: (AllAppsIntent) -> Unit, onBack
         Gap(24.dp)
     }
     state.confirm?.let { r -> ConfirmOffSheet(r, onIntent) }
+    state.uninstall?.let { r -> CytBottomSheet({ onIntent(AllAppsIntent.CancelUninstall) }) { ConfirmUninstallContent(r, onIntent) } }
+}
+
+@Composable
+internal fun androidx.compose.foundation.layout.ColumnScope.ConfirmUninstallContent(r: AppRow, onIntent: (AllAppsIntent) -> Unit) {
+    val body = msg(R.string.allapps_uninstall_body, "pkg" to r.pkg.value) +
+        (r.warning?.let { " " + msg(R.string.allapps_uninstall_protected, "reason" to it) } ?: "")
+    ConfirmQuestion(
+        msg(R.string.allapps_uninstall_title, "name" to r.name), body,
+        stringResource(R.string.allapps_uninstall_button), { onIntent(AllAppsIntent.ConfirmUninstall) },
+        stringResource(R.string.allapps_uninstall_cancel), { onIntent(AllAppsIntent.CancelUninstall) },
+    )
 }
 
 // The question before a protected app goes off: its reason, and "Switch it off anyway".
@@ -152,7 +167,8 @@ private fun AppLine(r: AppRow, busy: tv.cleanyour.core.model.PackageName?, onInt
     // `locked` and `warning` are properties of another module's class: no smart cast, so let.
     val why = r.locked?.let { msg(R.string.allapps_locked, "reason" to it) }
         ?: r.warning?.let { msg(R.string.allapps_protected, "reason" to it) }
-    val subtitle = listOfNotNull(r.pkg.value, tags, why).joinToString("\n")
+    val hint = if (r.canUninstall) stringResource(R.string.allapps_tap_to_uninstall) else null
+    val subtitle = listOfNotNull(r.pkg.value, tags, why, hint).joinToString("\n")
     val stateWord = stringResource(if (r.off) R.string.allapps_state_off else R.string.allapps_state_on)
     val cd = msg(R.string.allapps_switch_cd, "name" to r.name, "state" to stateWord)
     val red = r.warning != null
@@ -165,6 +181,7 @@ private fun AppLine(r: AppRow, busy: tv.cleanyour.core.model.PackageName?, onInt
             else -> c.textTertiary
         },
         titleColor = if (red) c.danger else c.textPrimary,
+        onClick = if (r.canUninstall && busy == null) ({ onIntent(AllAppsIntent.AskUninstall(r.pkg)) }) else null,
         trailing = {
             when {
                 busy == r.pkg -> Box(Modifier.padding(horizontal = 16.dp)) { Spinner() }

@@ -326,6 +326,13 @@
     <string name="allapps_confirm_body">This app is protected because {reason}. Switching it off can stop part of the TV from working. Nothing is deleted, and you can switch it back on here at any time.</string>
     <string name="allapps_confirm_button">Switch it off anyway</string>
     <string name="allapps_confirm_cancel">Keep it on</string>
+    <string name="allapps_tap_to_uninstall">Tap to uninstall</string>
+    <string name="allapps_uninstall_title">Uninstall {name}?</string>
+    <string name="allapps_uninstall_body">{pkg}. The app and its data are removed from the TV. This cannot be undone here; you can install it again from the Play Store or from an APK.</string>
+    <string name="allapps_uninstall_protected">It is protected because {reason}.</string>
+    <string name="allapps_uninstall_button">Uninstall</string>
+    <string name="allapps_uninstall_cancel">Keep it</string>
+    <string name="allapps_snackbar_uninstalled">{name} is uninstalled.</string>
     <string name="allapps_switch_cd">{name}, {state}</string>
     <string name="allapps_state_on">on</string>
     <string name="allapps_state_off">off</string>
@@ -375,4 +382,11 @@
     <string name="storage_note_unreadable">That file could not be read on this phone.</string>
     <string name="storage_note_no_tv">The TV could not be reached. Make sure it is on and on the same Wi-Fi.</string>
     <string name="storage_note_ok">OK</string>
+    <string name="storage_delete_cd">Delete {name} from the TV</string>
+    <string name="storage_delete_title">Delete {name}?</string>
+    <string name="storage_delete_body">The file ({size}) is removed from the TV\'s Download folder. This cannot be undone.</string>
+    <string name="storage_delete_button">Delete</string>
+    <string name="storage_delete_cancel">Keep it</string>
+    <string name="storage_note_deleted">{name} was deleted from the TV.</string>
+    <string name="storage_note_delete_failed">{name} could not be deleted.</string>
 </resources>

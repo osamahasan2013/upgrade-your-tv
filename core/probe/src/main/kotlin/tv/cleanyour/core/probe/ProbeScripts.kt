@@ -75,6 +75,17 @@ object ProbeScripts {
     val STORAGE = ShellLine("df -k 2>/dev/null; true")
     val DOWNLOADS = ShellLine("stat -c '%F|%s|%Y|%n' ${RemoteDir.DOWNLOAD.path}/* 2>/dev/null; true")
 
+    // Storage and files: one file of the Download folder removed. The name is the TV's own (any
+    // language), so it is checked here instead of by RemotePath: one path segment, no quote, no control
+    // character, never "." or "..". Single quotes keep everything else literal; `--` ends the options.
+    fun removeDownload(name: String): ShellLine {
+        require(isSafeDownloadName(name)) { "refusing to remove $name" }
+        return ShellLine("rm -f -- '${RemoteDir.DOWNLOAD.path}/$name'")
+    }
+
+    fun isSafeDownloadName(name: String): Boolean =
+        name.isNotEmpty() && name.length <= 255 && name != "." && name != ".." && name.none { it == '/' || it == '\'' || it == '\\' || it < ' ' || it == '\u007f' }
+
     // After a file is sent to the Download folder: the media scanner looks at it, so players and
     // galleries on the TV show it. Best effort; the path is a typed RemotePath (no quote can reach it).
     fun mediaScan(path: RemotePath): ShellLine {

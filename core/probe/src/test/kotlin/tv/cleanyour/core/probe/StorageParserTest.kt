@@ -32,4 +32,12 @@ class StorageParserTest {
         assertEquals(listOf(TvFile("notes.txt", 2048, 1700000900), TvFile("movie.mp4", 1048576, 1700000000)),
             StorageParser.parseDownloads(lines.lineSequence()))
     }
+
+    @Test fun onlyOneSafeFileNameIsEverRemoved() {
+        assertEquals("rm -f -- '/sdcard/Download/فيلم العيد.mp4'", ProbeScripts.removeDownload("فيلم العيد.mp4").text)
+        for (bad in listOf("", ".", "..", "a/b", "x'; rm -rf /; '", "a\nb", "back\\slash")) {
+            kotlin.test.assertFalse(ProbeScripts.isSafeDownloadName(bad), bad)
+            kotlin.test.assertFailsWith<IllegalArgumentException>(bad) { ProbeScripts.removeDownload(bad) }
+        }
+    }
 }

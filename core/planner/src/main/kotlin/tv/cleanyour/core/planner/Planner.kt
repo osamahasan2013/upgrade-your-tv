@@ -24,7 +24,8 @@ enum class WizardWifi { NOT_OWNER, OWNER, UNKNOWN }
 enum class PlanKind { SETUP, PUT_BACK, SWITCH_OFF, LEFTOVERS, THEME, ADD_MODULE, REMOVE_MODULE, USE_STOCK_HOME,
     UNDO_EVERYTHING, BEFORE_FACTORY_RESET, DEBUG_OFF, WRITE_RESTORE_POINT, REBOOT,   // R0: 11 (was kind: String); REBOOT: RFC-W8-5
     UPDATE_LAUNCHER,                                                                  // RFC-LAUNCHER-1 (D4)
-    HOME_HELPER_OFF }                                                                 // RFC-HELPER-1: Manage's "Switch off" of the Home button helper
+    HOME_HELPER_OFF,                                                                  // RFC-HELPER-1: Manage's "Switch off" of the Home button helper
+    UNINSTALL_APP }                                                                   // Upgrade Your TV (All apps): an app the person installed, removed
 sealed interface PlanRequest {
     data class Setup(val resolution: ProfileResolution, val choices: Choices, val launcher: LauncherArtifact, val level: Level,
         val config: BlobRef? = null, val wallpaper: BlobRef? = null,   // RFC-DOCK-1: config = encode(DockLayers.applyTo(theme doc, dock)) in the BlobStore
@@ -34,6 +35,9 @@ sealed interface PlanRequest {
     // SwitchOffRule.criticalReason still keeps one on. Its steps carry GROUP_SWITCH_OFF_OVERRIDE so the
     // engine applies the same rule at run time.
     data class SwitchOff(val pkgs: Set<PackageName>, val override: Boolean = false) : PlanRequest
+    // Upgrade Your TV (All apps): uninstall an app the person installed (never a system app, never this
+    // app's own launcher or curtain, never what the TV needs to run). `override`: a protected one, confirmed.
+    data class UninstallApp(val pkg: PackageName, val override: Boolean = false) : PlanRequest
     data class Leftovers(val expectedDisabled: Set<PackageName>) : PlanRequest
     data class ApplyTheme(val doc: LauncherConfigDoc, val config: BlobRef, val wallpaper: BlobRef?) : PlanRequest   // R0: 14 renamed from Theme; config = encode(doc) in the BlobStore
     data class AddModule(val module: Module, val version: ModuleVersion, val apk: BlobRef,

@@ -633,7 +633,12 @@ class DefaultEngine(
                 return if (e.error.isLost()) Outcome.Lost(e.error) else Outcome.Failed(e.error, "dumpsys package failed")
             }
             val live = liveState(target, dump, run.snapshot)
-            val reason = if (step.op is Op.Disable) switchOffReason(run, step, target, live, dump) else Denylist.reason(target, live, run.profile, run.snapshot)
+            val reason = when {
+                step.op is Op.Disable -> switchOffReason(run, step, target, live, dump)
+                // All apps: an uninstall the person confirmed for a protected app keeps only the critical rule.
+                step.op is Op.Uninstall && step.group == DefaultPlanner.GROUP_UNINSTALL_OVERRIDE -> SwitchOffRule.criticalReason(target, live, run.snapshot)
+                else -> Denylist.reason(target, live, run.profile, run.snapshot)
+            }
             if (reason != null) {
                 journal.append(JournalRecord.Begin(run.plan.id, step.index, step.op, step.rendered.lines.map { it.text }, step.prior, clock.nowMs()))
                 journal.append(JournalRecord.Failed(run.plan.id, step.index, null, "$PROTECTED$reason", ""))

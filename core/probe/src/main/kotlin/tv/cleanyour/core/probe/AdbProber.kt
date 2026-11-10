@@ -199,6 +199,12 @@ class AdbProber(
         return TvStorage(StorageParser.parseDf(lines(df.stdout)), StorageParser.parseDownloads(lines(dl.stdout)))
     }
 
+    override suspend fun removeDownload(session: TvSession, name: String): Boolean {
+        if (!ProbeScripts.isSafeDownloadName(name)) return false
+        val r = session.exec(ProbeScripts.removeDownload(name), ExecSpec(timeoutMs = 30_000, stdoutCap = 4096, retry = RetryClass.IDEMPOTENT_WRITE))
+        return r.exit == 0
+    }
+
     override suspend fun mediaScan(session: TvSession, file: RemotePath) {
         try {
             session.exec(ProbeScripts.mediaScan(file), ExecSpec(timeoutMs = 15_000, stdoutCap = 4096, retry = RetryClass.IDEMPOTENT_WRITE))
