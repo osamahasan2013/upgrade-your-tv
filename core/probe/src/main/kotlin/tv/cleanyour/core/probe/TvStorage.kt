@@ -27,8 +27,17 @@ interface StorageRead {
 // file from the phone (streamed) and puts it in place; `remove` takes it out; both restart Home after.
 interface VideoBackground {
     suspend fun videoPresent(session: TvSession): Boolean
-    suspend fun sendVideo(session: TvSession, sdk: Int, open: () -> java.io.InputStream, size: Long, onProgress: (Long) -> Unit)
-    suspend fun removeVideo(session: TvSession)
+    // `asApp`: the launcher is on the TV as an app, not as its Home, so it is opened by name afterwards.
+    suspend fun sendVideo(session: TvSession, sdk: Int, open: () -> java.io.InputStream, size: Long, asApp: Boolean, onProgress: (Long) -> Unit)
+    suspend fun removeVideo(session: TvSession, asApp: Boolean)
+    suspend fun openHome(session: TvSession)
+}
+
+// The TV's screen, again and again (Manage's card while it is on screen). `frame` leaves its temp file on
+// the TV between frames, so a frame is two round trips; `endLive` removes it.
+interface LiveScreen {
+    suspend fun frame(session: TvSession): ByteArray?
+    suspend fun endLive(session: TvSession)
 }
 
 // `df -k` as toybox prints it (Android 8 to 14): "Filesystem 1K-blocks Used Available Use% Mounted on",

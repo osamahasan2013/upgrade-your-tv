@@ -863,7 +863,8 @@ class DefaultPlanner(
         fun uninstallApp(pkg: PackageName, override: Boolean) {
             val current = state(pkg) ?: run { refuse("${pkg.value} is not on this TV"); return }
             if (current.system) { refuse("${name(pkg)} is part of the TV's system; switch it off instead"); return }
-            if (pkg == launcher.pkg || pkg.value == CURTAIN_PACKAGE) { refuse("${name(pkg)} belongs to this app; remove it from the home screen settings"); return }
+            // The new home screen can go when it is on the TV as an app only (1.6.0); while it is Home, criticalReason below refuses.
+            if (pkg.value == CURTAIN_PACKAGE || (pkg == launcher.pkg && snapshot.home.resolved?.pkg == pkg)) { refuse("${name(pkg)} belongs to this app; remove it from the home screen settings"); return }
             SwitchOffRule.criticalReason(pkg, current, snapshot)?.let { refuse("${name(pkg)} cannot be uninstalled: $it"); return }
             if (!override) protectedReason(pkg, managedProfile, managedStockLaunchers)?.let { refuse("${name(pkg)} cannot be uninstalled: $it"); return }
             step(Op.Uninstall(pkg), Prior(present = true), if (override) GROUP_UNINSTALL_OVERRIDE else GROUP_UNINSTALL,

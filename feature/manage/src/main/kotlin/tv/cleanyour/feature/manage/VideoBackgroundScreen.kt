@@ -52,6 +52,8 @@ fun VideoBackgroundScreen(state: VideoBackgroundState, onIntent: (VideoBackgroun
             val (text, tone) = when (n) {
                 VideoNote.Sent -> stringResource(R.string.video_note_sent) to BannerTone.SUCCESS
                 VideoNote.Removed -> stringResource(R.string.video_note_removed) to BannerTone.SUCCESS
+                VideoNote.InstalledAsApp -> stringResource(R.string.video_note_installed_app) to BannerTone.SUCCESS
+                VideoNote.Opened -> stringResource(R.string.video_note_opened) to BannerTone.SUCCESS
                 is VideoNote.Failed -> msg(R.string.video_note_failed, "detail" to n.detail) to BannerTone.DANGER
                 VideoNote.TooBig -> stringResource(R.string.video_note_too_big) to BannerTone.WARNING
                 VideoNote.NotMp4 -> stringResource(R.string.video_note_not_mp4) to BannerTone.WARNING
@@ -61,18 +63,28 @@ fun VideoBackgroundScreen(state: VideoBackgroundState, onIntent: (VideoBackgroun
             Banner(text, tone, Modifier.padding(top = 16.dp), actionLabel = stringResource(R.string.storage_note_ok),
                 onAction = { onIntent(VideoBackgroundIntent.DismissNote) })
         }
-        if (state.home != VideoHome.READY) {
+        val installing = state.installing
+        if (installing != null) {
+            LiveLine(msg(R.string.video_installing, "sent" to bytes(installing.first), "size" to bytes(installing.second)))
+            ProgressBar(if (installing.second > 0) installing.first.toFloat() / installing.second else 0f, Modifier.fillMaxWidth().padding(top = 10.dp))
+            return@ScreenScaffold
+        }
+        if (!state.home.plays) {
             val why = when (state.home) {
-                VideoHome.NOT_INSTALLED -> R.string.video_not_installed
                 VideoHome.OLD_LAUNCHER -> R.string.video_old_launcher
                 VideoHome.OTHER_KEY -> R.string.video_other_key
-                VideoHome.NOT_HOME -> R.string.video_not_home
-                VideoHome.READY -> R.string.video_not_installed
+                else -> R.string.video_not_installed
             }
             Banner(stringResource(why), BannerTone.INFO, Modifier.padding(top = 16.dp))
             PrimaryButton(stringResource(R.string.video_set_up_again), { onIntent(VideoBackgroundIntent.SetUpAgain) }, Modifier.padding(top = 16.dp))
+            // A TV that keeps its own home screen: the new one can still go on as an app.
+            if (state.home != VideoHome.OTHER_KEY) {
+                Body(stringResource(R.string.video_as_app_offer), Modifier.padding(top = 20.dp))
+                SecondaryButton(stringResource(R.string.video_install_as_app), { onIntent(VideoBackgroundIntent.InstallAsApp) }, Modifier.padding(top = 12.dp))
+            }
             return@ScreenScaffold
         }
+        if (state.home == VideoHome.AS_APP) Banner(stringResource(R.string.video_as_app), BannerTone.INFO, Modifier.padding(top = 16.dp))
         Body(stringResource(when (state.present) {
             true -> R.string.video_ready_on
             false -> R.string.video_ready_off
@@ -85,10 +97,13 @@ fun VideoBackgroundScreen(state: VideoBackgroundState, onIntent: (VideoBackgroun
                 ProgressBar(if (sending.second > 0) sending.first.toFloat() / sending.second else 0f, Modifier.fillMaxWidth().padding(top = 10.dp))
             }
             state.removing -> LiveLine(stringResource(R.string.video_removing))
+            state.opening -> LiveLine(stringResource(R.string.video_opening))
             else -> {
                 PrimaryButton(stringResource(if (state.present == true) R.string.video_replace else R.string.video_choose), onPickVideo,
                     Modifier.padding(top = 16.dp), enabled = !state.busy)
                 if (state.present == true) SecondaryButton(stringResource(R.string.video_remove), { onIntent(VideoBackgroundIntent.Remove) },
+                    Modifier.padding(top = 12.dp), enabled = !state.busy)
+                if (state.home == VideoHome.AS_APP) TertiaryButton(stringResource(R.string.video_open_on_tv), { onIntent(VideoBackgroundIntent.OpenOnTv) },
                     Modifier.padding(top = 12.dp), enabled = !state.busy)
             }
         }

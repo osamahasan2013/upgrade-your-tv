@@ -300,8 +300,8 @@ class ManageMachine(
         val id = after.current?.id
         when (event) {
             is Loaded -> if (after.offline && !before.offline) autoReconnect()
-            ManageIntent.Resumed -> { visible = true; keepHold(); if (after.offline) autoReconnect() }
-            ManageIntent.Paused -> { visible = false; autoJob?.cancel(); releaseHold() }
+            ManageIntent.Resumed -> { visible = true; keepHold(); if (after.offline) autoReconnect(); startLive() }
+            ManageIntent.Paused -> { visible = false; autoJob?.cancel(); stopLive(); releaseHold() }
             is ManageIntent.Select -> scope.launch { connected() }
             ManageIntent.RefreshThumbnail -> scope.launch { thumbnail() }
             ManageIntent.Reconnect -> if (id != null && !after.reconnecting) scope.launch {
@@ -334,7 +334,38 @@ class ManageMachine(
         send(Thumb(id, png))
     }
 
+    // 1.6.0: while Manage is on screen and the TV is connected, the card's picture follows the TV's screen: one
+    // frame after another, as fast as the TV makes them (a screenshot each, so about a frame a second, not video).
+    // Only the real prober does it (LiveScreen); it stops when Manage leaves the screen and tidies the TV's temp file.
+    private var liveJob: Job? = null
+
+    private fun startLive() {
+        val q = d.prober as? tv.cleanyour.core.probe.LiveScreen ?: return
+        if (liveJob?.isActive == true) return
+        liveJob = scope.launch {
+            var last: tv.cleanyour.core.session.TvSession? = null
+            try {
+                while (true) {
+                    val id = state.value.current?.id ?: state.value.selected
+                    val s = id?.let { d.access.live(it) }
+                    if (id == null || s == null) { delay(LIVE_IDLE_MS); continue }
+                    last = s
+                    val png = attempt { q.frame(s) }.getOrNull()
+                    if (png == null) { delay(LIVE_IDLE_MS); continue }
+                    send(Thumb(id, png))
+                    delay(LIVE_GAP_MS)
+                }
+            } finally {
+                last?.let { s -> kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) { attempt { q.endLive(s) } } }
+            }
+        }
+    }
+
+    private fun stopLive() { liveJob?.cancel(); liveJob = null }
+
     companion object {
+        const val LIVE_GAP_MS = 250L
+        const val LIVE_IDLE_MS = 3_000L
         // A TV restart takes one to three minutes; the quiet reconnect tries for five.
         const val AUTO_EVERY_MS = 15_000L
         const val AUTO_TRIES = 21

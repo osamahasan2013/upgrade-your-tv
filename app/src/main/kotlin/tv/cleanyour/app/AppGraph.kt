@@ -179,7 +179,7 @@ class AppGraph(context: Context, val appVersion: String = versionOf(context), va
     val runner = PlanRunner(planner, engine, gate, ledger, facts, snapshots, prober)
     val restorePoint = RestorePointWriter(restoreFiles, blobs, ledger, runner)
     val access = TvAccess(sessions, discovery, tvs, clock, log = FlowLog { CytLog.i(it) })
-    val sessionEnd = SessionEnd(sessions, discovery, tvs, runner, foreground)
+    val sessionEnd = SessionEnd(sessions, discovery, tvs, runner, foreground, keepAlways = true)
     val homePrefs = HomePrefs(documents)
     val appPrefs = AppPrefs(documents)
     val openWrites = OpenWrites()                          // one per graph (R5-W8 O2), held by the one ManageDeps

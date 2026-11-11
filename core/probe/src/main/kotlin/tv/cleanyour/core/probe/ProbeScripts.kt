@@ -87,6 +87,8 @@ object ProbeScripts {
     val VIDEO_REMOVE = ShellLine("content delete --uri $THEME_URI/$VIDEO_NAME 2>/dev/null; rm -f '${RemoteDir.OVERLAY.path}/$VIDEO_NAME' 2>/dev/null; true")
     // The launcher reads its theme folder when it starts, as a look's RestartHome does it.
     val HOME_RESTART = ShellLine("am force-stop com.gathin.tvhome; am start -a android.intent.action.MAIN -c android.intent.category.HOME >/dev/null 2>&1; true")
+    // The same for a launcher that is on the TV as an app and not its Home: opened by name.
+    val HOME_OPEN = ShellLine("am force-stop com.gathin.tvhome; am start -n com.gathin.tvhome/.MainActivity >/dev/null 2>&1; true")
 
     // Storage and files: one file of the Download folder removed. The name is the TV's own (any
     // language), so it is checked here instead of by RemotePath: one path segment, no quote, no control
@@ -156,7 +158,7 @@ object ProbeScripts {
         "HOME_RESOLVED" to HOME_RESOLVED, "LAUNCHABLE" to LAUNCHABLE, "INPUTS" to INPUTS, "SETTINGS" to SETTINGS, "HOME_FOCUS" to HOME_FOCUS, "BOOT_ID" to BOOT_ID,
         "FREE_DATA" to FREE_DATA, "SCREENSHOT" to SCREENSHOT, "SCREENSHOT_CLEANUP" to SCREENSHOT_CLEANUP, "MKDIR_TMP" to MKDIR_TMP,
         "NOOP_INSTALL" to NOOP_INSTALL, "NOOP_UNINSTALL" to NOOP_UNINSTALL, "NOOP_CLEANUP" to NOOP_CLEANUP, "PS_ARGS" to PS_ARGS, "STORAGE" to STORAGE, "DOWNLOADS" to DOWNLOADS,
-        "VIDEO_PRESENT" to VIDEO_PRESENT, "VIDEO_FROM_STAGED" to VIDEO_FROM_STAGED, "VIDEO_REMOVE" to VIDEO_REMOVE, "HOME_RESTART" to HOME_RESTART,
+        "VIDEO_PRESENT" to VIDEO_PRESENT, "VIDEO_FROM_STAGED" to VIDEO_FROM_STAGED, "VIDEO_REMOVE" to VIDEO_REMOVE, "HOME_RESTART" to HOME_RESTART, "HOME_OPEN" to HOME_OPEN,
         "WIFI_OWNERS" to WIFI_OWNERS,
     )
 }

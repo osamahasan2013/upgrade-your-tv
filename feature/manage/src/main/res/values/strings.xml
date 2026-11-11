@@ -32,7 +32,7 @@
     <string name="manage_state_original">Original</string>
     <string name="manage_checked">Checked {date}</string>
     <string name="manage_tv_card_cd">{tv}. {state}. {checked}</string>
-    <string name="manage_thumbnail_cd">The last picture from {tv}. Tap to refresh.</string>
+    <string name="manage_thumbnail_cd">The TV\'s screen from {tv}, refreshed while this page is open.</string>
     <!-- 0.4.7 (UX finding 20, PM 11): the one name for the way back into Setup, shown for every TV -->
     <string name="manage_clean_again">Run Setup again</string>
     <string name="manage_level_simple">Simple</string>
@@ -305,6 +305,8 @@
     <string name="allapps_search">Search by name or package</string>
     <string name="allapps_filter_all">All</string>
     <string name="allapps_filter_all_cd">Show every app</string>
+    <string name="allapps_filter_installed">Added</string>
+    <string name="allapps_filter_installed_cd">Show only apps added to the TV, which can be uninstalled</string>
     <string name="allapps_filter_running">Running</string>
     <string name="allapps_filter_running_cd">Show only apps running now</string>
     <string name="allapps_filter_off">Off</string>
@@ -407,7 +409,14 @@
     <string name="video_not_installed">The new home screen is not on this TV. Run Setup again to put it on, then come back here.</string>
     <string name="video_old_launcher">The home screen on this TV is an older version without video backgrounds. Run Setup again to update it.</string>
     <string name="video_other_key">The home screen on this TV was installed by the original Clean Your TV app, with another key. Run Setup again: it asks before it replaces it with the Upgrade Your TV home screen, which plays videos.</string>
-    <string name="video_not_home">The new home screen is on the TV but not in charge, so a video background would not show. Run Setup again to make it the home screen.</string>
+    <string name="video_as_app_offer">If Setup says this TV keeps its own home screen, the new one can still go on the TV as an ordinary app. Nothing on the TV is switched off and its Home button keeps opening the TV\'s own home screen; you open the new one from the TV\'s app list or from here.</string>
+    <string name="video_install_as_app">Install it as an app</string>
+    <string name="video_installing">Installing the home screen as an app ({sent} of {size})…</string>
+    <string name="video_as_app">The new home screen is on this TV as an app. The TV\'s own home screen stays in charge, so the video shows when you open \"Home\" from the TV\'s apps or from here. If the TV asks which home app to use, pick its own one and \"Always\". To take it off again, uninstall it in All apps.</string>
+    <string name="video_open_on_tv">Open it on the TV now</string>
+    <string name="video_opening">Opening it on the TV…</string>
+    <string name="video_note_installed_app">The home screen is on the TV as an app.</string>
+    <string name="video_note_opened">It is open on the TV.</string>
     <string name="video_set_up_again">Run Setup again</string>
     <string name="video_note_sent">The video is on. Press Home on the remote to see it.</string>
     <string name="video_note_removed">The video is removed; the look\'s picture is back.</string>

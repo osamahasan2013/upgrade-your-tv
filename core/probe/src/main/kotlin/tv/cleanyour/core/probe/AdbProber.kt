@@ -46,7 +46,7 @@ class AdbProber(
     private val clock: Clock,
     private val signed: Set<PackageName> = SIGNED_PACKAGES,
     private val known: Map<Sha256, Sha256> = emptyMap(),
-) : Prober, LaunchableApps, SavedWifiOwners, InstalledApkReader, AccessibilityRead, RunningApps, StorageRead, VideoBackground {
+) : Prober, LaunchableApps, SavedWifiOwners, InstalledApkReader, AccessibilityRead, RunningApps, StorageRead, VideoBackground, LiveScreen {
 
     private suspend fun run(
         session: TvSession, line: ShellLine, stage: ProbeStage, cap: Int, timeoutMs: Long = 30_000, retry: RetryClass = RetryClass.IDEMPOTENT_READ,
@@ -206,7 +206,7 @@ class AdbProber(
         return (r.stdout.trim().toIntOrNull() ?: 0) > 0
     }
 
-    override suspend fun sendVideo(session: TvSession, sdk: Int, open: () -> java.io.InputStream, size: Long, onProgress: (Long) -> Unit) {
+    override suspend fun sendVideo(session: TvSession, sdk: Int, open: () -> java.io.InputStream, size: Long, asApp: Boolean, onProgress: (Long) -> Unit) {
         if (sdk >= ThemeProviderLines.MIN_SDK) {
             session.exec(ProbeScripts.MKDIR_TMP, ExecSpec(timeoutMs = 15_000, stdoutCap = 4096, retry = RetryClass.IDEMPOTENT_WRITE))
             session.pushStream(open, size, ProbeScripts.videoStaged, onProgress)
@@ -215,12 +215,29 @@ class AdbProber(
         } else {
             session.pushStream(open, size, ProbeScripts.videoInFolder, onProgress)
         }
-        session.exec(ProbeScripts.HOME_RESTART, ExecSpec(timeoutMs = 30_000, stdoutCap = 4096, retry = RetryClass.NEVER))
+        restartHome(session, asApp)
     }
 
-    override suspend fun removeVideo(session: TvSession) {
+    override suspend fun removeVideo(session: TvSession, asApp: Boolean) {
         session.exec(ProbeScripts.VIDEO_REMOVE, ExecSpec(timeoutMs = 30_000, stdoutCap = 4096, retry = RetryClass.IDEMPOTENT_WRITE))
-        session.exec(ProbeScripts.HOME_RESTART, ExecSpec(timeoutMs = 30_000, stdoutCap = 4096, retry = RetryClass.NEVER))
+        restartHome(session, asApp)
+    }
+
+    override suspend fun openHome(session: TvSession) = restartHome(session, true)
+
+    private suspend fun restartHome(session: TvSession, asApp: Boolean) {
+        session.exec(if (asApp) ProbeScripts.HOME_OPEN else ProbeScripts.HOME_RESTART, ExecSpec(timeoutMs = 30_000, stdoutCap = 4096, retry = RetryClass.NEVER))
+    }
+
+    // LiveScreen: the temp file stays between frames (screencap writes over it).
+    override suspend fun frame(session: TvSession): ByteArray? {
+        val r = run(session, ProbeScripts.SCREENSHOT, ProbeStage.DONE, 16 * 1024, timeoutMs = 15_000, retry = RetryClass.IDEMPOTENT_WRITE)
+        val png = if (r.exit != 0) null else pullOrNull(session, ProbeScripts.screenPath, SCREENSHOT_CAP)
+        return png?.takeIf { it.size >= 8 && it.copyOfRange(0, 8).contentEquals(PNG_SIGNATURE) }
+    }
+
+    override suspend fun endLive(session: TvSession) {
+        withContext(NonCancellable) { bestEffort(session, ProbeScripts.SCREENSHOT_CLEANUP) }
     }
 
     override suspend fun removeDownload(session: TvSession, name: String): Boolean {

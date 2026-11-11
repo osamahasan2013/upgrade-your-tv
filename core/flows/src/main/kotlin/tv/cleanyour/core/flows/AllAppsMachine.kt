@@ -35,7 +35,7 @@ data class AppRow(
     val canUninstall: Boolean = false,   // an app the person installed (not a system app, not this app's own)
 )
 
-enum class AppFilter { ALL, RUNNING, OFF }
+enum class AppFilter { ALL, INSTALLED, RUNNING, OFF }   // INSTALLED: apps the person added, the ones that can be uninstalled
 
 data class AllAppsState(
     val tvName: String = "",
@@ -57,7 +57,7 @@ data class AllAppsState(
         val q = query.trim().lowercase()
         return all.filter { r ->
             (showSystem || !r.system) &&
-                when (filter) { AppFilter.ALL -> true; AppFilter.RUNNING -> r.running; AppFilter.OFF -> r.off } &&
+                when (filter) { AppFilter.ALL -> true; AppFilter.INSTALLED -> !r.system; AppFilter.RUNNING -> r.running; AppFilter.OFF -> r.off } &&
                 (q.isEmpty() || r.name.lowercase().contains(q) || r.pkg.value.lowercase().contains(q))
         }
     }
@@ -225,7 +225,7 @@ class AllAppsMachine(
             // Needed to run: a lock, whatever its state (one that is off can still be switched back on).
             val critical = attempt { SwitchOffRule.criticalReason(pkg, st, snap) }.getOrNull()
             val guarded = if (critical != null) null else attempt { SwitchOffRule.reason(pkg, st, profile, snap, stock) }.getOrNull()
-            val ours = pkg == SwitchOffRule.OUR_LAUNCHER || pkg.value == DefaultPlanner.CURTAIN_PACKAGE
+            val ours = pkg.value == DefaultPlanner.CURTAIN_PACKAGE || (pkg == SwitchOffRule.OUR_LAUNCHER && snap.home.resolved?.pkg == pkg)
             AppRow(pkg, d.nameOf(pkg, st.label), st.system, off, live?.contains(pkg) == true, locked = critical, warning = guarded,
                 canUninstall = !st.system && !ours && critical == null)
         }.sortedWith(compareBy<AppRow>({ it.name.lowercase() }, { it.pkg.value }))

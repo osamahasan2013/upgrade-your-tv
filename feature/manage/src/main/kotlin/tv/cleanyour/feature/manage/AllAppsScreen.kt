@@ -86,6 +86,7 @@ fun AllAppsScreen(state: AllAppsState, onIntent: (AllAppsIntent) -> Unit, onBack
         SegmentedChoice(
             options = listOf(
                 SegmentOption(AppFilter.ALL.name, stringResource(R.string.allapps_filter_all), stringResource(R.string.allapps_filter_all_cd)),
+                SegmentOption(AppFilter.INSTALLED.name, stringResource(R.string.allapps_filter_installed), stringResource(R.string.allapps_filter_installed_cd)),
                 SegmentOption(AppFilter.RUNNING.name, stringResource(R.string.allapps_filter_running), stringResource(R.string.allapps_filter_running_cd)),
                 SegmentOption(AppFilter.OFF.name, stringResource(R.string.allapps_filter_off), stringResource(R.string.allapps_filter_off_cd)),
             ),

@@ -46,13 +46,17 @@ class SessionEnd(
     private val probeGapMs: Long = 1_000,
     private val handshakeMs: Long = 6_000,
     private val readMs: Long = 20_000,
+    // Upgrade Your TV 1.6.0: the app leaves debugging on for every TV, so it does not have to be switched on at
+    // the TV again each time (the person asked for this). Finish, the 10 minute rule and closing a session then
+    // switch nothing off; the TV still only answers a phone whose key it has allowed.
+    private val keepAlways: Boolean = false,
 ) {
     private val keepOn = HashSet<TvId>()
     private val touched = LinkedHashSet<TvId>()
     private var watcher: Job? = null
 
     fun keepDebuggingOn(tvId: TvId, on: Boolean) { synchronized(keepOn) { if (on) keepOn.add(tvId) else keepOn.remove(tvId) } }
-    fun keepsDebuggingOn(tvId: TvId): Boolean = synchronized(keepOn) { tvId in keepOn }
+    fun keepsDebuggingOn(tvId: TvId): Boolean = keepAlways || synchronized(keepOn) { tvId in keepOn }
 
     // Every TV a write touched this process; the 10 minute rule switches these off.
     fun touched(tvId: TvId) { synchronized(touched) { touched.add(tvId) } }
