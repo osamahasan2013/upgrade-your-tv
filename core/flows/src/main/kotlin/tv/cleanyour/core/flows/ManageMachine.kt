@@ -78,6 +78,7 @@ enum class ManageSection(val key: String) {
     VIDEO("video"),        // the home screen's video background (VideoBackgroundMachine)
     REMOTE("remote"),      // the TV's remote on the phone (RemoteMachine)
     BUTTONS("buttons"),    // what the remote's buttons open (RemoteButtonsMachine)
+    EXTRAS("extras"),      // dot type, sidebar and the Continue card (HomeExtrasMachine)
 }
 
 sealed interface ManageIntent {

@@ -184,6 +184,10 @@ fun ManageScreen(state: ManageState, onIntent: (ManageIntent) -> Unit, modifier:
                     },
                     onClick = { onIntent(ManageIntent.Open(ManageSection.HOME_SCREEN)) })
                 ListDivider()
+                // Upgrade Your TV 1.8.0: dot type, the sidebar and the Continue card (HomeExtrasScreen).
+                ListRow(stringResource(R.string.manage_row_extras), subtitle = stringResource(R.string.manage_row_extras_sub),
+                    onClick = { onIntent(ManageIntent.Open(ManageSection.EXTRAS)) })
+                ListDivider()
                 // Upgrade Your TV: the home screen's video background (VideoBackgroundScreen).
                 ListRow(stringResource(R.string.manage_row_video), subtitle = stringResource(R.string.manage_row_video_sub),
                     onClick = { onIntent(ManageIntent.Open(ManageSection.VIDEO)) })

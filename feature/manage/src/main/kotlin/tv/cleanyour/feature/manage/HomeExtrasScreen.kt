@@ -1,0 +1,168 @@
+package tv.cleanyour.feature.manage
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import tv.cleanyour.core.flows.HomeExtras
+import tv.cleanyour.core.flows.HomeExtrasIntent
+import tv.cleanyour.core.flows.HomeExtrasState
+import tv.cleanyour.ui.design.component.Banner
+import tv.cleanyour.ui.design.component.BannerTone
+import tv.cleanyour.ui.design.component.CytTopBar
+import tv.cleanyour.ui.design.component.Gap
+import tv.cleanyour.ui.design.component.Lead
+import tv.cleanyour.ui.design.component.ListDivider
+import tv.cleanyour.ui.design.component.ListGroup
+import tv.cleanyour.ui.design.component.Overline
+import tv.cleanyour.ui.design.component.PrimaryButton
+import tv.cleanyour.ui.design.component.ScreenScaffold
+import tv.cleanyour.ui.design.component.ScreenTitle
+import tv.cleanyour.ui.design.component.SecondaryButton
+import tv.cleanyour.ui.design.component.SegmentOption
+import tv.cleanyour.ui.design.component.SegmentedChoice
+import tv.cleanyour.ui.design.component.Spinner
+import tv.cleanyour.ui.design.component.SwitchRow
+import tv.cleanyour.ui.design.theme.CytTheme
+import tv.cleanyour.ui.design.theme.Glow
+
+// The dot-matrix type the launcher uses (UytvHome), the same font file, so the preview shows it as the TV will.
+private val Dots = FontFamily(Font(R.font.uytv_dots))
+
+// Home screen layout (HomeExtrasMachine): type, where the apps go, the Continue card, with a preview of the
+// TV's home screen that follows each choice. Saving sends the TV's look again with them.
+@Composable
+fun HomeExtrasScreen(state: HomeExtrasState, onIntent: (HomeExtrasIntent) -> Unit, onBack: () -> Unit, modifier: Modifier = Modifier) {
+    val save: (@Composable ColumnScope.() -> Unit)? = if (state.changed && state.launcherOn) {
+        { PrimaryButton(stringResource(R.string.extras_save), { onIntent(HomeExtrasIntent.Save) }, Modifier.fillMaxWidth()) }
+    } else null
+    ScreenScaffold(Glow.Tv, modifier, topBar = {
+        CytTopBar(onBack = onBack, trailing = { if (state.loading) Box(Modifier.padding(horizontal = 16.dp)) { Spinner() } })
+    }, bottomBar = save) {
+        ScreenTitle(stringResource(R.string.extras_title), Modifier.padding(top = 20.dp))
+        Lead(stringResource(R.string.extras_intro), Modifier.padding(top = 12.dp))
+        if (state.loading) return@ScreenScaffold
+        HomePreview(state.extras, Modifier.padding(top = 18.dp))
+        if (!state.launcherOn) {
+            Banner(stringResource(R.string.extras_no_launcher), BannerTone.INFO, Modifier.padding(top = 16.dp))
+            PrimaryButton(stringResource(R.string.video_set_up_again), { onIntent(HomeExtrasIntent.SetUpAgain) }, Modifier.padding(top = 16.dp))
+            return@ScreenScaffold
+        }
+        if (state.launcherOld) Banner(stringResource(R.string.extras_old_launcher), BannerTone.INFO, Modifier.padding(top = 16.dp))
+
+        Overline(stringResource(R.string.extras_type), Modifier.padding(top = 22.dp, bottom = 8.dp))
+        SegmentedChoice(
+            listOf(SegmentOption("plain", stringResource(R.string.extras_type_plain), stringResource(R.string.extras_type_plain)),
+                SegmentOption("signal", stringResource(R.string.extras_type_signal), stringResource(R.string.extras_type_signal_cd))),
+            if (state.extras.signal) "signal" else "plain", { onIntent(HomeExtrasIntent.Signal(it.key == "signal")) },
+        )
+        Overline(stringResource(R.string.extras_layout), Modifier.padding(top = 20.dp, bottom = 8.dp))
+        SegmentedChoice(
+            listOf(SegmentOption("row", stringResource(R.string.extras_layout_row), stringResource(R.string.extras_layout_row)),
+                SegmentOption("sidebar", stringResource(R.string.extras_layout_sidebar), stringResource(R.string.extras_layout_sidebar_cd))),
+            if (state.extras.sidebar) "sidebar" else "row", { onIntent(HomeExtrasIntent.Sidebar(it.key == "sidebar")) },
+        )
+        Overline(stringResource(R.string.extras_widgets), Modifier.padding(top = 20.dp, bottom = 8.dp))
+        ListGroup {
+            SwitchRow(stringResource(R.string.extras_continue), state.extras.continueCard, { onIntent(HomeExtrasIntent.Continue(it)) },
+                subtitle = stringResource(R.string.extras_continue_sub))
+            ListDivider()
+            SwitchRow(stringResource(R.string.extras_no_ads), true, {}, subtitle = stringResource(R.string.extras_no_ads_sub), enabled = false)
+        }
+        Body(stringResource(R.string.extras_more), Modifier.padding(top = 18.dp))
+        SecondaryButton(stringResource(R.string.extras_open_look), { onIntent(HomeExtrasIntent.OpenLook) }, Modifier.fillMaxWidth().padding(top = 10.dp))
+        Gap(24.dp)
+    }
+}
+
+// A small TV with the home screen as the choices draw it: a mountain-dusk picture, the clock, the apps in a row
+// or down a frosted sidebar, and the Continue card.
+@Composable
+internal fun HomePreview(e: HomeExtras, modifier: Modifier = Modifier) {
+    val shape = RoundedCornerShape(14.dp)
+    val font = if (e.signal) Dots else FontFamily.Default
+    val desc = stringResource(R.string.extras_preview_cd)
+    Box(
+        modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(shape)
+            .background(Brush.verticalGradient(listOf(Color(0xFF3B6E9E), Color(0xFF7FA6C4), Color(0xFFB0563C), Color(0xFF2A1E2A))))
+            .border(1.dp, CytTheme.colors.rim, shape).semantics { contentDescription = desc },
+    ) {
+        Text("11:45", Modifier.align(Alignment.TopEnd).padding(top = 10.dp, end = 14.dp), color = Color.White,
+            fontFamily = font, fontSize = if (e.signal) 26.sp else 28.sp, fontWeight = FontWeight.Light)
+        Text(if (e.signal) "SAT 31.10" else "Saturday, 31 October", Modifier.align(Alignment.TopEnd).padding(top = 44.dp, end = 14.dp),
+            color = Color.White.copy(alpha = 0.8f), fontFamily = font, fontSize = 8.sp)
+        val apps = listOf(Color(0xFFE50914), Color(0xFF113CCF), Color(0xFFFF0000), Color(0xFF111111), Color(0xFF00A8E1), Color(0xFFFA2D48))
+        val names = listOf("Netflix", "Disney+", "YouTube", "Apple TV", "Prime Video", "Music")
+        if (e.sidebar) {
+            Column(
+                Modifier.align(Alignment.CenterStart).padding(start = 12.dp).width(110.dp).fillMaxHeight(0.82f)
+                    .clip(RoundedCornerShape(12.dp)).background(Color.White.copy(alpha = 0.18f))
+                    .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(12.dp)).padding(6.dp),
+                verticalArrangement = Arrangement.spacedBy(3.dp),
+            ) {
+                apps.forEachIndexed { i, c ->
+                    val focused = i == 2
+                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(if (focused) Color.White.copy(alpha = 0.95f) else Color.Transparent)
+                        .padding(horizontal = 4.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(12.dp).clip(RoundedCornerShape(3.dp)).background(c))
+                        Text(if (e.signal) names[i].uppercase() else names[i], Modifier.padding(start = 5.dp), color = if (focused) Color(0xFF111111) else Color.White,
+                            fontFamily = font, fontSize = 7.sp, maxLines = 1)
+                    }
+                }
+            }
+        } else {
+            if (e.signal) Text("03 YOUTUBE", Modifier.align(Alignment.BottomStart).padding(start = 18.dp, bottom = 46.dp), color = Color.White,
+                fontFamily = Dots, fontSize = 14.sp)
+            Row(
+                Modifier.align(Alignment.BottomStart).padding(start = 14.dp, bottom = 12.dp).clip(RoundedCornerShape(10.dp))
+                    .background(Color.White.copy(alpha = 0.18f)).border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(10.dp)).padding(5.dp),
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+            ) {
+                apps.forEachIndexed { i, c ->
+                    Box(Modifier.size(if (i == 2) 22.dp else 18.dp).clip(RoundedCornerShape(5.dp)).background(c)
+                        .then(if (i == 2) Modifier.border(1.5.dp, Color.White, RoundedCornerShape(5.dp)) else Modifier))
+                }
+            }
+        }
+        if (e.continueCard) {
+            Row(
+                Modifier.align(Alignment.BottomEnd).padding(end = 12.dp, bottom = 12.dp).clip(RoundedCornerShape(16.dp))
+                    .background(Color.White.copy(alpha = 0.2f)).border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+                    .padding(horizontal = 7.dp, vertical = 5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(Modifier.size(14.dp).clip(RoundedCornerShape(4.dp)).background(Color(0xFFFA2D48)))
+                Column(Modifier.padding(start = 5.dp)) {
+                    Text(if (e.signal) "CONTINUE IN MUSIC" else "Continue in Music", color = Color.White, fontFamily = font, fontSize = 7.sp, maxLines = 1)
+                    Text(if (e.signal) "5 MIN AGO" else "Last opened · 5 min ago", color = Color.White.copy(alpha = 0.7f), fontFamily = font, fontSize = 6.sp, maxLines = 1)
+                }
+            }
+        }
+    }
+}

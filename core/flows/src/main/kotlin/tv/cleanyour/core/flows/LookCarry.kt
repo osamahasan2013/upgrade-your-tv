@@ -17,6 +17,8 @@ internal object LookCarry {
         val liveTv = snap?.let { LiveTvKeys.pick(profile, it.packages) }
         // 1.7.0: the remote's buttons the person chose for this TV (RemoteButtonMap), last.
         val buttons = attempt { RemoteButtonMap(d.documents).load(tvId) }.getOrNull().orEmpty()
-        return { doc -> RemoteButtonMap.apply(LiveTvKeys.apply(helper(doc), liveTv), buttons) }
+        // 1.8.0: the type, sidebar and Continue card chosen for this TV (HomeExtras).
+        val extras = attempt { HomeExtrasStore(d.documents).load(tvId) }.getOrNull() ?: HomeExtras()
+        return { doc -> HomeExtras.apply(RemoteButtonMap.apply(LiveTvKeys.apply(helper(doc), liveTv), buttons), extras) }
     }
 }

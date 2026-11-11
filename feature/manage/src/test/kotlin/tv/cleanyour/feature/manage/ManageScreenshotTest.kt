@@ -419,6 +419,12 @@ object ManageShots {
         Shot("buttons_pick", 1500.dp) { SheetOver({ RemoteButtonsScreen(buttonsState(), {}, {}) }) {
             TargetPicker(tv.cleanyour.core.flows.RemoteButton.RED, false, buttonsState(), {})
         } },
+        Shot("extras_signal_sidebar", 1600.dp) { HomeExtrasScreen(tv.cleanyour.core.flows.HomeExtrasState("Living room TV", loading = false,
+            extras = tv.cleanyour.core.flows.HomeExtras(signal = true, sidebar = true, continueCard = true), launcherOn = true), {}, {}) },
+        Shot("extras_signal_row", 1600.dp) { HomeExtrasScreen(tv.cleanyour.core.flows.HomeExtrasState("Living room TV", loading = false,
+            extras = tv.cleanyour.core.flows.HomeExtras(signal = true, continueCard = true), launcherOn = true), {}, {}) },
+        Shot("extras_glass_sidebar", 1600.dp) { HomeExtrasScreen(tv.cleanyour.core.flows.HomeExtrasState("Living room TV", loading = false,
+            extras = tv.cleanyour.core.flows.HomeExtras(sidebar = true), launcherOn = true), {}, {}) },
         Shot("video_offer_app") { VideoBackgroundScreen(VideoBackgroundState("Living room TV", loading = false, home = VideoHome.NOT_INSTALLED), {}, {}, {}) },
         Shot("video_as_app") { VideoBackgroundScreen(VideoBackgroundState("Living room TV", loading = false, home = VideoHome.AS_APP, present = true), {}, {}, {}) },
         Shot("allapps_added", 1500.dp) { AllAppsScreen(allApps(filter = AppFilter.INSTALLED), {}, {}) },
