@@ -1,0 +1,497 @@
+diff --git a/launcher/app/build.gradle b/launcher/app/build.gradle
+index b8f64935..d5233412 100644
+--- a/launcher/app/build.gradle
++++ b/launcher/app/build.gradle
+@@ -11,9 +11,9 @@ android {
+         applicationId providers.gradleProperty('launcherApplicationId').getOrElse('com.gathin.tvhome')
+         minSdk 26
+         targetSdk 34
+-        // Upgrade Your TV: launcher 3.0 with the video background (wallpaper.mp4); above upstream's 9 so it updates over it.
+-        versionCode 1001
+-        versionName '3.0-uytv1'
++        // Upgrade Your TV: launcher 3.0 with the video background, dot type, sidebar and Continue card; above upstream's 9.
++        versionCode 1002
++        versionName '3.0-uytv2'
+     }
+ 
+     buildTypes {
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/AppAdapter.java b/launcher/app/src/main/java/com/gathin/tvhome/AppAdapter.java
+index 3632d74b..478c3219 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/AppAdapter.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/AppAdapter.java
+@@ -529,7 +529,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+         }
+         try {
+             ctx.startActivity(i);
+-            if (cinematic) LastOpened.record(ctx, e.pkg);
++            LastOpened.record(ctx, e.pkg);   // Upgrade Your TV: the Continue card reads it in every style
+             if (advancedEffects && !reducedMotion && ctx instanceof Activity) {
+                 ((Activity) ctx).overridePendingTransition(R.anim.app_open_enter, R.anim.app_open_exit);
+             }
+@@ -636,6 +636,21 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+         return DockSlots.focusable(position, docked, emptySlots);
+     }
+ 
++    /** Upgrade Your TV (UytvHome): the tile's kind, its icon (or banner), and opening it as its tile does. */
++    int kindAt(int position) {
++        return position >= 0 && position < items.size() ? items.get(position).kind : -1;
++    }
++
++    Drawable iconAt(int position) {
++        if (position < 0 || position >= items.size()) return null;
++        Entry e = items.get(position);
++        return e.icon != null ? e.icon : e.banner;
++    }
++
++    void launchAt(int position) {
++        if (position >= 0 && position < items.size()) launch(items.get(position));
++    }
++
+     String labelAt(int position) {
+         return position >= 0 && position < items.size() ? items.get(position).label : "";
+     }
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/Config.java b/launcher/app/src/main/java/com/gathin/tvhome/Config.java
+index 71356fff..8295401b 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/Config.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/Config.java
+@@ -38,6 +38,8 @@ import java.util.Set;
+ final class Config {
+     private static final String TAG = "TvHome.Config";
+     static final String FILE_NAME = "config.json";
++    /** Upgrade Your TV: the overlay the last load read (null without one), for UytvHome's keys. */
++    static volatile JSONObject lastOverlay;
+     static final String WALLPAPER_NAME = "wallpaper.jpg";
+     static final String SETTINGS_NAME = "launcher_settings";
+     static final String ROWS_BELOW_DOCK_KEY = "rows_below_dock";
+@@ -501,6 +503,7 @@ final class Config {
+         File file = dir != null ? new File(dir, FILE_NAME) : null;
+         boolean mounted = Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState());
+         JSONObject json = readOverlay(ctx, file, mounted);
++        lastOverlay = json;   // Upgrade Your TV: UytvHome reads its own keys from it
+         if (json != null) {
+             applied = true;
+             dock = stringList(json, "dock_apps", dock);
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java b/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
+index a5acd794..50a8a57f 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
+@@ -839,10 +839,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+                     .removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
+                     .build(), vpnCallback);
+         }
++        // Upgrade Your TV: dot-matrix type, the sidebar and the Continue card, when the look asks for them.
++        uytv = UytvHome.attach(this, adapter, this);
+         // Not after recreate(): the launch intent survives it and would open the settings again.
+         if (savedInstanceState == null && !openLauncherSettingsIfAsked(getIntent())) openInputsIfAsked(getIntent());
+     }
+ 
++    /** Upgrade Your TV: the home screen choices of UytvHome; null when the look asks for none. */
++    private UytvHome uytv;
++
+     /**
+      * handle_view_inputs: switch InputsRequestActivity, the VIEW_INPUTS handler, on or off. It is disabled in the
+      * manifest, so a TV with its own input picker never sees it; only the sets that need it turn it on. Written
+@@ -969,6 +974,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+                 break;
+         }
+         if (openLiveTvAfterBoot()) return;
++        if (uytv != null) uytv.refresh();
+         updateGreeting();
+         updateRace();
+         // The network and Inputs pills keep their state while Home is in the background, and callbacks update them
+@@ -1116,6 +1122,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+         lastFocusedKey = returnKey;
+         lastFocused = returnSlot;
+         packageSequence = currentPackageSequence(packageSequence);
++        if (uytv != null) uytv.refresh();
+     }
+ 
+     /**
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/UytvHome.java b/launcher/app/src/main/java/com/gathin/tvhome/UytvHome.java
+new file mode 100644
+index 00000000..0c6832b4
+--- /dev/null
++++ b/launcher/app/src/main/java/com/gathin/tvhome/UytvHome.java
+@@ -0,0 +1,290 @@
++package com.gathin.tvhome;
++
++import android.app.Activity;
++import android.content.res.Resources;
++import android.graphics.Color;
++import android.graphics.Outline;
++import android.graphics.Typeface;
++import android.graphics.drawable.Drawable;
++import android.graphics.drawable.GradientDrawable;
++import android.text.format.DateUtils;
++import android.util.Log;
++import android.util.TypedValue;
++import android.view.Gravity;
++import android.view.View;
++import android.view.ViewGroup;
++import android.view.ViewOutlineProvider;
++import android.widget.FrameLayout;
++import android.widget.ImageView;
++import android.widget.LinearLayout;
++import android.widget.TextView;
++
++import org.json.JSONObject;
++
++/**
++ * Upgrade Your TV: three home screen choices the phone app writes into config.json (carried keys the
++ * launcher 3.0 Config does not read itself):
++ * <ul>
++ *   <li>{@code uytv_signal}: dot-matrix type (res/font/uytv_dots.ttf, this repo's own font) for the clock,
++ *       the date, the greeting and the big app name, in capitals.</li>
++ *   <li>{@code uytv_sidebar}: the apps in a frosted panel down the left, each with its icon and name, instead of
++ *       the grid; "All apps" at its foot opens the App library.</li>
++ *   <li>{@code uytv_continue}: a frosted card at the bottom right, "Continue in {app}", for the app Home opened
++ *       last, with how long ago.</li>
++ * </ul>
++ * Every step is guarded: if anything here fails, Home stays as the look made it.
++ */
++final class UytvHome {
++    private static final String TAG = "TvHome.Uytv";
++    static final int MAX_SIDEBAR_APPS = 7;
++
++    final boolean signal;
++    final boolean sidebar;
++    final boolean continueCard;
++
++    private final Activity activity;
++    private final AppAdapter adapter;
++    private final AppAdapter.TileListener listener;
++    private final float density;
++    private Typeface dots;
++    private LinearLayout panel;
++    private LinearLayout card;
++
++    private UytvHome(Activity activity, AppAdapter adapter, AppAdapter.TileListener listener, JSONObject json) {
++        this.activity = activity;
++        this.adapter = adapter;
++        this.listener = listener;
++        this.density = activity.getResources().getDisplayMetrics().density;
++        this.signal = json != null && json.optBoolean("uytv_signal", false);
++        this.sidebar = json != null && json.optBoolean("uytv_sidebar", false);
++        this.continueCard = json != null && json.optBoolean("uytv_continue", false);
++    }
++
++    /** Null when none of the three is on. */
++    static UytvHome attach(Activity activity, AppAdapter adapter, AppAdapter.TileListener listener) {
++        try {
++            UytvHome home = new UytvHome(activity, adapter, listener, Config.lastOverlay);
++            if (!home.signal && !home.sidebar && !home.continueCard) return null;
++            home.build();
++            return home;
++        } catch (RuntimeException e) {
++            Log.w(TAG, "home choices skipped: " + e);
++            return null;
++        }
++    }
++
++    private int dp(float v) {
++        return Math.round(v * density);
++    }
++
++    private void build() {
++        if (signal) {
++            try {
++                dots = activity.getResources().getFont(R.font.uytv_dots);
++            } catch (Resources.NotFoundException e) {
++                dots = null;
++            }
++            if (dots != null) {
++                for (int id : new int[] {R.id.clock, R.id.ampm, R.id.date, R.id.greeting, R.id.heroName, R.id.heroMeta}) {
++                    View v = activity.findViewById(id);
++                    if (v instanceof TextView) {
++                        TextView t = (TextView) v;
++                        t.setTypeface(dots);
++                        t.setAllCaps(true);
++                        t.setLetterSpacing(0.02f);
++                    }
++                }
++            }
++        }
++        ViewGroup root = activity.findViewById(R.id.root);
++        if (sidebar) {
++            View grid = activity.findViewById(R.id.grid);
++            if (grid != null && grid.getParent() instanceof View) ((View) grid.getParent()).setVisibility(View.GONE);
++            View hero = activity.findViewById(R.id.hero);
++            if (hero != null) hero.setVisibility(View.GONE);
++            panel = new LinearLayout(activity);
++            panel.setOrientation(LinearLayout.VERTICAL);
++            panel.setPadding(dp(10), dp(10), dp(10), dp(10));
++            panel.setBackground(glass(28, 0x2EFFFFFF));
++            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(dp(330), ViewGroup.LayoutParams.WRAP_CONTENT,
++                    Gravity.START | Gravity.CENTER_VERTICAL);
++            lp.setMarginStart(dp(56));
++            lp.topMargin = dp(120);
++            lp.bottomMargin = dp(40);
++            root.addView(panel, lp);
++        }
++        if (continueCard) {
++            card = new LinearLayout(activity);
++            card.setOrientation(LinearLayout.HORIZONTAL);
++            card.setGravity(Gravity.CENTER_VERTICAL);
++            card.setPadding(dp(12), dp(10), dp(22), dp(10));
++            card.setBackground(focusable(36, 0x33FFFFFF, 0xF2FFFFFF));
++            card.setFocusable(true);
++            card.setClickable(true);
++            card.setVisibility(View.GONE);
++            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
++                    ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.END | Gravity.BOTTOM);
++            lp.setMarginEnd(dp(56));
++            lp.bottomMargin = dp(40);
++            root.addView(card, lp);
++        }
++    }
++
++    /** After the tiles were loaded again, and on every return to Home. */
++    void refresh() {
++        try {
++            if (panel != null) fillPanel();
++            if (card != null) fillCard();
++        } catch (RuntimeException e) {
++            Log.w(TAG, "refresh skipped: " + e);
++        }
++    }
++
++    private void fillPanel() {
++        View focused = activity.getCurrentFocus();
++        boolean hadFocus = focused != null && isInside(focused, panel);
++        panel.removeAllViews();
++        int shown = 0;
++        View first = null;
++        for (int i = 0; i < adapter.getItemCount() && shown < MAX_SIDEBAR_APPS; i++) {
++            if (adapter.kindAt(i) != AppAdapter.Entry.APP) continue;
++            final int position = i;
++            View row = row(adapter.iconAt(i), adapter.labelAt(i), 26, v -> adapter.launchAt(position));
++            panel.addView(row);
++            if (first == null) first = row;
++            shown++;
++        }
++        View all = row(null, activity.getString(R.string.uytv_all_apps), 17, v -> listener.onLibraryRequested());
++        panel.addView(all);
++        if (card != null) {
++            for (int i = 0; i < panel.getChildCount(); i++) panel.getChildAt(i).setNextFocusRightId(cardId());
++        }
++        if (first != null && (hadFocus || focused == null || !focused.isShown())) {
++            final View target = first;
++            panel.post(target::requestFocus);
++        }
++    }
++
++    private int cardId() {
++        if (card.getId() == View.NO_ID) card.setId(View.generateViewId());
++        return card.getId();
++    }
++
++    private void fillCard() {
++        String best = null;
++        long when = 0;
++        int bestPos = -1;
++        for (int i = 0; i < adapter.getItemCount(); i++) {
++            if (adapter.kindAt(i) != AppAdapter.Entry.APP) continue;
++            long t = LastOpened.get(activity, adapter.packageAt(i));
++            if (t > when) {
++                when = t;
++                best = adapter.labelAt(i);
++                bestPos = i;
++            }
++        }
++        card.removeAllViews();
++        if (bestPos < 0) {
++            card.setVisibility(View.GONE);
++            return;
++        }
++        final int position = bestPos;
++        ImageView icon = icon(adapter.iconAt(position), 44);
++        card.addView(icon);
++        LinearLayout texts = new LinearLayout(activity);
++        texts.setOrientation(LinearLayout.VERTICAL);
++        texts.setPadding(dp(14), 0, 0, 0);
++        TextView title = text(activity.getString(R.string.uytv_continue_in, best), 18, Color.WHITE);
++        CharSequence ago = DateUtils.getRelativeTimeSpanString(when, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS);
++        TextView sub = text(activity.getString(R.string.uytv_last_opened, ago), 13, 0xB3FFFFFF);
++        texts.addView(title);
++        texts.addView(sub);
++        card.addView(texts);
++        card.setOnClickListener(v -> adapter.launchAt(position));
++        card.setOnFocusChangeListener((v, has) -> {
++            int ink = has ? 0xFF111111 : Color.WHITE;
++            title.setTextColor(ink);
++            sub.setTextColor(has ? 0xB3111111 : 0xB3FFFFFF);
++        });
++        card.setVisibility(View.VISIBLE);
++    }
++
++    private View row(Drawable art, String label, int iconDp, View.OnClickListener click) {
++        LinearLayout row = new LinearLayout(activity);
++        row.setOrientation(LinearLayout.HORIZONTAL);
++        row.setGravity(Gravity.CENTER_VERTICAL);
++        row.setPadding(dp(12), dp(9), dp(12), dp(9));
++        row.setFocusable(true);
++        row.setClickable(true);
++        row.setBackground(focusable(18, 0x00FFFFFF, 0xF2FFFFFF));
++        if (art != null) {
++            row.addView(icon(art, 40));
++        }
++        TextView name = text(label, signal ? 18 : 20, Color.WHITE);
++        name.setPadding(dp(art != null ? 16 : 6), 0, 0, 0);
++        if (art == null) name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
++        row.addView(name, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
++        row.setOnClickListener(click);
++        row.setOnFocusChangeListener((v, has) -> name.setTextColor(has ? 0xFF111111 : Color.WHITE));
++        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
++        lp.topMargin = dp(2);
++        row.setLayoutParams(lp);
++        return row;
++    }
++
++    private ImageView icon(Drawable art, int sizeDp) {
++        ImageView v = new ImageView(activity);
++        v.setImageDrawable(art);
++        v.setScaleType(ImageView.ScaleType.CENTER_CROP);
++        final float radius = dp(10);
++        v.setOutlineProvider(new ViewOutlineProvider() {
++            @Override
++            public void getOutline(View view, Outline outline) {
++                outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), radius);
++            }
++        });
++        v.setClipToOutline(true);
++        v.setLayoutParams(new LinearLayout.LayoutParams(dp(sizeDp), dp(sizeDp)));
++        return v;
++    }
++
++    private TextView text(String s, int sp, int color) {
++        TextView t = new TextView(activity);
++        t.setText(s);
++        t.setTextColor(color);
++        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
++        t.setSingleLine(true);
++        t.setEllipsize(android.text.TextUtils.TruncateAt.END);
++        if (signal && dots != null) {
++            t.setTypeface(dots);
++            t.setAllCaps(true);
++        }
++        return t;
++    }
++
++    private GradientDrawable glass(int radiusDp, int fill) {
++        GradientDrawable g = new GradientDrawable();
++        g.setCornerRadius(dp(radiusDp));
++        g.setColor(fill);
++        g.setStroke(Math.max(1, dp(1)), 0x40FFFFFF);
++        return g;
++    }
++
++    private Drawable focusable(int radiusDp, int rest, int focused) {
++        android.graphics.drawable.StateListDrawable s = new android.graphics.drawable.StateListDrawable();
++        GradientDrawable on = new GradientDrawable();
++        on.setCornerRadius(dp(radiusDp));
++        on.setColor(focused);
++        s.addState(new int[] {android.R.attr.state_focused}, on);
++        s.addState(new int[] {android.R.attr.state_pressed}, on);
++        s.addState(new int[] {}, rest == 0 ? new GradientDrawable() : glass(radiusDp, rest));
++        return s;
++    }
++
++    private static boolean isInside(View v, View parent) {
++        for (View p = v; p != null; p = p.getParent() instanceof View ? (View) p.getParent() : null) {
++            if (p == parent) return true;
++        }
++        return false;
++    }
++}
+diff --git a/launcher/app/src/main/res/font/uytv_dots.ttf b/launcher/app/src/main/res/font/uytv_dots.ttf
+new file mode 100644
+index 0000000000000000000000000000000000000000..53c3a0b19dafedaf46fc7af54b02f57176373fc7
+GIT binary patch
+literal 33764
+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
+XA8?if&U1%DE;@w5D8B1wen0Sk|Froc
+
+literal 0
+HcmV?d00001
+
+diff --git a/launcher/app/src/main/res/values/strings.xml b/launcher/app/src/main/res/values/strings.xml
+index 635bced9..a643e827 100644
+--- a/launcher/app/src/main/res/values/strings.xml
++++ b/launcher/app/src/main/res/values/strings.xml
+@@ -151,4 +151,8 @@
+     <!-- Cinematic top shelf (cinematic_home): the line under the focused dock app's name; %1$s is when it was
+          last opened, e.g. "5 minutes ago" or "yesterday, 9:40 pm". -->
+     <string name="last_opened">Last opened %1$s</string>
++    <!-- Upgrade Your TV (UytvHome) -->
++    <string name="uytv_all_apps">All apps</string>
++    <string name="uytv_continue_in">Continue in %1$s</string>
++    <string name="uytv_last_opened">Last opened · %1$s</string>
+ </resources>
