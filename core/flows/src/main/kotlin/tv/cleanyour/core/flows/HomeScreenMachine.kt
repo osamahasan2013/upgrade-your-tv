@@ -58,9 +58,6 @@ data class NotOnTv(
     val earlier: Boolean = false,
     val installed: Boolean = false,
     val reportSentAtMs: Long? = null,
-    // Upgrade Your TV 1.8.2: the new home screen can go on as an ordinary app here (not installed, a TV that
-    // takes installs and runs Android 8 or newer): nothing switched off, Home not changed.
-    val canInstallAsApp: Boolean = false,
 )
 
 // 0.4.0: a picture of the Picture row: a gallery picture by id, with its file for the thumbnail
@@ -127,6 +124,8 @@ data class HomeScreenState(
     // before a send, while one runs, or when the TV gave no picture.
     val lookShot: ByteArray? = null,
     // Upgrade Your TV 1.8.2: the new home screen going on as an app (sent, size), and a failure to say.
+    // (not installed, a TV that takes installs and runs Android 8 or newer: nothing switched off, Home not changed)
+    val canInstallAsApp: Boolean = false,
     val installingApp: Pair<Long, Long>? = null,
     val installAppFailed: String? = null,
 ) {
@@ -305,7 +304,7 @@ class HomeScreenMachine(
             HomeScreenIntent.PreviewUpdate -> scope.launch { previewUpdate() }
             HomeScreenIntent.UpdateHomeScreen -> scope.launch { update() }
             HomeScreenIntent.RunSetupAgain -> if (after.notOnTv?.setupAgain == true) effect(ManageEffect.Navigate("setup/${tvId.value}"))
-            HomeScreenIntent.InstallAsApp -> if (after.notOnTv?.canInstallAsApp == true && before.installingApp == null) scope.launch { installAsApp() }
+            HomeScreenIntent.InstallAsApp -> if (after.canInstallAsApp && before.installingApp == null) scope.launch { installAsApp() }
             HomeScreenIntent.HelpAddTv -> if (after.notOnTv?.helpAddTv == true) effect(ManageEffect.Navigate("report/tv/${tvId.value}"))
             HomeScreenIntent.HelperOff -> if (after.helper?.canSwitchOff == true) scope.launch { helperOff() }
             else -> {}
@@ -377,13 +376,18 @@ class HomeScreenMachine(
         val ended = if (choice?.isNew == true) choice.picture?.takeIf { drafts.datedPicture(it) && drafts.pictureOptions().none { o -> o.id == it } }
             ?.let { id -> drafts.gallery().firstOrNull { it.id == id }?.name ?: id }
             else choice?.endedLook(today)?.let { id -> theme(id)?.name ?: id }
+        // 1.8.2: the new home screen can go on as an ordinary app (NotOnTvScreen's "Install it as an app").
+        val notHere = notOnTv(tv, snap)
+        val installable = notHere != null && snap != null && !notHere.installed && snap.packages[Launcher.pkg] == null &&
+            notHere.reason != HomeBlock.TV_REFUSES && notHere.reason != HomeBlock.OLD_ANDROID && !snap.facts.installRefusal &&
+            snap.facts.sdk >= DefaultPlanner.TV_MIN_SDK
         send(Loaded(HomeScreenState(tv.nickname, dock, apps, if (choice?.isNew == true) null else lookId, offeredThemes(d),
             // 0.4.6: a TV on a brand set or none (R0) has no list of its own; the stock home the
             // switch armed its watchdog with is the TV's own then.
             stock = profile?.stockLaunchers?.firstOrNull() ?: attempt { HomePlaceholder.stockFromRecords(d.ledger.changes(tvId)) }.getOrNull(),
             homeScreenOurs = tv.launcher != null, columns = columns, updateTo = updateTo(tv, packages),
             tvSideSettings = (packages[Launcher.pkg]?.versionCode ?: 0) >= FIRST_WITH_TV_SETTINGS,
-            notOnTv = notOnTv(tv, snap), tclRemoteKeys = snap != null && TclGoogleTv.applies(snap.facts, snap),
+            notOnTv = notHere, canInstallAsApp = installable, tclRemoteKeys = snap != null && TclGoogleTv.applies(snap.facts, snap),
             googleTvSettingsKey = snap != null && GoogleTvSettingsKey.applies(snap.facts, snap),
             endedLook = ended, pictureId = pictureId, pictures = pictureOptions(),
             ownPicture = own, ownDim = choice?.dim ?: OwnPicture.DEFAULT_DIM,
@@ -432,8 +436,7 @@ class HomeScreenMachine(
         val now = attempt { d.profiles.resolveFor(snap) }.getOrNull()
         val earlier = reason != null && decision?.earlier(d.about.version, now) == true
         val unlisted = tv.profileId == null && (!earlier || now !is ProfileResolution.Exact)
-        if (earlier) return NotOnTv(reason = reason, brand = brand, unlisted = unlisted, setupAgain = true, earlier = true, reportSentAtMs = sent,
-            canInstallAsApp = ours == null && !snap.facts.installRefusal && snap.facts.sdk >= DefaultPlanner.TV_MIN_SDK)
+        if (earlier) return NotOnTv(reason = reason, brand = brand, unlisted = unlisted, setupAgain = true, earlier = true, reportSentAtMs = sent)
         val setupAgain = when (reason) {
             null, HomeBlock.NONE, HomeBlock.WIZARD_WIFI_UNKNOWN -> true
             // Issue #8: the person can make the TV's own home screen Home again, and on a TV an exact
@@ -453,8 +456,6 @@ class HomeScreenMachine(
             reason = reason, brand = brand,
             fireTv = reason == HomeBlock.TV_REFUSES && FireOs.isFireOs(snap.facts, snap), unlisted = unlisted,
             setupAgain = setupAgain, helpAddTv = needsList && unlisted, reportSentAtMs = sent,
-            canInstallAsApp = ours == null && reason != HomeBlock.TV_REFUSES && reason != HomeBlock.OLD_ANDROID &&
-                !snap.facts.installRefusal && snap.facts.sdk >= DefaultPlanner.TV_MIN_SDK,
         )
     }
 

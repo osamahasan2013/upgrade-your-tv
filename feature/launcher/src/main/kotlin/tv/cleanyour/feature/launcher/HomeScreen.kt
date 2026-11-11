@@ -85,7 +85,7 @@ fun HomeScreen(
     onReport: (String) -> Unit = {}, onOpenUrl: (String) -> Unit = {},
 ) {
     val notOnTv = state.notOnTv
-    if (notOnTv != null) { NotOnTvScreen(state.tvName, notOnTv, onIntent, onBack, modifier, onReport, onOpenUrl, state.installingApp, state.installAppFailed); return }
+    if (notOnTv != null) { NotOnTvScreen(state.tvName, notOnTv, onIntent, onBack, modifier, onReport, onOpenUrl, state.canInstallAsApp, state.installingApp, state.installAppFailed); return }
     var dockOpen by rememberSaveable { mutableStateOf(false) }
     val busy = state.busy
     ScreenScaffold(Glow.Tv, modifier, topBar = { CytTopBar(onBack = onBack) }) {
@@ -188,6 +188,7 @@ fun HomeScreen(
 internal fun NotOnTvScreen(
     tvName: String, n: NotOnTv, onIntent: (HomeScreenIntent) -> Unit, onBack: () -> Unit, modifier: Modifier = Modifier, onReport: (String) -> Unit = {},
     onOpenUrl: (String) -> Unit = {},
+    canInstallAsApp: Boolean = false,
     installingApp: Pair<Long, Long>? = null,
     installAppFailed: String? = null,
 ) {
@@ -251,7 +252,7 @@ internal fun NotOnTvScreen(
         }
         next?.let { Body(stringResource(it), Modifier.padding(top = 16.dp, start = 4.dp, end = 4.dp)) }
         // Upgrade Your TV 1.8.2: the new home screen as an ordinary app, the TV's own staying Home.
-        if (n.canInstallAsApp) {
+        if (canInstallAsApp) {
             Overline(stringResource(R.string.home_as_app_title), Modifier.padding(top = 22.dp, bottom = 6.dp, start = 4.dp))
             Body(stringResource(R.string.home_as_app_body), Modifier.padding(start = 4.dp, end = 4.dp))
             installAppFailed?.let { Banner(msg(R.string.home_as_app_failed, "detail" to it), BannerTone.DANGER, Modifier.padding(top = 12.dp)) }
