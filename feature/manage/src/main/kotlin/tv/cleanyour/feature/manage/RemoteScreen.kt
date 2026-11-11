@@ -85,7 +85,7 @@ fun RemoteScreen(state: RemoteState, onIntent: (RemoteIntent) -> Unit, onBack: (
         val p = state.pressing
 
         Row(Modifier.fillMaxWidth().padding(top = 20.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Key(K.POWER, p, press, hold, stringResource(R.string.remote_power), text = "⏻", danger = true)
+            Key(K.POWER, p, press, hold, stringResource(R.string.remote_power), power = true, danger = true)
             Key(K.INPUT, p, press, hold, stringResource(R.string.remote_input), text = stringResource(R.string.remote_input_short), wide = true)
             Key(K.SETTINGS, p, press, hold, stringResource(R.string.remote_settings), icon = CytIcons.Settings)
         }
@@ -160,6 +160,7 @@ private fun Key(
     code: Int, pressing: Int?, press: (Int) -> Unit, hold: (Int) -> Unit, description: String,
     modifier: Modifier = Modifier, icon: ImageVector? = null, text: String? = null, iconTurn: Float = 0f,
     size: Dp = 60.dp, wide: Boolean = false, flat: Boolean = false, accent: Boolean = false, danger: Boolean = false,
+    power: Boolean = false,
 ) {
     val c = CytTheme.colors
     val haptics = LocalHapticFeedback.current
@@ -184,8 +185,24 @@ private fun Key(
         contentAlignment = Alignment.Center,
     ) {
         when {
+            power -> PowerGlyph(ink, Modifier.size(24.dp))
             icon != null -> CytIcon(icon, null, Modifier.size(26.dp).rotate(iconTurn), tint = ink)
             text != null -> Text(text, color = ink, fontSize = if (text.length > 3) 14.sp else 20.sp, fontWeight = FontWeight.SemiBold)
         }
+    }
+}
+
+// The power sign, drawn (no font has it everywhere): a ring open at the top and a bar through the gap.
+@Composable
+private fun PowerGlyph(ink: androidx.compose.ui.graphics.Color, modifier: Modifier) {
+    androidx.compose.foundation.Canvas(modifier) {
+        val stroke = size.minDimension * 0.12f
+        val inset = stroke / 2 + size.minDimension * 0.08f
+        drawArc(ink, startAngle = -60f, sweepAngle = 300f, useCenter = false,
+            topLeft = androidx.compose.ui.geometry.Offset(inset, inset + size.height * 0.04f),
+            size = androidx.compose.ui.geometry.Size(size.width - 2 * inset, size.height - 2 * inset),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round))
+        drawLine(ink, androidx.compose.ui.geometry.Offset(size.width / 2, size.height * 0.04f),
+            androidx.compose.ui.geometry.Offset(size.width / 2, size.height * 0.48f), stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round)
     }
 }
