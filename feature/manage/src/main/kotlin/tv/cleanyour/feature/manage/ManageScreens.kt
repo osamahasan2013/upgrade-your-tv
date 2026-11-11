@@ -166,6 +166,9 @@ fun ManageScreen(state: ManageState, onIntent: (ManageIntent) -> Unit, modifier:
             ListGroup(Modifier.padding(top = 16.dp)) {
                 ListRow(stringResource(R.string.manage_row_devices), subtitle = msg(R.string.manage_row_devices_sub, "count" to state.cards.size),
                     onClick = { onIntent(ManageIntent.Devices) })
+                ListDivider()
+                ListRow(stringResource(R.string.manage_row_remote), subtitle = stringResource(R.string.manage_row_remote_sub),
+                    onClick = { onIntent(ManageIntent.Open(ManageSection.REMOTE)) })
             }
             ListGroup(Modifier.padding(top = 16.dp)) {
                 // 0.3.3 D2: without the new home screen there is no dock to name; the row opens the reason.

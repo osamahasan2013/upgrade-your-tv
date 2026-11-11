@@ -46,7 +46,7 @@ class AdbProber(
     private val clock: Clock,
     private val signed: Set<PackageName> = SIGNED_PACKAGES,
     private val known: Map<Sha256, Sha256> = emptyMap(),
-) : Prober, LaunchableApps, SavedWifiOwners, InstalledApkReader, AccessibilityRead, RunningApps, StorageRead, VideoBackground, LiveScreen {
+) : Prober, LaunchableApps, SavedWifiOwners, InstalledApkReader, AccessibilityRead, RunningApps, StorageRead, VideoBackground, LiveScreen, RemoteInput {
 
     private suspend fun run(
         session: TvSession, line: ShellLine, stage: ProbeStage, cap: Int, timeoutMs: Long = 30_000, retry: RetryClass = RetryClass.IDEMPOTENT_READ,
@@ -227,6 +227,15 @@ class AdbProber(
 
     private suspend fun restartHome(session: TvSession, asApp: Boolean) {
         session.exec(if (asApp) ProbeScripts.HOME_OPEN else ProbeScripts.HOME_RESTART, ExecSpec(timeoutMs = 30_000, stdoutCap = 4096, retry = RetryClass.NEVER))
+    }
+
+    // RemoteInput: one press, sent as the TV's own remote would (input keyevent), or typed text.
+    override suspend fun key(session: TvSession, code: Int, long: Boolean) {
+        session.exec(ProbeScripts.keyEvent(code, long), ExecSpec(timeoutMs = 10_000, stdoutCap = 4096, retry = RetryClass.NEVER))
+    }
+
+    override suspend fun text(session: TvSession, text: String) {
+        session.exec(ProbeScripts.inputText(text), ExecSpec(timeoutMs = 15_000, stdoutCap = 4096, retry = RetryClass.NEVER))
     }
 
     // LiveScreen: the temp file stays between frames (screencap writes over it).

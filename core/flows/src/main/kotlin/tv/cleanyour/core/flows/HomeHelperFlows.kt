@@ -54,10 +54,13 @@ object HomeHelperFlows {
         val snap = attempt { d.snapshots.latest(tvId) }.getOrNull() ?: return { it }
         val listed = HomeHelper.listed(snap)
         val unread = snap.launcherOverlay == null
-        val home = snap.home.resolved?.pkg?.takeIf { p -> KnownLaunchers.generic.any { it.pkg == p } }
+        // 1.7.0: the TV's own home screens its profile lists count as well (HomeHelper.sendsOnFrom).
+        val stocks = d.tv(tvId)?.let { attempt { d.profileOf(it) }.getOrNull() }?.stockLaunchers.orEmpty()
+        val also = stocks.map { it.pkg }
+        val home = snap.home.resolved?.takeIf { HomeHelper.sendsOnFrom(it, stocks) }?.pkg
         return { doc ->
-            if (listed && unread && home != null && HomeHelperKeys.REDIRECT !in doc.unknown) HomeHelperKeys.with(doc, home)
-            else HomeHelperKeys.carry(doc, snap.launcherOverlay, listed)
+            if (listed && unread && home != null && HomeHelperKeys.REDIRECT !in doc.unknown) HomeHelperKeys.with(doc, home, also + home)
+            else HomeHelperKeys.carry(doc, snap.launcherOverlay, listed, also)
         }
     }
 }

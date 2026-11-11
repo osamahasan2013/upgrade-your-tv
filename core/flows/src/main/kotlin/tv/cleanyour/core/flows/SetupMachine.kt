@@ -999,7 +999,8 @@ class SetupMachine(
             keyNames = keyNames, dockChosen = draft.dock != null)
         val sheet = mutableExtras.value.look?.let { drafts.refresh(it, lookContext) } ?: drafts.open(choice, lookContext)
         val look = if (!possible && !helper) null else attempt { val (doc, w) = drafts.docOf(sheet, dock, cards, lookContext)
-            Look.encode(deps.encoder, deps.blobs, LiveTvKeys.apply(if (helper) HomeHelperKeys.with(doc, helperStock!!.pkg) else doc, liveTv), w) }
+            val buttons = deps.documents?.let { docs -> attempt { RemoteButtonMap(docs).load(record.id) }.getOrNull() }.orEmpty()
+            Look.encode(deps.encoder, deps.blobs, RemoteButtonMap.apply(LiveTvKeys.apply(if (helper) HomeHelperKeys.with(doc, helperStock!!.pkg, listOf(helperStock!!.pkg)) else doc, liveTv), buttons), w) }
             .onFailure { deps.log.line("setup: the look could not be encoded, planned without it") }.getOrNull()
         // What Manage starts from once the run pushed it, saved as the Look sheet saves it, in the new
         // form: a photo made here is kept for the TV (and saved as "mine") only once the TV has it.

@@ -15,6 +15,8 @@ internal object LookCarry {
         val snap = attempt { d.snapshots.latest(tvId) }.getOrNull()
         val profile = d.tv(tvId)?.let { attempt { d.profileOf(it) }.getOrNull() }
         val liveTv = snap?.let { LiveTvKeys.pick(profile, it.packages) }
-        return { doc -> LiveTvKeys.apply(helper(doc), liveTv) }
+        // 1.7.0: the remote's buttons the person chose for this TV (RemoteButtonMap), last.
+        val buttons = attempt { RemoteButtonMap(d.documents).load(tvId) }.getOrNull().orEmpty()
+        return { doc -> RemoteButtonMap.apply(LiveTvKeys.apply(helper(doc), liveTv), buttons) }
     }
 }

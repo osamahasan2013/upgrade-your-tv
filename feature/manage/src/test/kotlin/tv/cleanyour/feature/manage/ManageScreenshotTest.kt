@@ -412,6 +412,13 @@ object ManageShots {
         Shot("video_sent") { VideoBackgroundScreen(VideoBackgroundState("Living room TV", loading = false, home = VideoHome.READY, present = true,
             note = VideoNote.Sent), {}, {}, {}) },
         Shot("video_other_key") { VideoBackgroundScreen(VideoBackgroundState("Living room TV", loading = false, home = VideoHome.OTHER_KEY), {}, {}, {}) },
+        Shot("remote", 1700.dp) { RemoteScreen(tv.cleanyour.core.flows.RemoteState("Living room TV", connected = true, connecting = false, pressing = 23), {}, {}, {}) },
+        Shot("remote_no_tv", 1700.dp) { RemoteScreen(tv.cleanyour.core.flows.RemoteState("Living room TV", connecting = false, note = tv.cleanyour.core.flows.RemoteNote.NoTv), {}, {}, {}) },
+        Shot("buttons", 1700.dp) { RemoteButtonsScreen(buttonsState(), {}, {}) },
+        Shot("buttons_needs_helper") { RemoteButtonsScreen(tv.cleanyour.core.flows.RemoteButtonsState("Living room TV", loading = false), {}, {}) },
+        Shot("buttons_pick", 1500.dp) { SheetOver({ RemoteButtonsScreen(buttonsState(), {}, {}) }) {
+            TargetPicker(tv.cleanyour.core.flows.RemoteButton.RED, false, buttonsState(), {})
+        } },
         Shot("video_offer_app") { VideoBackgroundScreen(VideoBackgroundState("Living room TV", loading = false, home = VideoHome.NOT_INSTALLED), {}, {}, {}) },
         Shot("video_as_app") { VideoBackgroundScreen(VideoBackgroundState("Living room TV", loading = false, home = VideoHome.AS_APP, present = true), {}, {}, {}) },
         Shot("allapps_added", 1500.dp) { AllAppsScreen(allApps(filter = AppFilter.INSTALLED), {}, {}) },
@@ -482,3 +489,18 @@ class ManageScreenshotTest(private val shot: Shot, private val variant: Variant)
         fun params(): List<Array<Any>> = ManageShots.all.flatMap { s -> Variant.entries.map { v -> arrayOf<Any>(s, v) } }
     }
 }
+
+private fun buttonsState(): tv.cleanyour.core.flows.RemoteButtonsState {
+    val apps = listOf(
+        tv.cleanyour.core.flows.TargetChoice("com.netflix.ninja", "Netflix"),
+        tv.cleanyour.core.flows.TargetChoice("com.google.android.youtube.tv", "YouTube"),
+        tv.cleanyour.core.flows.TargetChoice("com.amazon.amazonvideo.livingroom", "Prime Video"),
+    )
+    val map = listOf(
+        tv.cleanyour.core.flows.ButtonMapping(tv.cleanyour.core.flows.RemoteButton.RED, false, "com.netflix.ninja"),
+        tv.cleanyour.core.flows.ButtonMapping(tv.cleanyour.core.flows.RemoteButton.INPUT, false, "inputs"),
+        tv.cleanyour.core.flows.ButtonMapping(tv.cleanyour.core.flows.RemoteButton.HOME_HOLD, true, "settings"),
+    )
+    return tv.cleanyour.core.flows.RemoteButtonsState("Living room TV", loading = false, helperOn = true, map = map, saved = emptyList(), apps = apps)
+}
+

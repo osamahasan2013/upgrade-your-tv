@@ -20,8 +20,10 @@ object HomeHelperKeys {
     const val KEY_FILTER = "key_filter"
 
     // The doc with the helper's keys for this TV's own home screen, which must be one of Google's.
-    fun with(doc: LauncherConfigDoc, stock: PackageName): LauncherConfigDoc {
-        require(KnownLaunchers.generic.any { it.pkg == stock }) { "the helper only ever sends on from Google's TV home screens" }
+    // Upgrade Your TV 1.7.0: `also`, the TV's own home screens its profile lists (a TCL's, say), which the
+    // helper may send on from too; nothing is switched off for it, so the TV keeps its own home screen.
+    fun with(doc: LauncherConfigDoc, stock: PackageName, also: Collection<PackageName> = emptyList()): LauncherConfigDoc {
+        require(KnownLaunchers.generic.any { it.pkg == stock } || stock in also) { "the helper only ever sends on from Google's TV home screens" }
         return doc.copy(unknown = LinkedHashMap(doc.unknown).apply {
             put(REDIRECT, JsonPrimitive(stock.value))
             put(KEY_FILTER, JsonPrimitive(false))
@@ -45,9 +47,9 @@ object HomeHelperKeys {
     // overlay go into the new doc, unless it sets them itself. Only when `helperListed` (our
     // HomeKeyService is in the TV's accessibility list) and only a Google home screen's redirect: a
     // switched off helper's keys go with the next look, and a hostile overlay's redirect is not kept.
-    fun carry(doc: LauncherConfigDoc, overlay: ByteArray?, helperListed: Boolean): LauncherConfigDoc {
+    fun carry(doc: LauncherConfigDoc, overlay: ByteArray?, helperListed: Boolean, also: Collection<PackageName> = emptyList()): LauncherConfigDoc {
         if (!helperListed || REDIRECT in doc.unknown) return doc
-        val stock = redirectOf(overlay)?.takeIf { s -> KnownLaunchers.generic.any { it.pkg == s } } ?: return doc
-        return with(doc, stock)
+        val stock = redirectOf(overlay)?.takeIf { s -> KnownLaunchers.generic.any { it.pkg == s } || s in also } ?: return doc
+        return with(doc, stock, also)
     }
 }

@@ -98,6 +98,22 @@ object ProbeScripts {
         return ShellLine("rm -f -- '${RemoteDir.DOWNLOAD.path}/$name'")
     }
 
+    // The remote (RemoteInput): `input keyevent` for one of the remote's own key codes.
+    fun keyEvent(code: Int, long: Boolean = false): ShellLine {
+        require(code in 1..400) { "not a key code: $code" }
+        return ShellLine(if (long) "input keyevent --longpress $code" else "input keyevent $code")
+    }
+
+    // `input text` takes no spaces (%s stands for one) and the shell must see nothing it reads: letters,
+    // digits and a short list of marks only, each word sent as it is.
+    fun inputText(text: String): ShellLine {
+        require(isSafeText(text)) { "refusing to type that" }
+        return ShellLine("input text '" + text.replace(" ", "%s") + "'")
+    }
+
+    fun isSafeText(text: String): Boolean = text.isNotEmpty() && text.length <= 200 &&
+        text.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' || it in " .,_-@:/+=?!#" }
+
     fun isSafeDownloadName(name: String): Boolean =
         name.isNotEmpty() && name.length <= 255 && name != "." && name != ".." && name.none { it == '/' || it == '\'' || it == '\\' || it < ' ' || it == '\u007f' }
 

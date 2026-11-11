@@ -93,6 +93,8 @@ import tv.cleanyour.feature.setup.SetupFlow
     @Serializable data class AllApps(val tvId: String) : Dest
     @Serializable data class Storage(val tvId: String) : Dest
     @Serializable data class Video(val tvId: String) : Dest
+    @Serializable data class Remote(val tvId: String) : Dest
+    @Serializable data class Buttons(val tvId: String) : Dest
     @Serializable data object Devices : Dest
     @Serializable data class Leftovers(val tvId: String) : Dest
     // 0.4.8: `again`, from Done's "Not right? Send it again": the page sends the saved look once it has loaded.
@@ -131,6 +133,8 @@ internal fun applyRoute(stack: MutableList<NavKey>, route: String, noTvs: Boolea
         "allapps" -> id?.let { Dest.AllApps(it) }
         "storage" -> id?.let { Dest.Storage(it) }
         "video" -> id?.let { Dest.Video(it) }
+        "remote" -> id?.let { Dest.Remote(it) }
+        "buttons" -> id?.let { Dest.Buttons(it) }
         "leftovers" -> id?.let { Dest.Leftovers(it) }
         "restore" -> id?.let { Dest.Restore(it) }
         "tvsettings" -> id?.let { Dest.TvSettings(it) }
@@ -374,6 +378,23 @@ fun AppRoot(graph: AppGraph, start: Dest, onExit: () -> Unit) {
                         onApk = { uri -> m.dispatch(tv.cleanyour.core.flows.VideoBackgroundIntent.Picked(uri.toString())) }
                         runCatching { pickApk.launch(arrayOf("video/mp4")) }
                     })
+                }
+                entry<Dest.Remote> { key ->
+                    val m = rememberMachine("remote:${key.tvId}") { graph.remote(it, TvId(key.tvId)) }
+                    val state by m.state.collectAsStateWithLifecycle()
+                    LaunchedEffect(m) { m.effects.collect { onManageEffect(it) } }
+                    // The TV's picture follows its screen only while this page is on screen.
+                    androidx.lifecycle.compose.LifecycleResumeEffect(m) {
+                        m.dispatch(tv.cleanyour.core.flows.RemoteIntent.Live(true))
+                        onPauseOrDispose { m.dispatch(tv.cleanyour.core.flows.RemoteIntent.Live(false)) }
+                    }
+                    tv.cleanyour.feature.manage.RemoteScreen(state, m::dispatch, onBack = { go("back") }, onButtons = { go("buttons/${key.tvId}") })
+                }
+                entry<Dest.Buttons> { key ->
+                    val m = rememberMachine("buttons:${key.tvId}") { graph.buttons(it, TvId(key.tvId)) }
+                    val state by m.state.collectAsStateWithLifecycle()
+                    LaunchedEffect(m) { m.effects.collect { onManageEffect(it) } }
+                    tv.cleanyour.feature.manage.RemoteButtonsScreen(state, m::dispatch, onBack = { go("back") })
                 }
                 entry<Dest.Leftovers> { key ->
                     val m = rememberMachine("left:${key.tvId}") { graph.leftovers(it, TvId(key.tvId)) }

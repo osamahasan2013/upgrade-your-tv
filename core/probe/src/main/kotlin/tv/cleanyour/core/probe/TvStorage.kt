@@ -35,6 +35,13 @@ interface VideoBackground {
 
 // The TV's screen, again and again (Manage's card while it is on screen). `frame` leaves its temp file on
 // the TV between frames, so a frame is two round trips; `endLive` removes it.
+// The remote in the app (1.7.0): a button press as the TV's own remote sends it, and typed text, through
+// `input`. Only key codes from RemoteKeyCodes and text from the safe set ever reach the shell.
+interface RemoteInput {
+    suspend fun key(session: TvSession, code: Int, long: Boolean = false)
+    suspend fun text(session: TvSession, text: String)
+}
+
 interface LiveScreen {
     suspend fun frame(session: TvSession): ByteArray?
     suspend fun endLive(session: TvSession)
