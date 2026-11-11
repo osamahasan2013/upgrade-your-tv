@@ -78,10 +78,10 @@ fun VideoBackgroundScreen(state: VideoBackgroundState, onIntent: (VideoBackgroun
             }
             Banner(stringResource(why), BannerTone.INFO, Modifier.padding(top = 16.dp))
             PrimaryButton(stringResource(R.string.video_set_up_again), { onIntent(VideoBackgroundIntent.SetUpAgain) }, Modifier.padding(top = 16.dp))
-            // A TV that keeps its own home screen: the new one can still go on as an app.
+            // A TV that keeps its own home screen: the Home screen page can put the new one on as an app.
             if (state.home != VideoHome.OTHER_KEY) {
                 Body(stringResource(R.string.video_as_app_offer), Modifier.padding(top = 20.dp))
-                SecondaryButton(stringResource(R.string.video_install_as_app), { onIntent(VideoBackgroundIntent.InstallAsApp) }, Modifier.padding(top = 12.dp))
+                SecondaryButton(stringResource(R.string.video_open_home_page), { onIntent(VideoBackgroundIntent.OpenHomeScreen) }, Modifier.padding(top = 12.dp))
             }
             return@ScreenScaffold
         }

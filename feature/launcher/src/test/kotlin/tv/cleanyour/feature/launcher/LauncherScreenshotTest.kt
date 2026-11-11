@@ -191,6 +191,8 @@ object LauncherShots {
         Shot("home_not_on_tv_other_home") { HomeScreen(notOnTv(NotOnTv(HomeBlock.OTHER_HOME, "Xiaomi", setupAgain = true), "Xiaomi MiTV4I"), {}, {}) },
         // beta4 (issue #825): a system service's FallbackHome claims Home too.
         Shot("home_not_on_tv_vendor_home") { HomeScreen(notOnTv(NotOnTv(HomeBlock.VENDOR_HOME, "THOMSON"), "THOMSON SPPL 2K ANDROID TV"), {}, {}) },
+        Shot("home_not_on_tv_as_app", 1300.dp) { HomeScreen(notOnTv(NotOnTv(HomeBlock.VENDOR_HOME, "TCL", canInstallAsApp = true), "Living Room TV"), {}, {}) },
+        Shot("home_not_on_tv_as_app_installing", 1300.dp) { HomeScreen(notOnTv(NotOnTv(HomeBlock.VENDOR_HOME, "TCL", canInstallAsApp = true), "Living Room TV").copy(installingApp = 220_000L to 548_789L), {}, {}) },
         // beta4 (issue #945): PatchWall stays on while its feeds are off, not by this app.
         Shot("home_not_on_tv_patchwall_feeds") { HomeScreen(notOnTv(NotOnTv(HomeBlock.PATCHWALL_FEEDS, "Xiaomi", setupAgain = true), "Xiaomi MiTV-AXSO2"), {}, {}) },
         Shot("home_not_on_tv_earlier") { HomeScreen(notOnTv(NotOnTv(HomeBlock.WIZARD_STAYS_ON, "TCL", setupAgain = true, earlier = true), "TCL Percee TV"), {}, {}) },

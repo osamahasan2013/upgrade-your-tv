@@ -52,7 +52,9 @@ import tv.cleanyour.ui.design.component.ListGroup
 import tv.cleanyour.ui.design.component.ListRow
 import tv.cleanyour.ui.design.component.PhotoPicker
 import tv.cleanyour.ui.design.component.PrimaryButton
+import tv.cleanyour.ui.design.component.Overline
 import tv.cleanyour.ui.design.component.ProgressBar
+import tv.cleanyour.ui.design.component.SecondaryButton
 import tv.cleanyour.ui.design.component.ScreenScaffold
 import tv.cleanyour.ui.design.component.ScreenTitle
 import tv.cleanyour.ui.design.component.SheetHeader
@@ -83,7 +85,7 @@ fun HomeScreen(
     onReport: (String) -> Unit = {}, onOpenUrl: (String) -> Unit = {},
 ) {
     val notOnTv = state.notOnTv
-    if (notOnTv != null) { NotOnTvScreen(state.tvName, notOnTv, onIntent, onBack, modifier, onReport, onOpenUrl); return }
+    if (notOnTv != null) { NotOnTvScreen(state.tvName, notOnTv, onIntent, onBack, modifier, onReport, onOpenUrl, state.installingApp, state.installAppFailed); return }
     var dockOpen by rememberSaveable { mutableStateOf(false) }
     val busy = state.busy
     ScreenScaffold(Glow.Tv, modifier, topBar = { CytTopBar(onBack = onBack) }) {
@@ -186,6 +188,8 @@ fun HomeScreen(
 internal fun NotOnTvScreen(
     tvName: String, n: NotOnTv, onIntent: (HomeScreenIntent) -> Unit, onBack: () -> Unit, modifier: Modifier = Modifier, onReport: (String) -> Unit = {},
     onOpenUrl: (String) -> Unit = {},
+    installingApp: Pair<Long, Long>? = null,
+    installAppFailed: String? = null,
 ) {
     val locale = LocalConfiguration.current.locales[0]
     val action = when {
@@ -246,6 +250,23 @@ internal fun NotOnTvScreen(
             else -> R.string.home_not_on_tv_next_setup
         }
         next?.let { Body(stringResource(it), Modifier.padding(top = 16.dp, start = 4.dp, end = 4.dp)) }
+        // Upgrade Your TV 1.8.2: the new home screen as an ordinary app, the TV's own staying Home.
+        if (n.canInstallAsApp) {
+            Overline(stringResource(R.string.home_as_app_title), Modifier.padding(top = 22.dp, bottom = 6.dp, start = 4.dp))
+            Body(stringResource(R.string.home_as_app_body), Modifier.padding(start = 4.dp, end = 4.dp))
+            installAppFailed?.let { Banner(msg(R.string.home_as_app_failed, "detail" to it), BannerTone.DANGER, Modifier.padding(top = 12.dp)) }
+            if (installingApp != null) {
+                val ctx = androidx.compose.ui.platform.LocalContext.current
+                fun bytes(v: Long) = android.text.format.Formatter.formatShortFileSize(ctx, v)
+                Body(msg(R.string.home_as_app_installing, "sent" to bytes(installingApp.first), "size" to bytes(installingApp.second)),
+                    Modifier.padding(top = 12.dp, start = 4.dp), color = CytTheme.colors.textPrimary)
+                ProgressBar(if (installingApp.second > 0) installingApp.first.toFloat() / installingApp.second else 0f,
+                    Modifier.fillMaxWidth().padding(top = 8.dp))
+            } else {
+                SecondaryButton(stringResource(R.string.home_as_app_button), { onIntent(HomeScreenIntent.InstallAsApp) },
+                    Modifier.fillMaxWidth().padding(top = 12.dp))
+            }
+        }
         // The report sent before (SentReports): when, and that the issue is where news comes.
         n.reportSentAtMs?.let { Body(msg(R.string.home_report_sent, "date" to shortDate(it, locale)), Modifier.padding(top = 12.dp, start = 4.dp, end = 4.dp), color = CytTheme.colors.textPrimary) }
         // A designed outcome (a reason Setup recorded, not an earlier version's) is not a fault: say

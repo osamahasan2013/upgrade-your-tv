@@ -53,6 +53,7 @@ sealed interface VideoBackgroundIntent {
     data object SetUpAgain : VideoBackgroundIntent   // a TV with the old launcher: Setup replaces it
     data object InstallAsApp : VideoBackgroundIntent // the launcher as an app; the TV's own home screen stays
     data object OpenOnTv : VideoBackgroundIntent
+    data object OpenHomeScreen : VideoBackgroundIntent   // 1.8.2: "Install it as an app" lives on the Home screen page
 }
 
 class VideoBackgroundMachine(
@@ -80,6 +81,7 @@ class VideoBackgroundMachine(
             VideoBackgroundIntent.InstallAsApp -> if (!before.busy && (before.home == VideoHome.NOT_INSTALLED || before.home == VideoHome.OLD_LAUNCHER)) scope.launch { installAsApp() }
             VideoBackgroundIntent.OpenOnTv -> if (!before.busy && before.home.plays) scope.launch { openOnTv() }
             VideoBackgroundIntent.SetUpAgain -> effect(ManageEffect.Navigate("setup/${tvId.value}"))
+            VideoBackgroundIntent.OpenHomeScreen -> effect(ManageEffect.Navigate("home/${tvId.value}"))
             else -> {}
         }
     }

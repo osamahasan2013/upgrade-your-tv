@@ -499,7 +499,8 @@
     <string name="video_not_installed">The new home screen is not on this TV. Run Setup again to put it on, then come back here.</string>
     <string name="video_old_launcher">The home screen on this TV is an older version without video backgrounds. Run Setup again to update it.</string>
     <string name="video_other_key">The home screen on this TV was installed by the original Clean Your TV app, with another key. Run Setup again: it asks before it replaces it with the Upgrade Your TV home screen, which plays videos.</string>
-    <string name="video_as_app_offer">If Setup says this TV keeps its own home screen, the new one can still go on the TV as an ordinary app. Nothing on the TV is switched off and its Home button keeps opening the TV\'s own home screen; you open the new one from the TV\'s app list or from here.</string>
+    <string name="video_as_app_offer">If Setup says this TV keeps its own home screen, the Home screen page can still put the new one on the TV as an app.</string>
+    <string name="video_open_home_page">Open the Home screen page</string>
     <string name="video_install_as_app">Install it as an app</string>
     <string name="video_installing">Installing the home screen as an app ({sent} of {size})…</string>
     <string name="video_as_app">The new home screen is on this TV as an app. The TV\'s own home screen stays in charge, so the video shows when you open \"Home\" from the TV\'s apps or from here. If the TV asks which home app to use, pick its own one and \"Always\". To take it off again, uninstall it in All apps.</string>

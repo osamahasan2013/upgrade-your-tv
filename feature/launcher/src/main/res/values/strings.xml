@@ -38,6 +38,11 @@
 
     <!-- 0.3.3 D2 (issue #3): the new home screen isn't on this TV, so there is no dock or look to change.
          The lead, then why (the reason Setup recorded), then what can change it, when something can. -->
+    <string name="home_as_app_title">Or: the new home screen as an app</string>
+    <string name="home_as_app_body">It can still go on this TV as an ordinary app. Nothing on the TV is switched off and its Home button keeps opening the TV\'s own home screen; you open the new one as \"Home\" from the TV\'s apps. Its look, picture, video background and layout then work, and All apps can uninstall it again.</string>
+    <string name="home_as_app_button">Install it as an app</string>
+    <string name="home_as_app_installing">Installing the home screen as an app ({sent} of {size})…</string>
+    <string name="home_as_app_failed">That did not work: {detail}</string>
     <string name="home_not_on_tv_lead">{tv} keeps its own home screen. The dock and the look belong to the new home screen, and it isn\'t on this TV.</string>
     <string name="home_not_on_tv_refuses">{brand} only allows its own home screen, so Setup didn\'t add ours. The clean-up works without it.</string>
     <string name="home_not_on_tv_old_android">The new home screen needs Android 8 or newer, so Setup didn\'t add it. The clean-up works without it.</string>
