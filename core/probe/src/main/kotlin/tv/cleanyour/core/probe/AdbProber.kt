@@ -46,7 +46,7 @@ class AdbProber(
     private val clock: Clock,
     private val signed: Set<PackageName> = SIGNED_PACKAGES,
     private val known: Map<Sha256, Sha256> = emptyMap(),
-) : Prober, LaunchableApps, SavedWifiOwners, InstalledApkReader, AccessibilityRead, RunningApps, StorageRead, VideoBackground, LiveScreen, RemoteInput {
+) : Prober, LaunchableApps, SavedWifiOwners, InstalledApkReader, AccessibilityRead, RunningApps, StorageRead, VideoBackground, LiveScreen, RemoteInput, SpeedUp {
 
     private suspend fun run(
         session: TvSession, line: ShellLine, stage: ProbeStage, cap: Int, timeoutMs: Long = 30_000, retry: RetryClass = RetryClass.IDEMPOTENT_READ,
@@ -236,6 +236,22 @@ class AdbProber(
 
     override suspend fun text(session: TvSession, text: String) {
         session.exec(ProbeScripts.inputText(text), ExecSpec(timeoutMs = 15_000, stdoutCap = 4096, retry = RetryClass.NEVER))
+    }
+
+    // SpeedUp.
+    override suspend fun animationScale(session: TvSession): Float? =
+        run(session, ProbeScripts.animationRead(), ProbeStage.SETTINGS, 4096).stdout.trim().toFloatOrNull() ?: 1f
+
+    override suspend fun setAnimationScale(session: TvSession, scale: Float) {
+        session.exec(ProbeScripts.animationWrite(scale), ExecSpec(timeoutMs = 15_000, stdoutCap = 4096, retry = RetryClass.IDEMPOTENT_WRITE))
+    }
+
+    override suspend fun freeMemory(session: TvSession) {
+        session.exec(ProbeScripts.freeMemory(), ExecSpec(timeoutMs = 30_000, stdoutCap = 4096, retry = RetryClass.NEVER))
+    }
+
+    override suspend fun trimCaches(session: TvSession) {
+        session.exec(ProbeScripts.trimCaches(), ExecSpec(timeoutMs = 60_000, stdoutCap = 4096, retry = RetryClass.NEVER))
     }
 
     // LiveScreen: the temp file stays between frames (screencap writes over it).

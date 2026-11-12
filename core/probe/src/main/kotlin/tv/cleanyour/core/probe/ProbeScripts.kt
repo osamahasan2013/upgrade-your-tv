@@ -111,6 +111,15 @@ object ProbeScripts {
         return ShellLine("input text '" + text.replace(" ", "%s") + "'")
     }
 
+    // Speed up the TV (SpeedUp): only 0, 0.5 and 1 are ever written.
+    fun animationRead(): ShellLine = ShellLine("settings get global window_animation_scale")
+    fun animationWrite(scale: Float): ShellLine {
+        val v = when (scale) { 0f -> "0"; 0.5f -> "0.5"; 1f -> "1"; else -> throw IllegalArgumentException("not an animation scale: $scale") }
+        return ShellLine("settings put global window_animation_scale $v; settings put global transition_animation_scale $v; settings put global animator_duration_scale $v")
+    }
+    fun freeMemory(): ShellLine = ShellLine("am kill-all")
+    fun trimCaches(): ShellLine = ShellLine("pm trim-caches 999G")
+
     fun isSafeText(text: String): Boolean = text.isNotEmpty() && text.length <= 200 &&
         text.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' || it in " .,_-@:/+=?!#" }
 

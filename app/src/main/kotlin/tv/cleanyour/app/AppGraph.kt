@@ -252,6 +252,7 @@ class AppGraph(context: Context, val appVersion: String = versionOf(context), va
     fun remote(scope: CoroutineScope, tvId: TvId) = tv.cleanyour.core.flows.RemoteMachine(manageDeps, scope, tvId)
     fun buttons(scope: CoroutineScope, tvId: TvId) = tv.cleanyour.core.flows.RemoteButtonsMachine(manageDeps, scope, tvId)
     fun extras(scope: CoroutineScope, tvId: TvId) = tv.cleanyour.core.flows.HomeExtrasMachine(manageDeps, scope, tvId)
+    fun speed(scope: CoroutineScope, tvId: TvId) = tv.cleanyour.core.flows.SpeedMachine(manageDeps, scope, tvId)
     fun leftovers(scope: CoroutineScope, tvId: TvId) = LeftoversMachine(manageDeps, scope, tvId)
     fun homeScreen(scope: CoroutineScope, tvId: TvId, again: Boolean = false) = HomeScreenMachine(manageDeps, scope, tvId, again)
     fun modules(scope: CoroutineScope, tvId: TvId) = ModulesMachine(manageDeps, scope, tvId)

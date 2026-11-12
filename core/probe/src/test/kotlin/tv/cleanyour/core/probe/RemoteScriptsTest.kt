@@ -22,4 +22,10 @@ class RemoteScriptsTest {
         }
         assertTrue(ProbeScripts.isSafeText("Wi-Fi 5G: home@example.com"))
     }
+
+    @Test fun speedUpWritesOnlyTheThreeScales() {
+        assertTrue(ProbeScripts.animationWrite(0.5f).text.startsWith("settings put global window_animation_scale 0.5;"))
+        assertFailsWith<IllegalArgumentException> { ProbeScripts.animationWrite(3f) }
+        assertEquals("am kill-all", ProbeScripts.freeMemory().text)
+    }
 }

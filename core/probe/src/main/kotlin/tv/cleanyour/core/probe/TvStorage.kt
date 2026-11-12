@@ -42,6 +42,15 @@ interface RemoteInput {
     suspend fun text(session: TvSession, text: String)
 }
 
+// "Speed up the TV" (1.9.1): Android's animation speed (the three animation scales), free memory (background
+// processes ended, as Android does when it runs short) and app caches trimmed. Fixed lines only.
+interface SpeedUp {
+    suspend fun animationScale(session: TvSession): Float?
+    suspend fun setAnimationScale(session: TvSession, scale: Float)
+    suspend fun freeMemory(session: TvSession)
+    suspend fun trimCaches(session: TvSession)
+}
+
 interface LiveScreen {
     suspend fun frame(session: TvSession): ByteArray?
     suspend fun endLive(session: TvSession)

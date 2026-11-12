@@ -425,6 +425,8 @@ object ManageShots {
             extras = tv.cleanyour.core.flows.HomeExtras(signal = true, continueCard = true), launcherOn = true), {}, {}) },
         Shot("extras_small_right_dockonly", 1800.dp) { HomeExtrasScreen(tv.cleanyour.core.flows.HomeExtrasState("Living room TV", loading = false,
             extras = tv.cleanyour.core.flows.HomeExtras(sidebar = true, sideRight = true, names = tv.cleanyour.core.flows.NameSize.SMALL, dockOnly = true, continueCard = true), launcherOn = true), {}, {}) },
+        Shot("speed", 1500.dp) { SpeedScreen(tv.cleanyour.core.flows.SpeedState("Living room TV", loading = false,
+            anim = tv.cleanyour.core.flows.AnimSpeed.FAST, note = tv.cleanyour.core.flows.SpeedNote.Done), {}, {}) },
         Shot("extras_theme_gaming", 2000.dp) { HomeExtrasScreen(tv.cleanyour.core.flows.HomeExtrasState("Living room TV", loading = false,
             extras = tv.cleanyour.core.flows.HomeExtras().withTheme(tv.cleanyour.core.flows.HomeTheme.GAMING).copy(openAtStart = true), launcherOn = true), {}, {}) },
         Shot("extras_theme_anime", 2000.dp) { HomeExtrasScreen(tv.cleanyour.core.flows.HomeExtrasState("Living room TV", loading = false,

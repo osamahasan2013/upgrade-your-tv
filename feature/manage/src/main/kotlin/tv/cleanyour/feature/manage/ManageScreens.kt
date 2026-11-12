@@ -169,6 +169,9 @@ fun ManageScreen(state: ManageState, onIntent: (ManageIntent) -> Unit, modifier:
                 ListDivider()
                 ListRow(stringResource(R.string.manage_row_remote), subtitle = stringResource(R.string.manage_row_remote_sub),
                     onClick = { onIntent(ManageIntent.Open(ManageSection.REMOTE)) })
+                ListDivider()
+                ListRow(stringResource(R.string.manage_row_speed), subtitle = stringResource(R.string.manage_row_speed_sub),
+                    onClick = { onIntent(ManageIntent.Open(ManageSection.SPEED)) })
             }
             ListGroup(Modifier.padding(top = 16.dp)) {
                 // 0.3.3 D2: without the new home screen there is no dock to name; the row opens the reason.

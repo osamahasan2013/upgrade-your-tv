@@ -96,6 +96,7 @@ import tv.cleanyour.feature.setup.SetupFlow
     @Serializable data class Remote(val tvId: String) : Dest
     @Serializable data class Buttons(val tvId: String) : Dest
     @Serializable data class Extras(val tvId: String) : Dest
+    @Serializable data class Speed(val tvId: String) : Dest
     @Serializable data object Devices : Dest
     @Serializable data class Leftovers(val tvId: String) : Dest
     // 0.4.8: `again`, from Done's "Not right? Send it again": the page sends the saved look once it has loaded.
@@ -137,6 +138,7 @@ internal fun applyRoute(stack: MutableList<NavKey>, route: String, noTvs: Boolea
         "remote" -> id?.let { Dest.Remote(it) }
         "buttons" -> id?.let { Dest.Buttons(it) }
         "extras" -> id?.let { Dest.Extras(it) }
+        "speed" -> id?.let { Dest.Speed(it) }
         "leftovers" -> id?.let { Dest.Leftovers(it) }
         "restore" -> id?.let { Dest.Restore(it) }
         "tvsettings" -> id?.let { Dest.TvSettings(it) }
@@ -397,6 +399,12 @@ fun AppRoot(graph: AppGraph, start: Dest, onExit: () -> Unit) {
                     val state by m.state.collectAsStateWithLifecycle()
                     LaunchedEffect(m) { m.effects.collect { onManageEffect(it) } }
                     tv.cleanyour.feature.manage.RemoteButtonsScreen(state, m::dispatch, onBack = { go("back") })
+                }
+                entry<Dest.Speed> { key ->
+                    val m = rememberMachine("speed:${key.tvId}") { graph.speed(it, TvId(key.tvId)) }
+                    val state by m.state.collectAsStateWithLifecycle()
+                    LaunchedEffect(m) { m.effects.collect { onManageEffect(it) } }
+                    tv.cleanyour.feature.manage.SpeedScreen(state, m::dispatch, onBack = { go("back") })
                 }
                 entry<Dest.Extras> { key ->
                     val m = rememberMachine("extras:${key.tvId}") { graph.extras(it, TvId(key.tvId)) }
