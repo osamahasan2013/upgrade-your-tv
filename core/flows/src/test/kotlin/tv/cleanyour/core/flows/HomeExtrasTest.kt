@@ -27,4 +27,13 @@ class HomeExtrasTest {
         assertEquals(JsonPrimitive("right"), doc.unknown[HomeExtras.SIDE])
         assertEquals(JsonPrimitive(true), doc.unknown[HomeExtras.DOCK_ONLY])
     }
+
+    @Test fun aThemeGoesInWithItsPictureAndPowerOnHome() {
+        val e = HomeExtras().withTheme(HomeTheme.ISLAMIC).copy(openAtStart = true)
+        val doc = HomeExtras.apply(LauncherConfigDoc(), e)
+        assertEquals(JsonPrimitive("islamic"), doc.unknown[HomeExtras.THEME])
+        assertEquals(JsonPrimitive(true), doc.unknown[HomeExtras.THEME_PICTURE])
+        assertEquals(JsonPrimitive(true), doc.unknown[HomeExtras.POWER_ON_HOME])
+        assertEquals(true, e.dockOnly)
+    }
 }

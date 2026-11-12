@@ -34,6 +34,15 @@ import tv.cleanyour.core.flows.HomeExtras
 import tv.cleanyour.core.flows.HomeExtrasIntent
 import tv.cleanyour.core.flows.HomeExtrasState
 import tv.cleanyour.core.flows.NameSize
+import tv.cleanyour.core.flows.HomeTheme
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
 import tv.cleanyour.ui.design.component.Banner
 import tv.cleanyour.ui.design.component.BannerTone
 import tv.cleanyour.ui.design.component.CytTopBar
@@ -77,6 +86,14 @@ fun HomeExtrasScreen(state: HomeExtrasState, onIntent: (HomeExtrasIntent) -> Uni
         }
         if (state.launcherOld) Banner(stringResource(R.string.extras_old_launcher), BannerTone.INFO, Modifier.padding(top = 16.dp))
 
+        Overline(stringResource(R.string.extras_theme), Modifier.padding(top = 22.dp, bottom = 8.dp))
+        ThemePicker(state.extras.theme) { onIntent(HomeExtrasIntent.Theme(it)) }
+        if (state.extras.theme != HomeTheme.NONE) {
+            ListGroup(Modifier.padding(top = 12.dp)) {
+                SwitchRow(stringResource(R.string.extras_theme_picture), state.extras.themePicture, { onIntent(HomeExtrasIntent.ThemePicture(it)) },
+                    subtitle = stringResource(R.string.extras_theme_picture_sub))
+            }
+        }
         Overline(stringResource(R.string.extras_type), Modifier.padding(top = 22.dp, bottom = 8.dp))
         SegmentedChoice(
             listOf(SegmentOption("plain", stringResource(R.string.extras_type_plain), stringResource(R.string.extras_type_plain)),
@@ -112,9 +129,13 @@ fun HomeExtrasScreen(state: HomeExtrasState, onIntent: (HomeExtrasIntent) -> Uni
             SwitchRow(stringResource(R.string.extras_continue), state.extras.continueCard, { onIntent(HomeExtrasIntent.Continue(it)) },
                 subtitle = stringResource(R.string.extras_continue_sub))
             ListDivider()
+            SwitchRow(stringResource(R.string.extras_at_start), state.extras.openAtStart, { onIntent(HomeExtrasIntent.OpenAtStart(it)) },
+                subtitle = stringResource(R.string.extras_at_start_sub))
+            ListDivider()
             SwitchRow(stringResource(R.string.extras_no_ads), true, {}, subtitle = stringResource(R.string.extras_no_ads_sub), enabled = false)
         }
-        Body(stringResource(R.string.extras_more), Modifier.padding(top = 18.dp))
+        Body(stringResource(R.string.extras_on_tv), Modifier.padding(top = 18.dp))
+        Body(stringResource(R.string.extras_more), Modifier.padding(top = 10.dp))
         SecondaryButton(stringResource(R.string.extras_open_look), { onIntent(HomeExtrasIntent.OpenLook) }, Modifier.fillMaxWidth().padding(top = 10.dp))
         Gap(24.dp)
     }
@@ -127,11 +148,13 @@ internal fun HomePreview(e: HomeExtras, modifier: Modifier = Modifier) {
     val shape = RoundedCornerShape(14.dp)
     val font = if (e.signal) Dots else FontFamily.Default
     val desc = stringResource(R.string.extras_preview_cd)
+    val picture = themeThumb(e.theme).takeIf { e.themePicture }
     Box(
         modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(shape)
             .background(Brush.verticalGradient(listOf(Color(0xFF3B6E9E), Color(0xFF7FA6C4), Color(0xFFB0563C), Color(0xFF2A1E2A))))
             .border(1.dp, CytTheme.colors.rim, shape).semantics { contentDescription = desc },
     ) {
+        if (picture != null) Image(painterResource(picture), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         Text("11:45", Modifier.align(Alignment.TopEnd).padding(top = 10.dp, end = 14.dp), color = Color.White,
             fontFamily = font, fontSize = if (e.signal) 26.sp else 28.sp, fontWeight = FontWeight.Light)
         Text(if (e.signal) "SAT 31.10" else "Saturday, 31 October", Modifier.align(Alignment.TopEnd).padding(top = 44.dp, end = 14.dp),
@@ -187,6 +210,55 @@ internal fun HomePreview(e: HomeExtras, modifier: Modifier = Modifier) {
                     Text(if (e.signal) "CONTINUE IN MUSIC" else "Continue in Music", color = Color.White, fontFamily = font, fontSize = 7.sp, maxLines = 1)
                     Text(if (e.signal) "5 MIN AGO" else "Last opened · 5 min ago", color = Color.White.copy(alpha = 0.7f), fontFamily = font, fontSize = 6.sp, maxLines = 1)
                 }
+            }
+        }
+    }
+}
+
+internal fun themeThumb(t: HomeTheme): Int? = when (t) {
+    HomeTheme.NONE -> null
+    HomeTheme.GLASS -> R.drawable.uytv_theme_glass
+    HomeTheme.SIGNAL -> R.drawable.uytv_theme_signal
+    HomeTheme.SIGNAL_DARK -> R.drawable.uytv_theme_signal_dark
+    HomeTheme.GAMING -> R.drawable.uytv_theme_gaming
+    HomeTheme.ISLAMIC -> R.drawable.uytv_theme_islamic
+    HomeTheme.HALLOWEEN -> R.drawable.uytv_theme_halloween
+    HomeTheme.HORROR -> R.drawable.uytv_theme_horror
+    HomeTheme.ANIME -> R.drawable.uytv_theme_anime
+}
+
+@Composable
+private fun themeName(t: HomeTheme): String = stringResource(when (t) {
+    HomeTheme.NONE -> R.string.extras_theme_none
+    HomeTheme.GLASS -> R.string.extras_theme_glass
+    HomeTheme.SIGNAL -> R.string.extras_theme_signal
+    HomeTheme.SIGNAL_DARK -> R.string.extras_theme_signal_dark
+    HomeTheme.GAMING -> R.string.extras_theme_gaming
+    HomeTheme.ISLAMIC -> R.string.extras_theme_islamic
+    HomeTheme.HALLOWEEN -> R.string.extras_theme_halloween
+    HomeTheme.HORROR -> R.string.extras_theme_horror
+    HomeTheme.ANIME -> R.string.extras_theme_anime
+})
+
+// The themes in a row of cards, each its picture and name; the chosen one has a ring.
+@Composable
+private fun ThemePicker(current: HomeTheme, onPick: (HomeTheme) -> Unit) {
+    val c = CytTheme.colors
+    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        HomeTheme.entries.forEach { t ->
+            val on = t == current
+            val shape = RoundedCornerShape(12.dp)
+            Column(
+                Modifier.width(132.dp).clip(shape).clickable(role = Role.RadioButton) { onPick(t) }
+                    .semantics { this.selected = on }.padding(2.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Box(Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(shape).background(c.surface2)
+                    .border(if (on) 2.dp else 1.dp, if (on) c.primary else c.rim, shape)) {
+                    themeThumb(t)?.let { Image(painterResource(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                }
+                Text(themeName(t), Modifier.padding(top = 6.dp), color = if (on) c.textPrimary else c.textSecondary,
+                    style = CytTheme.type.bodySmall, maxLines = 1)
             }
         }
     }

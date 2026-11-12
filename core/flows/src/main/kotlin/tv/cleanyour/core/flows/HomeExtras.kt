@@ -15,12 +15,32 @@ import tv.cleanyour.core.store.DocumentStore
 // again (the Home screen page, "again"), which asks for the screen lock.
 enum class NameSize(val id: String) { LARGE("large"), SMALL("small"), HIDDEN("hidden") }
 
+// 1.9.0 (launcher 3.0-uytv4, UytvTheme): the themes, by the id the launcher reads.
+enum class HomeTheme(val id: String) {
+    NONE("none"), GLASS("glass"), SIGNAL("signal"), SIGNAL_DARK("signal_dark"), GAMING("gaming"), ISLAMIC("islamic"),
+    HALLOWEEN("halloween"), HORROR("horror"), ANIME("anime");
+    companion object { fun of(id: String?): HomeTheme = entries.firstOrNull { it.id == id } ?: NONE }
+}
+
 data class HomeExtras(
     val signal: Boolean = false, val sidebar: Boolean = false, val continueCard: Boolean = false,
     // 1.8.3 (launcher 3.0-uytv3): the apps' names, the sidebar's side, and the dock alone with All apps.
     val names: NameSize = NameSize.LARGE, val sideRight: Boolean = false, val dockOnly: Boolean = false,
+    // 1.9.0: the theme, whether its picture shows (over the look's own), and Home at every power-on (the helper's
+    // power_on_home_always: with the Home button helper on, the new home screen comes up when the TV is switched on).
+    val theme: HomeTheme = HomeTheme.NONE, val themePicture: Boolean = false, val openAtStart: Boolean = false,
 ) {
-    val any: Boolean get() = signal || sidebar || continueCard || names != NameSize.LARGE || sideRight || dockOnly
+    val any: Boolean get() = signal || sidebar || continueCard || names != NameSize.LARGE || sideRight || dockOnly ||
+        theme != HomeTheme.NONE || openAtStart
+
+    // A theme brings its own way of setting out Home; the person can change each part after.
+    fun withTheme(t: HomeTheme): HomeExtras = when (t) {
+        HomeTheme.SIGNAL -> copy(theme = t, themePicture = true, signal = true, sidebar = false)
+        HomeTheme.SIGNAL_DARK -> copy(theme = t, themePicture = true, signal = true, sidebar = true, sideRight = true)
+        HomeTheme.GLASS -> copy(theme = t, themePicture = true, signal = false, sidebar = true, sideRight = false, continueCard = true)
+        HomeTheme.NONE -> copy(theme = t, themePicture = false)
+        else -> copy(theme = t, themePicture = true, signal = false, sidebar = false, dockOnly = true)
+    }
 
     companion object {
         const val SIGNAL = "uytv_signal"
@@ -29,15 +49,23 @@ data class HomeExtras(
         const val NAMES = "uytv_names"
         const val SIDE = "uytv_side"
         const val DOCK_ONLY = "uytv_dock_only"
+        const val THEME = "uytv_theme"
+        const val THEME_PICTURE = "uytv_theme_bg"
+        const val POWER_ON_HOME = "power_on_home_always"
         // The launcher that reads them (patches/launcher/0002-home-choices.patch).
         const val LAUNCHER_VERSION = 1002L
         // The launcher that reads names, side and dock only (patches/launcher/0003).
         const val LAUNCHER_VERSION_3 = 1003L
+        // The launcher with the themes and the TV's own Style page (patches/launcher/0004).
+        const val LAUNCHER_VERSION_4 = 1004L
 
         // The doc with this TV's choices; with none, the keys are left out so nothing of an older choice stays.
         fun apply(doc: LauncherConfigDoc, extras: HomeExtras): LauncherConfigDoc {
             val unknown = LinkedHashMap(doc.unknown)
-            for (k in listOf(SIGNAL, SIDEBAR, CONTINUE, NAMES, SIDE, DOCK_ONLY)) unknown.remove(k)
+            for (k in listOf(SIGNAL, SIDEBAR, CONTINUE, NAMES, SIDE, DOCK_ONLY, THEME, THEME_PICTURE, POWER_ON_HOME)) unknown.remove(k)
+            if (extras.openAtStart) unknown[POWER_ON_HOME] = JsonPrimitive(true)
+            if (extras.theme != HomeTheme.NONE) unknown[THEME] = JsonPrimitive(extras.theme.id)
+            if (extras.theme != HomeTheme.NONE && extras.themePicture) unknown[THEME_PICTURE] = JsonPrimitive(true)
             if (extras.names != NameSize.LARGE) unknown[NAMES] = JsonPrimitive(extras.names.id)
             if (extras.sideRight) unknown[SIDE] = JsonPrimitive("right")
             if (extras.dockOnly) unknown[DOCK_ONLY] = JsonPrimitive(true)
@@ -56,13 +84,16 @@ class HomeExtrasStore(private val store: DocumentStore) {
         val on = bytes.decodeToString().lines().map { it.trim() }.toSet()
         HomeExtras(signal = "signal" in on, sidebar = "sidebar" in on, continueCard = "continue" in on,
             names = NameSize.entries.firstOrNull { "names=${it.id}" in on } ?: NameSize.LARGE,
-            sideRight = "side=right" in on, dockOnly = "dockonly" in on)
+            sideRight = "side=right" in on, dockOnly = "dockonly" in on,
+            theme = HomeTheme.of(on.firstOrNull { it.startsWith("theme=") }?.removePrefix("theme=")),
+            themePicture = "themepicture" in on, openAtStart = "atstart" in on)
     } ?: HomeExtras()
 
     suspend fun save(id: TvId, e: HomeExtras) {
         if (!e.any) { store.delete(path(id)); return }
         val lines = listOfNotNull("signal".takeIf { e.signal }, "sidebar".takeIf { e.sidebar }, "continue".takeIf { e.continueCard },
-            "names=${e.names.id}".takeIf { e.names != NameSize.LARGE }, "side=right".takeIf { e.sideRight }, "dockonly".takeIf { e.dockOnly })
+            "names=${e.names.id}".takeIf { e.names != NameSize.LARGE }, "side=right".takeIf { e.sideRight }, "dockonly".takeIf { e.dockOnly },
+            "theme=${e.theme.id}".takeIf { e.theme != HomeTheme.NONE }, "themepicture".takeIf { e.themePicture }, "atstart".takeIf { e.openAtStart })
         store.write(path(id), lines.joinToString("") { "$it\n" }.encodeToByteArray())
     }
 }
@@ -85,6 +116,9 @@ sealed interface HomeExtrasIntent {
     data class Names(val size: NameSize) : HomeExtrasIntent
     data class SideRight(val on: Boolean) : HomeExtrasIntent
     data class DockOnly(val on: Boolean) : HomeExtrasIntent
+    data class Theme(val theme: HomeTheme) : HomeExtrasIntent
+    data class ThemePicture(val on: Boolean) : HomeExtrasIntent
+    data class OpenAtStart(val on: Boolean) : HomeExtrasIntent
     data object Save : HomeExtrasIntent
     data object OpenLook : HomeExtrasIntent        // the Home screen page: looks, pictures, the person's own photo
     data object SetUpAgain : HomeExtrasIntent
@@ -109,6 +143,9 @@ class HomeExtrasMachine(
         is HomeExtrasIntent.Names -> state.copy(extras = state.extras.copy(names = event.size))
         is HomeExtrasIntent.SideRight -> state.copy(extras = state.extras.copy(sideRight = event.on))
         is HomeExtrasIntent.DockOnly -> state.copy(extras = state.extras.copy(dockOnly = event.on))
+        is HomeExtrasIntent.Theme -> state.copy(extras = state.extras.withTheme(event.theme))
+        is HomeExtrasIntent.ThemePicture -> state.copy(extras = state.extras.copy(themePicture = event.on))
+        is HomeExtrasIntent.OpenAtStart -> state.copy(extras = state.extras.copy(openAtStart = event.on))
         else -> state
     }
 
@@ -131,6 +168,6 @@ class HomeExtrasMachine(
         val snap = attempt { d.snapshots.latest(tvId) }.getOrNull()
         val ours = snap?.packages?.get(SwitchOffRule.OUR_LAUNCHER)
         send(Loaded(HomeExtrasState(tvName = tv?.nickname.orEmpty(), loading = false, extras = saved, saved = saved,
-            launcherOn = ours != null, launcherOld = ours != null && ours.versionCode < HomeExtras.LAUNCHER_VERSION_3)))
+            launcherOn = ours != null, launcherOld = ours != null && ours.versionCode < HomeExtras.LAUNCHER_VERSION_4)))
     }
 }
