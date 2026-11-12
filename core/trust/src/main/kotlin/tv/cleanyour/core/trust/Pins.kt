@@ -34,7 +34,7 @@ object PinnedLauncher {
     const val VERSION_CODE = 1003L
     const val VERSION_NAME = "3.0-uytv3"
     const val SIZE = 552_885L
-    const val SHA256 = "35afb661efe7d961dbc67aee515ca26e591a959d6b9b1f8d060e272f9a0db8c4"
+    const val SHA256 = "60d7c9e070ad7ae09d3c29bb49e6ca64596217a7ed97668b210d228de840c04a"
     // SHA-256 of the signing certificate (DER), "CN=Upgrade Your TV", v2 and v3.
     const val SIGNER_SHA256 = "bc3d58326548f5b2da4bfec975586d8641bb3f27e33e6956a3f479976ba9176e"
     // The original Clean Your TV launcher key ("O=cleanyourtv, CN=Clean Your TV launcher"), which signs
