@@ -972,7 +972,7 @@ class SetupMachine(
         // it. Before, both switches started off on every run, and a run left as it was took the helper for unwanted.
         if (!startedFromTv) {
             startedFromTv = true
-            val hadHelper = tv.cleanyour.core.planner.HomeHelper.state(snap) != tv.cleanyour.core.planner.HomeHelper.State.NONE
+            val hadHelper = HomeHelper.state(snap) != HomeHelper.State.NONE
             val wantHelper = (helperAsked || hadHelper) && helperStock != null && !draft.homeHelper && block != HomeBlock.NONE
             val wantDebug = !draft.keepDebuggingOn && deps.sessionEnd.keepsDebuggingOn(record.id)
             helperAsked = false

@@ -4,6 +4,7 @@ import java.time.Instant
 import java.time.ZoneId
 import tv.cleanyour.core.model.BlobRef
 import tv.cleanyour.core.model.PackageName
+import tv.cleanyour.core.spec.BandChoice
 import tv.cleanyour.core.spec.DockLayers
 import tv.cleanyour.core.spec.GlowChoice
 import tv.cleanyour.core.spec.LauncherConfigDoc
@@ -196,7 +197,7 @@ internal class LookDrafts(
             // 1.9.6: picking an amount also picks the see-through band it belongs to (before, the row did nothing
             // until "See-through" was picked under Dock band, which nobody found).
             is LookEdit.SetSeeThrough -> detail((rows.seeThrough.enabled || rows.band.enabled) && edit.percent in LookKeys.SEE_THROUGH) {
-                copy(band = tv.cleanyour.core.spec.BandChoice.SEE_THROUGH, seeThrough = edit.percent) }
+                copy(band = BandChoice.SEE_THROUGH, seeThrough = edit.percent) }
             is LookEdit.SetButtons -> detail(rows.buttons.enabled) { copy(buttons = edit.buttons) }
             is LookEdit.SetGreenWifi -> detail(rows.greenWifi.enabled) { copy(greenWifi = edit.on) }
             is LookEdit.SetDim -> detail(rows.dim.enabled) { copy(dim = edit.percent.coerceIn(LookRules.DIM)) }
