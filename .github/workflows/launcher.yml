@@ -39,6 +39,37 @@ jobs:
           for p in ../../patches/launcher/*.patch; do echo "applying $p"; git apply --whitespace=nowarn "$p"; done
           git status --short
 
+      - name: Theme fonts (open licences, cut down to the letters the themes use)
+        run: |
+          pip install --quiet fonttools
+          cd third_party/cleanyourtv/launcher/app/src/main
+          mkdir -p res/font assets
+          echo "Fonts in the Upgrade Your TV themes, each under its own licence, below." > assets/fonts-licences.txt
+          LATIN='U+0020-007E,U+00A0-00FF,U+00B7,U+2010-2027,U+2030-203A,U+2122'
+          ARABIC='U+0600-06FF,U+0750-077F,U+FB50-FDFF,U+FE70-FEFF'
+          fetch() {
+            name=$1; family=$2; dir=$3; licence=$4; chars=$5
+            url=$(curl -fsSL "https://fonts.googleapis.com/css2?family=${family}" | grep -o 'https://[^)]*\.ttf' | head -n 1)
+            if [ -z "$url" ]; then echo "::error::no font file for ${family}"; exit 1; fi
+            curl -fsSL "$url" -o "/tmp/${name}.ttf"
+            pyftsubset "/tmp/${name}.ttf" --unicodes="$chars" --layout-features='*' --no-hinting --output-file="res/font/${name}.ttf"
+            ls -l "res/font/${name}.ttf"
+            { echo; echo "==== ${name}: ${family%%:*} (https://fonts.google.com), ${dir}"; echo
+              curl -fsSL "https://raw.githubusercontent.com/google/fonts/main/${dir}/${licence}" || echo "(licence: see https://github.com/google/fonts/tree/main/${dir})"
+            } >> assets/fonts-licences.txt
+          }
+          fetch uytv_f_inter 'Inter:wght@300' ofl/inter OFL.txt "$LATIN"
+          fetch uytv_f_spacemono 'Space+Mono' ofl/spacemono OFL.txt "$LATIN"
+          fetch uytv_f_orbitron 'Orbitron:wght@700' ofl/orbitron OFL.txt "$LATIN"
+          fetch uytv_f_rajdhani 'Rajdhani:wght@600' ofl/rajdhani OFL.txt "$LATIN"
+          fetch uytv_f_reemkufi 'Reem+Kufi:wght@500' ofl/reemkufi OFL.txt "$LATIN,$ARABIC"
+          fetch uytv_f_creepster 'Creepster' ofl/creepster OFL.txt "$LATIN"
+          fetch uytv_f_nunito 'Nunito:wght@700' ofl/nunito OFL.txt "$LATIN"
+          fetch uytv_f_nosifer 'Nosifer' ofl/nosifer OFL.txt "$LATIN"
+          fetch uytv_f_specialelite 'Special+Elite' apache/specialelite LICENSE.txt "$LATIN"
+          fetch uytv_f_fredoka 'Fredoka:wght@600' ofl/fredoka OFL.txt "$LATIN"
+          du -ch res/font/uytv_f_*.ttf | tail -n 1
+
       - name: Build the launcher (release, R8)
         run: |
           cd third_party/cleanyourtv/launcher
