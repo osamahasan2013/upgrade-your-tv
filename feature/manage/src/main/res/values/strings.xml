@@ -519,6 +519,8 @@
     <string name="extras_side">Sidebar side</string>
     <string name="extras_side_left">Left</string>
     <string name="extras_side_right">Right</string>
+    <string name="extras_clock_opposite">Clock across from the sidebar</string>
+    <string name="extras_clock_opposite_sub">The clock, the date and the Continue card go to the other side, clear of the apps</string>
     <string name="extras_names">App names</string>
     <string name="extras_names_large">Large</string>
     <string name="extras_names_small">Small</string>

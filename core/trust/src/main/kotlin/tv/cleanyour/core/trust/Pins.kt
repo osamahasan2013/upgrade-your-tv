@@ -22,7 +22,7 @@ object TrustRoots {
 
 // The launcher APK bundled in the phone app (D13, Q1). Upgrade Your TV: upstream
 // github.com/Gathin23/cleanyourtv at main after v3.0.0, commit b06ab21 (third_party/cleanyourtv),
-// launcher 3.0 with patches/launcher (the video background; dot type, sidebar, Continue card), versionCode 1004 "3.0-uytv4" (themes, Style page), built by
+// launcher 3.0 with patches/launcher (the video background; dot type, sidebar, Continue card), versionCode 1005 "3.0-uytv5" (themes, Style page), built by
 // .github/workflows/launcher.yml and signed with this repo's key (the phone app's). A TV that has the
 // original launcher, signed with the Clean Your TV launcher key, gets it through Setup's key
 // replacement (D36). The verifyLauncherPin task (part of :core:trust check and of :android:platform
@@ -31,10 +31,10 @@ object PinnedLauncher {
     const val ASSET_NAME = "cleanyourtv-launcher.apk"
     const val UPSTREAM_COMMIT = "b06ab21105c49900cb1ed76b24414dba1e21d0db"
     const val PACKAGE = "com.gathin.tvhome"
-    const val VERSION_CODE = 1004L
-    const val VERSION_NAME = "3.0-uytv4"
-    const val SIZE = 1_246_188L
-    const val SHA256 = "039a621ffde0c080672683aa16b61c0a96d615c7e1133d77c64a1a6f45949c86"
+    const val VERSION_CODE = 1005L
+    const val VERSION_NAME = "3.0-uytv5"
+    const val SIZE = 1_246_244L
+    const val SHA256 = "b1fae1aa25d3cc82dde2a3b4cd21b009375333cda32ffc60b06f61813d1cbff7"
     // SHA-256 of the signing certificate (DER), "CN=Upgrade Your TV", v2 and v3.
     const val SIGNER_SHA256 = "bc3d58326548f5b2da4bfec975586d8641bb3f27e33e6956a3f479976ba9176e"
     // The original Clean Your TV launcher key ("O=cleanyourtv, CN=Clean Your TV launcher"), which signs

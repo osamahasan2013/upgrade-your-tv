@@ -113,6 +113,10 @@ fun HomeExtrasScreen(state: HomeExtrasState, onIntent: (HomeExtrasIntent) -> Uni
                     SegmentOption("right", stringResource(R.string.extras_side_right), stringResource(R.string.extras_side_right))),
                 if (state.extras.sideRight) "right" else "left", { onIntent(HomeExtrasIntent.SideRight(it.key == "right")) },
             )
+            ListGroup(Modifier.padding(top = 12.dp)) {
+                SwitchRow(stringResource(R.string.extras_clock_opposite), state.extras.clockOpposite, { onIntent(HomeExtrasIntent.ClockOpposite(it)) },
+                    subtitle = stringResource(R.string.extras_clock_opposite_sub))
+            }
         }
         Overline(stringResource(R.string.extras_names), Modifier.padding(top = 20.dp, bottom = 8.dp))
         SegmentedChoice(
@@ -155,9 +159,10 @@ internal fun HomePreview(e: HomeExtras, modifier: Modifier = Modifier) {
             .border(1.dp, CytTheme.colors.rim, shape).semantics { contentDescription = desc },
     ) {
         if (picture != null) Image(painterResource(picture), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        Text("11:45", Modifier.align(Alignment.TopEnd).padding(top = 10.dp, end = 14.dp), color = Color.White,
+        val clockLeft = e.sidebar && (e.sideRight || !e.clockOpposite)
+        Text("11:45", Modifier.align(if (clockLeft) Alignment.TopStart else Alignment.TopEnd).padding(top = 10.dp, start = 14.dp, end = 14.dp), color = Color.White,
             fontFamily = font, fontSize = if (e.signal) 26.sp else 28.sp, fontWeight = FontWeight.Light)
-        Text(if (e.signal) "SAT 31.10" else "Saturday, 31 October", Modifier.align(Alignment.TopEnd).padding(top = 44.dp, end = 14.dp),
+        Text(if (e.signal) "SAT 31.10" else "Saturday, 31 October", Modifier.align(if (clockLeft) Alignment.TopStart else Alignment.TopEnd).padding(top = 44.dp, start = 14.dp, end = 14.dp),
             color = Color.White.copy(alpha = 0.8f), fontFamily = font, fontSize = 8.sp)
         val apps = listOf(Color(0xFFE50914), Color(0xFF113CCF), Color(0xFFFF0000), Color(0xFF111111), Color(0xFF00A8E1), Color(0xFFFA2D48))
         // Below the row, the rest of the apps unless only the dock shows.

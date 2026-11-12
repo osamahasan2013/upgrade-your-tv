@@ -29,9 +29,11 @@ data class HomeExtras(
     // 1.9.0: the theme, whether its picture shows (over the look's own), and Home at every power-on (the helper's
     // power_on_home_always: with the Home button helper on, the new home screen comes up when the TV is switched on).
     val theme: HomeTheme = HomeTheme.NONE, val themePicture: Boolean = false, val openAtStart: Boolean = false,
+    // 1.9.2 (launcher 3.0-uytv5): with a left sidebar, the clock moves to the right (false keeps it left).
+    val clockOpposite: Boolean = true,
 ) {
     val any: Boolean get() = signal || sidebar || continueCard || names != NameSize.LARGE || sideRight || dockOnly ||
-        theme != HomeTheme.NONE || openAtStart
+        theme != HomeTheme.NONE || openAtStart || !clockOpposite
 
     // A theme brings its own way of setting out Home; the person can change each part after.
     fun withTheme(t: HomeTheme): HomeExtras = when (t) {
@@ -52,17 +54,21 @@ data class HomeExtras(
         const val THEME = "uytv_theme"
         const val THEME_PICTURE = "uytv_theme_bg"
         const val POWER_ON_HOME = "power_on_home_always"
+        const val CLOCK_OPPOSITE = "uytv_clock_opposite"
         // The launcher that reads them (patches/launcher/0002-home-choices.patch).
         const val LAUNCHER_VERSION = 1002L
         // The launcher that reads names, side and dock only (patches/launcher/0003).
         const val LAUNCHER_VERSION_3 = 1003L
         // The launcher with the themes and the TV's own Style page (patches/launcher/0004).
         const val LAUNCHER_VERSION_4 = 1004L
+        // The clock across from a left sidebar, the All apps icon (patches/launcher/0005).
+        const val LAUNCHER_VERSION_5 = 1005L
 
         // The doc with this TV's choices; with none, the keys are left out so nothing of an older choice stays.
         fun apply(doc: LauncherConfigDoc, extras: HomeExtras): LauncherConfigDoc {
             val unknown = LinkedHashMap(doc.unknown)
-            for (k in listOf(SIGNAL, SIDEBAR, CONTINUE, NAMES, SIDE, DOCK_ONLY, THEME, THEME_PICTURE, POWER_ON_HOME)) unknown.remove(k)
+            for (k in listOf(SIGNAL, SIDEBAR, CONTINUE, NAMES, SIDE, DOCK_ONLY, THEME, THEME_PICTURE, POWER_ON_HOME, CLOCK_OPPOSITE)) unknown.remove(k)
+            if (!extras.clockOpposite) unknown[CLOCK_OPPOSITE] = JsonPrimitive(false)
             if (extras.openAtStart) unknown[POWER_ON_HOME] = JsonPrimitive(true)
             if (extras.theme != HomeTheme.NONE) unknown[THEME] = JsonPrimitive(extras.theme.id)
             if (extras.theme != HomeTheme.NONE && extras.themePicture) unknown[THEME_PICTURE] = JsonPrimitive(true)
@@ -86,14 +92,14 @@ class HomeExtrasStore(private val store: DocumentStore) {
             names = NameSize.entries.firstOrNull { "names=${it.id}" in on } ?: NameSize.LARGE,
             sideRight = "side=right" in on, dockOnly = "dockonly" in on,
             theme = HomeTheme.of(on.firstOrNull { it.startsWith("theme=") }?.removePrefix("theme=")),
-            themePicture = "themepicture" in on, openAtStart = "atstart" in on)
+            themePicture = "themepicture" in on, openAtStart = "atstart" in on, clockOpposite = "clocksame" !in on)
     } ?: HomeExtras()
 
     suspend fun save(id: TvId, e: HomeExtras) {
         if (!e.any) { store.delete(path(id)); return }
         val lines = listOfNotNull("signal".takeIf { e.signal }, "sidebar".takeIf { e.sidebar }, "continue".takeIf { e.continueCard },
             "names=${e.names.id}".takeIf { e.names != NameSize.LARGE }, "side=right".takeIf { e.sideRight }, "dockonly".takeIf { e.dockOnly },
-            "theme=${e.theme.id}".takeIf { e.theme != HomeTheme.NONE }, "themepicture".takeIf { e.themePicture }, "atstart".takeIf { e.openAtStart })
+            "theme=${e.theme.id}".takeIf { e.theme != HomeTheme.NONE }, "themepicture".takeIf { e.themePicture }, "atstart".takeIf { e.openAtStart }, "clocksame".takeIf { !e.clockOpposite })
         store.write(path(id), lines.joinToString("") { "$it\n" }.encodeToByteArray())
     }
 }
@@ -119,6 +125,7 @@ sealed interface HomeExtrasIntent {
     data class Theme(val theme: HomeTheme) : HomeExtrasIntent
     data class ThemePicture(val on: Boolean) : HomeExtrasIntent
     data class OpenAtStart(val on: Boolean) : HomeExtrasIntent
+    data class ClockOpposite(val on: Boolean) : HomeExtrasIntent
     data object Save : HomeExtrasIntent
     data object OpenLook : HomeExtrasIntent        // the Home screen page: looks, pictures, the person's own photo
     data object SetUpAgain : HomeExtrasIntent
@@ -146,6 +153,7 @@ class HomeExtrasMachine(
         is HomeExtrasIntent.Theme -> state.copy(extras = state.extras.withTheme(event.theme))
         is HomeExtrasIntent.ThemePicture -> state.copy(extras = state.extras.copy(themePicture = event.on))
         is HomeExtrasIntent.OpenAtStart -> state.copy(extras = state.extras.copy(openAtStart = event.on))
+        is HomeExtrasIntent.ClockOpposite -> state.copy(extras = state.extras.copy(clockOpposite = event.on))
         else -> state
     }
 
@@ -168,6 +176,6 @@ class HomeExtrasMachine(
         val snap = attempt { d.snapshots.latest(tvId) }.getOrNull()
         val ours = snap?.packages?.get(SwitchOffRule.OUR_LAUNCHER)
         send(Loaded(HomeExtrasState(tvName = tv?.nickname.orEmpty(), loading = false, extras = saved, saved = saved,
-            launcherOn = ours != null, launcherOld = ours != null && ours.versionCode < HomeExtras.LAUNCHER_VERSION_4)))
+            launcherOn = ours != null, launcherOld = ours != null && ours.versionCode < HomeExtras.LAUNCHER_VERSION_5)))
     }
 }
