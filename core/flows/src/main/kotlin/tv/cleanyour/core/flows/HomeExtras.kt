@@ -64,6 +64,8 @@ data class HomeExtras(
         const val LAUNCHER_VERSION_8 = 1008L
         // A video background in its own colours, no sky tint over it (patches/launcher/0009).
         const val LAUNCHER_VERSION_9 = 1009L
+        // The video background starts again after the TV slept (patches/launcher/0010).
+        const val LAUNCHER_VERSION_10 = 1010L
         // The launcher that reads them (patches/launcher/0002-home-choices.patch).
         const val LAUNCHER_VERSION = 1002L
         // The launcher that reads names, side and dock only (patches/launcher/0003).
@@ -192,6 +194,6 @@ class HomeExtrasMachine(
         val snap = attempt { d.snapshots.latest(tvId) }.getOrNull()
         val ours = snap?.packages?.get(SwitchOffRule.OUR_LAUNCHER)
         send(Loaded(HomeExtrasState(tvName = tv?.nickname.orEmpty(), loading = false, extras = saved, saved = saved,
-            launcherOn = ours != null, launcherOld = ours != null && ours.versionCode < HomeExtras.LAUNCHER_VERSION_9)))
+            launcherOn = ours != null, launcherOld = ours != null && ours.versionCode < HomeExtras.LAUNCHER_VERSION_10)))
     }
 }
