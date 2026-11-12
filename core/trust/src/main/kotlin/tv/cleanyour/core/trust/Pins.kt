@@ -31,10 +31,10 @@ object PinnedLauncher {
     const val ASSET_NAME = "cleanyourtv-launcher.apk"
     const val UPSTREAM_COMMIT = "b06ab21105c49900cb1ed76b24414dba1e21d0db"
     const val PACKAGE = "com.gathin.tvhome"
-    const val VERSION_CODE = 1009L
-    const val VERSION_NAME = "3.0-uytv9"
+    const val VERSION_CODE = 1010L
+    const val VERSION_NAME = "3.0-uytv10"
     const val SIZE = 2_020_892L
-    const val SHA256 = "3b73fc6dbb5f1e5cdb93831d3a434fa21bf5e33ea9a9f552f0a40e1ec90ad543"
+    const val SHA256 = "0dd5bf2296a518403c3f128c2f9fd5d2138a2864993bc83a97079a4fb5cfec03"
     // SHA-256 of the signing certificate (DER), "CN=Upgrade Your TV", v2 and v3.
     const val SIGNER_SHA256 = "bc3d58326548f5b2da4bfec975586d8641bb3f27e33e6956a3f479976ba9176e"
     // The original Clean Your TV launcher key ("O=cleanyourtv, CN=Clean Your TV launcher"), which signs
