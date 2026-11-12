@@ -288,6 +288,7 @@ class SetupMachine(
     private val mutableExtras = MutableStateFlow(SetupExtras(addOns = deps.store.addOns))
     // 1.9.3: Setup opened from "Turn on the Home button helper" (SetupStart.Continue.helper).
     private var helperAsked = (start as? SetupStart.Continue)?.helper == true
+    private var startedFromTv = false
     val extras: StateFlow<SetupExtras> = mutableExtras.asStateFlow()
 
     // Live context of this wizard run. Only handlers touch it.
@@ -966,10 +967,19 @@ class SetupMachine(
         // RFC-HELPER-1 (test build): the Home button helper instead of the switch, when the person
         // switched it on in Customise and this TV meets its rules (HomeHelper.refusal, as the planner).
         val helperStock = helperStock(snap, block)
-        if (helperAsked && helperStock != null && !draft.homeHelper && block != HomeBlock.NONE) {
+        // 1.9.6: a Setup run again starts from what the TV has, once: the helper switch on when the TV is set up
+        // for the helper (on, or its keys there and the service dropped), and "Keep debugging on" as the app keeps
+        // it. Before, both switches started off on every run, and a run left as it was took the helper for unwanted.
+        if (!startedFromTv) {
+            startedFromTv = true
+            val hadHelper = tv.cleanyour.core.planner.HomeHelper.state(snap) != tv.cleanyour.core.planner.HomeHelper.State.NONE
+            val wantHelper = (helperAsked || hadHelper) && helperStock != null && !draft.homeHelper && block != HomeBlock.NONE
+            val wantDebug = !draft.keepDebuggingOn && deps.sessionEnd.keepsDebuggingOn(record.id)
             helperAsked = false
-            editDraft { it.copy(homeHelper = true) }
-            return
+            if (wantHelper || wantDebug) {
+                editDraft { it.copy(homeHelper = it.homeHelper || wantHelper, keepDebuggingOn = it.keepDebuggingOn || wantDebug) }
+                return
+            }
         }
         val helper = helperStock != null && draft.homeHelper
         val possible = block == HomeBlock.NONE && !helper

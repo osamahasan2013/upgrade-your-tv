@@ -1,0 +1,30 @@
+diff --git a/launcher/app/build.gradle b/launcher/app/build.gradle
+index 032dbbaf..ca1a0382 100644
+--- a/launcher/app/build.gradle
++++ b/launcher/app/build.gradle
+@@ -12,8 +12,8 @@ android {
+         minSdk 26
+         targetSdk 34
+         // Upgrade Your TV: launcher 3.0 with the video background, dot type, sidebar and Continue card; above upstream's 9.
+-        versionCode 1008
+-        versionName '3.0-uytv8'
++        versionCode 1009
++        versionName '3.0-uytv9'
+     }
+ 
+     buildTypes {
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java b/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
+index 50a8a57f..589b9994 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
+@@ -433,7 +433,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+         getWindow().setBackgroundDrawable(null);
+         wallpaperPlayer = new WallpaperPlayer(this, root, cfg);
+         sky = findViewById(R.id.sky);
+-        sky.setIntensity(cfg.skyIntensity);
++        // Upgrade Your TV (3.0-uytv9): the sky is a tint drawn over the wallpaper; over a moving video it washed the
++        // video out (pink in the evening), so a video plays in its own colours.
++        sky.setIntensity(cfg.wallpaperEnabled && VideoWallpaper.find(this) != null ? 0 : cfg.skyIntensity);
+         glass = findViewById(R.id.glass);
+         glass.setStyle(cfg.glassStyle);
+         if (festive) glass.setAccent(festival.accentColor());

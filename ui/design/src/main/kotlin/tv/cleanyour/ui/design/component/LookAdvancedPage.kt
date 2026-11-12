@@ -57,10 +57,10 @@ internal fun ColumnScope.LookAdvancedPage(state: LookEditorState, onEdit: (LookE
         val seeReason = r.seeThrough.reason?.let { reasonText(it) }
         SegmentedChoice(
             options, (r.seeThrough.value ?: LookKeys.SEE_THROUGH_DEFAULT).toString(), { onEdit(LookEdit.SetSeeThrough(it.key.toInt())) },
-            enabled = r.seeThrough.enabled, disabledReason = seeReason, groupLabel = seeTitle,
+            enabled = r.seeThrough.enabled || r.band.enabled, disabledReason = seeReason, groupLabel = seeTitle,
         )
         LookBody(
-            if (r.seeThrough.enabled) stringResource(R.string.cyt_look_see_amount_desc) else seeReason.orEmpty(),
+            if (r.seeThrough.enabled || r.band.enabled) stringResource(R.string.cyt_look_see_amount_desc) else seeReason.orEmpty(),
             Modifier.padding(start = 4.dp, end = 4.dp, top = 10.dp),
         )
         if (keys) KeyNameLine(KEY_NAMES.getValue("see"), Modifier.padding(start = 4.dp))

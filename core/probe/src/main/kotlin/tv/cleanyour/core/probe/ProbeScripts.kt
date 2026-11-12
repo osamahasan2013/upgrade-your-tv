@@ -86,9 +86,16 @@ object ProbeScripts {
     val VIDEO_FROM_STAGED = ShellLine("content write --uri $THEME_URI/$VIDEO_NAME < '${RemoteDir.TMP.path}/$VIDEO_NAME'; r=\$?; rm -f '${RemoteDir.TMP.path}/$VIDEO_NAME'; exit \$r")
     val VIDEO_REMOVE = ShellLine("content delete --uri $THEME_URI/$VIDEO_NAME 2>/dev/null; rm -f '${RemoteDir.OVERLAY.path}/$VIDEO_NAME' 2>/dev/null; true")
     // The launcher reads its theme folder when it starts, as a look's RestartHome does it.
-    val HOME_RESTART = ShellLine("am force-stop com.gathin.tvhome; am start -a android.intent.action.MAIN -c android.intent.category.HOME >/dev/null 2>&1; true")
-    // The same for a launcher that is on the TV as an app and not its Home: opened by name.
-    val HOME_OPEN = ShellLine("am force-stop com.gathin.tvhome; am start -n com.gathin.tvhome/.MainActivity >/dev/null 2>&1; true")
+    // 1.9.6: a force-stop drops the launcher's accessibility services (the Home button helper) from the TV's list
+    // and can turn accessibility off, so Home, the remote's buttons and "Open when the TV starts" stopped after
+    // every video change. As the planner's restoreAccessibility: when the TV had one of ours on, the list and
+    // the switch are put back exactly as they were, off and on again so the service binds.
+    private const val ACC_READ = "a=\$(settings get secure enabled_accessibility_services 2>/dev/null); e=\$(settings get secure accessibility_enabled 2>/dev/null); "
+    private const val ACC_BACK = "case \"\$e:\$a\" in 1:*com.gathin.tvhome/*) sleep 1; settings put secure accessibility_enabled 0; sleep 1; " +
+        "settings put secure enabled_accessibility_services \"\$a\"; settings put secure accessibility_enabled 1;; esac; true"
+    val HOME_RESTART = ShellLine(ACC_READ + "am force-stop com.gathin.tvhome; am start -a android.intent.action.MAIN -c android.intent.category.HOME >/dev/null 2>&1; " + ACC_BACK)
+    // Upgrade Your TV: the launcher as an app (not Home), opened by its own activity.
+    val HOME_OPEN = ShellLine(ACC_READ + "am force-stop com.gathin.tvhome; am start -n com.gathin.tvhome/.MainActivity >/dev/null 2>&1; " + ACC_BACK)
 
     // Storage and files: one file of the Download folder removed. The name is the TV's own (any
     // language), so it is checked here instead of by RemotePath: one path segment, no quote, no control

@@ -193,7 +193,10 @@ internal class LookDrafts(
             is LookEdit.SetSpotColour -> detail(rows.spotColour.enabled) { copy(spotColour = edit.on) }
             is LookEdit.SetRing -> detail(rows.ring.enabled) { copy(ring = edit.on) }
             is LookEdit.SetBand -> detail(rows.band.enabled) { copy(band = edit.band) }
-            is LookEdit.SetSeeThrough -> detail(rows.seeThrough.enabled && edit.percent in LookKeys.SEE_THROUGH) { copy(seeThrough = edit.percent) }
+            // 1.9.6: picking an amount also picks the see-through band it belongs to (before, the row did nothing
+            // until "See-through" was picked under Dock band, which nobody found).
+            is LookEdit.SetSeeThrough -> detail((rows.seeThrough.enabled || rows.band.enabled) && edit.percent in LookKeys.SEE_THROUGH) {
+                copy(band = tv.cleanyour.core.spec.BandChoice.SEE_THROUGH, seeThrough = edit.percent) }
             is LookEdit.SetButtons -> detail(rows.buttons.enabled) { copy(buttons = edit.buttons) }
             is LookEdit.SetGreenWifi -> detail(rows.greenWifi.enabled) { copy(greenWifi = edit.on) }
             is LookEdit.SetDim -> detail(rows.dim.enabled) { copy(dim = edit.percent.coerceIn(LookRules.DIM)) }
