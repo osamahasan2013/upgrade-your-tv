@@ -72,9 +72,13 @@ object HomeHelper {
         snapshot.home.resolved == home && !StockHome.isPlaceholder(home) && home.pkg != SwitchOffRule.OUR_LAUNCHER &&
             snapshot.packages[home.pkg]?.system == true && snapshot.home.claimants.any { it.component.pkg == home.pkg && it.priority >= 0 }
 
+    private val PLATFORM_PREFIXES = listOf("com.google.android.", "com.android.", "android.")
+
     // An accessibility list entry ("pkg/cls") of an app the person installed, which is on the TV.
     fun userInstalled(entry: String, snapshot: Snapshot): Boolean {
         val pkg = entry.substringBefore('/').trim()
+        // A screen reader or other platform service, even updated from the store, is never the person's own app.
+        if (PLATFORM_PREFIXES.any { pkg.startsWith(it) }) return false
         val state = snapshot.packages.entries.firstOrNull { it.key.value == pkg }?.value ?: return false
         return !state.system
     }
