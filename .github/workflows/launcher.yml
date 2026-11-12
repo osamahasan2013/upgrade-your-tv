@@ -68,6 +68,10 @@ jobs:
           fetch uytv_f_nosifer 'Nosifer' ofl/nosifer OFL.txt "$LATIN"
           fetch uytv_f_specialelite 'Special+Elite' apache/specialelite LICENSE.txt "$LATIN"
           fetch uytv_f_fredoka 'Fredoka:wght@600' ofl/fredoka OFL.txt "$LATIN"
+          fetch uytv_f_cinzel 'Cinzel:wght@700' ofl/cinzel OFL.txt "$LATIN"
+          fetch uytv_f_exo2 'Exo+2:wght@600' ofl/exo2 OFL.txt "$LATIN"
+          fetch uytv_f_cormorant 'Cormorant+Garamond:wght@700' ofl/cormorantgaramond OFL.txt "$LATIN"
+          fetch uytv_f_audiowide 'Audiowide' ofl/audiowide OFL.txt "$LATIN"
           du -ch res/font/uytv_f_*.ttf | tail -n 1
 
       - name: Build the launcher (release, R8)
