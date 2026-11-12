@@ -90,6 +90,11 @@ object ProbeScripts {
     // and can turn accessibility off, so Home, the remote's buttons and "Open when the TV starts" stopped after
     // every video change. As the planner's restoreAccessibility: when the TV had one of ours on, the list and
     // the switch are put back exactly as they were, off and on again so the service binds.
+    // 1.9.8: what lets the launcher put the Home button helper back by itself after the TV was off (its
+    // ServiceRepair and UytvBoot, patches/launcher/0011): the secure-settings permission, and the app-op that lets
+    // it open Home from its boot receiver. Each alone on its line (PmGuard).
+    val HELPER_KEEP_GRANT = ShellLine("pm grant com.gathin.tvhome android.permission.WRITE_SECURE_SETTINGS")
+    val HELPER_KEEP_OPEN = ShellLine("appops set com.gathin.tvhome SYSTEM_ALERT_WINDOW allow")
     private const val ACC_READ = "a=\$(settings get secure enabled_accessibility_services 2>/dev/null); e=\$(settings get secure accessibility_enabled 2>/dev/null); "
     private const val ACC_BACK = "case \"\$e:\$a\" in 1:*com.gathin.tvhome/*) sleep 1; settings put secure accessibility_enabled 0; sleep 1; " +
         "settings put secure enabled_accessibility_services \"\$a\"; settings put secure accessibility_enabled 1;; esac; true"
@@ -196,6 +201,7 @@ object ProbeScripts {
         "FREE_DATA" to FREE_DATA, "SCREENSHOT" to SCREENSHOT, "SCREENSHOT_CLEANUP" to SCREENSHOT_CLEANUP, "MKDIR_TMP" to MKDIR_TMP,
         "NOOP_INSTALL" to NOOP_INSTALL, "NOOP_UNINSTALL" to NOOP_UNINSTALL, "NOOP_CLEANUP" to NOOP_CLEANUP, "PS_ARGS" to PS_ARGS, "STORAGE" to STORAGE, "DOWNLOADS" to DOWNLOADS,
         "VIDEO_PRESENT" to VIDEO_PRESENT, "VIDEO_FROM_STAGED" to VIDEO_FROM_STAGED, "VIDEO_REMOVE" to VIDEO_REMOVE, "HOME_RESTART" to HOME_RESTART, "HOME_OPEN" to HOME_OPEN,
+        "HELPER_KEEP_GRANT" to HELPER_KEEP_GRANT, "HELPER_KEEP_OPEN" to HELPER_KEEP_OPEN,
         "WIFI_OWNERS" to WIFI_OWNERS,
     )
 }

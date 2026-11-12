@@ -54,6 +54,11 @@ fun HomeStartScreen(state: HomeStartState, onIntent: (HomeStartIntent) -> Unit, 
                 enabled = state.launcherOn, guardObscured = false)
             Body(stringResource(R.string.start_turn_on_sub), Modifier.padding(top = 8.dp))
         }
+        when (state.keeps) {
+            true -> Body(stringResource(R.string.start_keeps), Modifier.padding(top = 12.dp))
+            false -> Body(stringResource(R.string.start_keeps_not), Modifier.padding(top = 12.dp))
+            null -> {}
+        }
         Body(stringResource(R.string.start_button_mapper), Modifier.padding(top = 12.dp))
 
         Overline(stringResource(R.string.start_at_start), Modifier.padding(top = 22.dp, bottom = 8.dp))

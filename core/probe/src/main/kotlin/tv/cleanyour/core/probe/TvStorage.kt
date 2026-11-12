@@ -37,6 +37,11 @@ interface VideoBackground {
 // the TV between frames, so a frame is two round trips; `endLive` removes it.
 // The remote in the app (1.7.0): a button press as the TV's own remote sends it, and typed text, through
 // `input`. Only key codes from RemoteKeyCodes and text from the safe set ever reach the shell.
+// 1.9.8: the launcher allowed to put its Home button helper back after the TV was off. True when both lines ran.
+interface HelperKeep {
+    suspend fun keepHelper(session: TvSession): Boolean
+}
+
 interface RemoteInput {
     suspend fun key(session: TvSession, code: Int, long: Boolean = false)
     suspend fun text(session: TvSession, text: String)

@@ -502,6 +502,8 @@
     <string name="start_turn_on">Turn on the Home button helper</string>
     <string name="start_turn_on_sub">Setup runs for this TV with the helper already chosen; it asks for your screen lock, switches nothing else off, and checks Home works before it ends.</string>
     <string name="start_button_mapper">If an app like Button Mapper changes the remote\'s buttons on this TV, switch it off on the TV first: two apps catching the same buttons fight over them.</string>
+    <string name="start_keeps">After the TV was switched off: the home screen puts the helper back by itself (allowed just now).</string>
+    <string name="start_keeps_not">Could not allow the home screen to put the helper back after the TV is switched off. Connect the TV and open this page again.</string>
     <string name="start_at_start">Open when the TV starts</string>
     <string name="start_at_start_sub">The new home screen comes up every time the TV is switched on.</string>
     <string name="start_at_start_needs">Works once the Home button helper is on: it is the helper that opens the new home screen at power-on.</string>

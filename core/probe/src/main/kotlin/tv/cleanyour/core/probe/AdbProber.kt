@@ -47,7 +47,7 @@ class AdbProber(
     private val clock: Clock,
     private val signed: Set<PackageName> = SIGNED_PACKAGES,
     private val known: Map<Sha256, Sha256> = emptyMap(),
-) : Prober, LaunchableApps, SavedWifiOwners, InstalledApkReader, AccessibilityRead, RunningApps, StorageRead, VideoBackground, LiveScreen, RemoteInput, SpeedUp {
+) : Prober, LaunchableApps, SavedWifiOwners, InstalledApkReader, AccessibilityRead, RunningApps, StorageRead, VideoBackground, LiveScreen, RemoteInput, SpeedUp, HelperKeep {
 
     private suspend fun run(
         session: TvSession, line: ShellLine, stage: ProbeStage, cap: Int, timeoutMs: Long = 30_000, retry: RetryClass = RetryClass.IDEMPOTENT_READ,
@@ -241,6 +241,13 @@ class AdbProber(
     }
 
     override suspend fun warmKeys(session: TvSession) { keyChannel(session) }
+
+    override suspend fun keepHelper(session: TvSession): Boolean {
+        val spec = ExecSpec(timeoutMs = 10_000, stdoutCap = 4096, retry = RetryClass.NEVER)
+        val grant = session.exec(ProbeScripts.HELPER_KEEP_GRANT, spec)
+        val open = session.exec(ProbeScripts.HELPER_KEEP_OPEN, spec)
+        return grant.exit == 0 && open.exit == 0
+    }
 
     override suspend fun endKeys(session: TvSession) {
         keyLock.withLock { keyChannels.remove(session) }?.let { ch -> runCatching { ch.close() } }

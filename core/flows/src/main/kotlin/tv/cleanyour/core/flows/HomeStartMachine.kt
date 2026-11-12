@@ -5,6 +5,7 @@ import kotlinx.coroutines.launch
 import tv.cleanyour.core.model.TvId
 import tv.cleanyour.core.planner.HomeHelper
 import tv.cleanyour.core.planner.SwitchOffRule
+import tv.cleanyour.core.probe.HelperKeep
 
 // Upgrade Your TV 1.9.3: "Home button & start", a page of its own. The Home button helper (RFC-HELPER-1) is what
 // makes the remote's Home open the new home screen on a TV whose own home screen stays Home (TCL, Google TV), what
@@ -20,6 +21,7 @@ data class HomeStartState(
     val homeNow: String? = null,         // what the TV's Home answers to now
     val openAtStart: Boolean = false,
     val savedOpenAtStart: Boolean = false,
+    val keeps: Boolean? = null,          // the launcher may put the helper back after power-off (null: not tried)
 ) {
     val changed: Boolean get() = openAtStart != savedOpenAtStart
 }
@@ -39,11 +41,13 @@ class HomeStartMachine(
 ) : Machine<HomeStartState, HomeStartIntent, ManageEffect>(HomeStartState(), scope) {
 
     private data class Loaded(val s: HomeStartState)
+    private data class Kept(val ok: Boolean)
 
     init { scope.launch { load() } }
 
     override fun reduce(state: HomeStartState, event: Any): HomeStartState = when (event) {
         is Loaded -> event.s
+        is Kept -> state.copy(keeps = event.ok)
         is HomeStartIntent.OpenAtStart -> state.copy(openAtStart = event.on)
         else -> state
     }
@@ -74,5 +78,15 @@ class HomeStartMachine(
             launcherOn = snap?.packages?.get(SwitchOffRule.OUR_LAUNCHER) != null, helperOn = helperOn, helperWhy = why,
             homeNow = snap?.home?.resolved?.let { "${it.pkg.value}/${it.cls}" },
             openAtStart = extras.openAtStart, savedOpenAtStart = extras.openAtStart)))
+        // 1.9.8: a TV that empties its accessibility list at power-off (TCL) took the helper with it. The launcher
+        // puts it back by itself once it holds these two; set quietly whenever this page opens with the TV there.
+        val keep = d.prober as? HelperKeep
+        if (keep != null && snap?.packages?.get(SwitchOffRule.OUR_LAUNCHER) != null) {
+            val s = (d.access.session(tvId) as? AccessResult.Ok)?.session
+            if (s != null) {
+                val ok = attempt { keep.keepHelper(s) }.getOrNull() == true
+                send(Kept(ok))
+            }
+        }
     }
 }
