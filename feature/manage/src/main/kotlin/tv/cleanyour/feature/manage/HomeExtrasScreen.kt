@@ -240,6 +240,10 @@ internal fun themeThumb(t: HomeTheme): Int? = when (t) {
     HomeTheme.HALLOWEEN -> R.drawable.uytv_theme_halloween
     HomeTheme.HORROR -> R.drawable.uytv_theme_horror
     HomeTheme.ANIME -> R.drawable.uytv_theme_anime
+    HomeTheme.OCEAN -> R.drawable.uytv_theme_ocean
+    HomeTheme.SPACE -> R.drawable.uytv_theme_space
+    HomeTheme.CASTLE -> R.drawable.uytv_theme_castle
+    HomeTheme.NEON_CITY -> R.drawable.uytv_theme_neon
 }
 
 @Composable
@@ -253,6 +257,10 @@ private fun themeName(t: HomeTheme): String = stringResource(when (t) {
     HomeTheme.HALLOWEEN -> R.string.extras_theme_halloween
     HomeTheme.HORROR -> R.string.extras_theme_horror
     HomeTheme.ANIME -> R.string.extras_theme_anime
+    HomeTheme.OCEAN -> R.string.extras_theme_ocean
+    HomeTheme.SPACE -> R.string.extras_theme_space
+    HomeTheme.CASTLE -> R.string.extras_theme_castle
+    HomeTheme.NEON_CITY -> R.string.extras_theme_neon
 })
 
 // The themes in a row of cards, each its picture and name; the chosen one has a ring.

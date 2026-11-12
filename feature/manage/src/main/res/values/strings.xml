@@ -530,6 +530,10 @@
     <string name="extras_theme_halloween">Halloween</string>
     <string name="extras_theme_horror">Horror</string>
     <string name="extras_theme_anime">Anime</string>
+    <string name="extras_theme_ocean">Deep sea</string>
+    <string name="extras_theme_space">Space</string>
+    <string name="extras_theme_castle">Cloud castle</string>
+    <string name="extras_theme_neon">Neon city</string>
     <string name="extras_theme_picture">The theme\'s picture</string>
     <string name="extras_theme_picture_sub">Off: your own picture or video from Home screen and Video background shows instead</string>
     <string name="extras_on_tv">You can change the theme and layout on the TV too: the Style button (the sliders) at the top of Home. The next save from here puts these choices back.</string>

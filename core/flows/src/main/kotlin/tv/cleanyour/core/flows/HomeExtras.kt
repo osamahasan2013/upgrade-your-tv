@@ -18,7 +18,9 @@ enum class NameSize(val id: String) { LARGE("large"), SMALL("small"), HIDDEN("hi
 // 1.9.0 (launcher 3.0-uytv4, UytvTheme): the themes, by the id the launcher reads.
 enum class HomeTheme(val id: String) {
     NONE("none"), GLASS("glass"), SIGNAL("signal"), SIGNAL_DARK("signal_dark"), GAMING("gaming"), ISLAMIC("islamic"),
-    HALLOWEEN("halloween"), HORROR("horror"), ANIME("anime");
+    HALLOWEEN("halloween"), HORROR("horror"), ANIME("anime"),
+    // 1.9.5 (launcher 3.0-uytv8): painted pictures, each with its tile frame (shell, glass, scroll, neon).
+    OCEAN("ocean"), SPACE("space"), CASTLE("castle"), NEON_CITY("neon");
     companion object { fun of(id: String?): HomeTheme = entries.firstOrNull { it.id == id } ?: NONE }
 }
 
@@ -58,6 +60,8 @@ data class HomeExtras(
         const val ALWAYS_NAMES = "always_show_names"   // the look's own key (LookKeys)
         // The Style button on Home's top bar and the Continue card clear of it (patches/launcher/0006).
         const val LAUNCHER_VERSION_6 = 1006L
+        // Deep sea, Space, Cloud castle and Neon city (patches/launcher/0008).
+        const val LAUNCHER_VERSION_8 = 1008L
         // The launcher that reads them (patches/launcher/0002-home-choices.patch).
         const val LAUNCHER_VERSION = 1002L
         // The launcher that reads names, side and dock only (patches/launcher/0003).
@@ -186,6 +190,6 @@ class HomeExtrasMachine(
         val snap = attempt { d.snapshots.latest(tvId) }.getOrNull()
         val ours = snap?.packages?.get(SwitchOffRule.OUR_LAUNCHER)
         send(Loaded(HomeExtrasState(tvName = tv?.nickname.orEmpty(), loading = false, extras = saved, saved = saved,
-            launcherOn = ours != null, launcherOld = ours != null && ours.versionCode < HomeExtras.LAUNCHER_VERSION_6)))
+            launcherOn = ours != null, launcherOld = ours != null && ours.versionCode < HomeExtras.LAUNCHER_VERSION_8)))
     }
 }
