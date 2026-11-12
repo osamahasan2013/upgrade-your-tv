@@ -651,13 +651,13 @@ internal class OpenShell(private val stream: tv.cleanyour.adb.wire.AdbStream, sc
     private val reader: Job = scope.launch {
         try {
             val r = AdbStreamReader(stream)
-            val buf = StringBuilder()
+            var buf = StringBuilder()
             while (isActive) {
                 when (val p = ShellV2.next(r)) {
                     null, is ShellPacket.Exit -> break
                     is ShellPacket.Stderr -> {}
                     is ShellPacket.Stdout -> for (c in String(p.bytes, Charsets.UTF_8)) {
-                        if (c == '\n') { lines.trySend(buf.toString()); buf.setLength(0) } else if (buf.length < 512) buf.append(c)
+                        if (c == '\n') { lines.trySend(buf.toString()); buf = StringBuilder() } else if (buf.length < 512) buf.append(c)
                     }
                 }
             }
