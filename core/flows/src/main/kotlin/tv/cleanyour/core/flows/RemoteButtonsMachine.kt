@@ -125,7 +125,7 @@ class RemoteButtonsMachine(
                 // The look goes again with the buttons in it (LookCarry); that page asks for the screen lock.
                 effect(ManageEffect.Navigate("home/${tvId.value}/again"))
             }
-            RemoteButtonsIntent.SetUpHelper -> effect(ManageEffect.Navigate("setup/${tvId.value}"))
+            RemoteButtonsIntent.SetUpHelper -> effect(ManageEffect.Navigate("setup/${tvId.value}/helper"))   // 1.9.3: the helper chosen
             else -> {}
         }
     }

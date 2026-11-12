@@ -72,6 +72,13 @@ object HomeHelper {
         snapshot.home.resolved == home && !StockHome.isPlaceholder(home) && home.pkg != SwitchOffRule.OUR_LAUNCHER &&
             snapshot.packages[home.pkg]?.system == true && snapshot.home.claimants.any { it.component.pkg == home.pkg && it.priority >= 0 }
 
+    // An accessibility list entry ("pkg/cls") of an app the person installed, which is on the TV.
+    fun userInstalled(entry: String, snapshot: Snapshot): Boolean {
+        val pkg = entry.substringBefore('/').trim()
+        val state = snapshot.packages.entries.firstOrNull { it.key.value == pkg }?.value ?: return false
+        return !state.system
+    }
+
     fun list(snapshot: Snapshot): String? = snapshot.settings[SettingKey.ENABLED_ACCESSIBILITY]?.takeIf { it.isNotEmpty() && it != "null" }
     fun on(snapshot: Snapshot): Boolean = snapshot.settings[SettingKey.ACCESSIBILITY_ENABLED] == "1"
     fun listed(snapshot: Snapshot): Boolean = HelperLines.listed(list(snapshot))
@@ -91,7 +98,9 @@ object HomeHelper {
         val list = list(snapshot)
         if (list != null && !COMPONENT_LIST_RE.matches(list)) return Refusal.LIST_UNREADABLE
         if (!HelperLines.listed(list) && HelperLines.entries(list).size >= HelperLines.MAX_ENTRIES) return Refusal.LIST_FULL
-        if (needsOn(snapshot) && HelperLines.others(list).isNotEmpty()) return Refusal.OTHERS_WOULD_BIND
+        // Upgrade Your TV 1.9.3: an app the person installed (Button Mapper, say) may start with it; a system service
+        // (a screen reader) or one the TV does not have still refuses, as S3 meant.
+        if (needsOn(snapshot) && HelperLines.others(list).any { !userInstalled(it, snapshot) }) return Refusal.OTHERS_WOULD_BIND
         return null
     }
 

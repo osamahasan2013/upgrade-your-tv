@@ -83,11 +83,12 @@ import tv.cleanyour.feature.manage.DevicesScreen
 import tv.cleanyour.feature.manage.TvSettingsScreen
 import tv.cleanyour.feature.modules.ModulesFlow
 import tv.cleanyour.feature.setup.SetupFlow
+import tv.cleanyour.feature.manage.HomeExtrasSection
 
 // Navigation 3 keys (ARCHITECTURE 2.2): serializable, ids only, never payloads, so the back stack
 // itself survives process death and every screen rebuilds its state from disk.
 @Serializable sealed interface Dest : NavKey {
-    @Serializable data class Setup(val tvId: String? = null, val planId: String? = null) : Dest
+    @Serializable data class Setup(val tvId: String? = null, val planId: String? = null, val helper: Boolean = false) : Dest
     @Serializable data class Manage(val tvId: String? = null) : Dest
     @Serializable data class SwitchedOff(val tvId: String) : Dest
     @Serializable data class AllApps(val tvId: String) : Dest
@@ -97,6 +98,7 @@ import tv.cleanyour.feature.setup.SetupFlow
     @Serializable data class Buttons(val tvId: String) : Dest
     @Serializable data class Extras(val tvId: String) : Dest
     @Serializable data class Speed(val tvId: String) : Dest
+    @Serializable data class HomeStart(val tvId: String) : Dest
     @Serializable data object Devices : Dest
     @Serializable data class Leftovers(val tvId: String) : Dest
     // 0.4.8: `again`, from Done's "Not right? Send it again": the page sends the saved look once it has loaded.
@@ -127,7 +129,7 @@ internal fun applyRoute(stack: MutableList<NavKey>, route: String, noTvs: Boolea
     val dest: Dest? = when (parts[0]) {
         "manage" -> Dest.Manage(id)
         "returning" -> { stack.add(Dest.Manage(null)); return true }
-        "setup" -> Dest.Setup(id)
+        "setup" -> Dest.Setup(id, helper = parts.getOrNull(2) == "helper")
         "resume" -> id?.let { t -> parts.getOrNull(2)?.let { p -> Dest.Setup(t, p) } }
         "modules" -> if (addOns) id?.let { Dest.Modules(it) } else null
         "home" -> if (id != null) Dest.Home(id, again = parts.getOrNull(2) == "again") else null
@@ -139,6 +141,7 @@ internal fun applyRoute(stack: MutableList<NavKey>, route: String, noTvs: Boolea
         "buttons" -> id?.let { Dest.Buttons(it) }
         "extras" -> id?.let { Dest.Extras(it) }
         "speed" -> id?.let { Dest.Speed(it) }
+        "homestart" -> id?.let { Dest.HomeStart(it) }
         "leftovers" -> id?.let { Dest.Leftovers(it) }
         "restore" -> id?.let { Dest.Restore(it) }
         "tvsettings" -> id?.let { Dest.TvSettings(it) }
@@ -302,10 +305,10 @@ fun AppRoot(graph: AppGraph, start: Dest, onExit: () -> Unit) {
                 entry<Dest.Setup> { key ->
                     val start = when {
                         key.planId != null && key.tvId != null -> SetupStart.Resume(TvId(key.tvId), PlanId(key.planId))
-                        key.tvId != null -> SetupStart.Continue(TvId(key.tvId))
+                        key.tvId != null -> SetupStart.Continue(TvId(key.tvId), helper = key.helper)
                         else -> SetupStart.Fresh
                     }
-                    val m = rememberMachine("setup:${key.tvId}:${key.planId}") { graph.setup(it, start) }
+                    val m = rememberMachine("setup:${key.tvId}:${key.planId}:${key.helper}") { graph.setup(it, start) }
                     val state by m.state.collectAsStateWithLifecycle()
                     val extras by m.extras.collectAsStateWithLifecycle()
                     LaunchedEffect(m) { m.effects.collect { onSetupEffect(it) } }
@@ -406,6 +409,12 @@ fun AppRoot(graph: AppGraph, start: Dest, onExit: () -> Unit) {
                     LaunchedEffect(m) { m.effects.collect { onManageEffect(it) } }
                     tv.cleanyour.feature.manage.SpeedScreen(state, m::dispatch, onBack = { go("back") })
                 }
+                entry<Dest.HomeStart> { key ->
+                    val m = rememberMachine("homestart:${key.tvId}") { graph.homeStart(it, TvId(key.tvId)) }
+                    val state by m.state.collectAsStateWithLifecycle()
+                    LaunchedEffect(m) { m.effects.collect { onManageEffect(it) } }
+                    tv.cleanyour.feature.manage.HomeStartScreen(state, m::dispatch, onBack = { go("back") })
+                }
                 entry<Dest.Extras> { key ->
                     val m = rememberMachine("extras:${key.tvId}") { graph.extras(it, TvId(key.tvId)) }
                     val state by m.state.collectAsStateWithLifecycle()
@@ -422,9 +431,23 @@ fun AppRoot(graph: AppGraph, start: Dest, onExit: () -> Unit) {
                     val m = rememberMachine("home:${key.tvId}:${key.again}") { graph.homeScreen(it, TvId(key.tvId), key.again) }
                     val state by m.state.collectAsStateWithLifecycle()
                     LaunchedEffect(m) { m.effects.collect { onManageEffect(it) } }
+                    // 1.9.3: the theme and layout on the same page; its Save sends the look again from here.
+                    val x = rememberMachine("extras:${key.tvId}") { graph.extras(it, TvId(key.tvId)) }
+                    val extras by x.state.collectAsStateWithLifecycle()
+                    LaunchedEffect(x) {
+                        x.effects.collect { e ->
+                            val to = (e as? ManageEffect.Navigate)?.key
+                            when {
+                                to == "home/${key.tvId}/again" -> m.dispatch(tv.cleanyour.core.flows.HomeScreenIntent.RestoreMine)
+                                to == "home/${key.tvId}" -> if (m.state.value.updateTo != null) m.dispatch(tv.cleanyour.core.flows.HomeScreenIntent.PreviewUpdate)
+                                else -> onManageEffect(e)
+                            }
+                        }
+                    }
                     HomeScreen(state, m::dispatch, onBack = { go("back") }, photos = photoPicker, onReport = { lead ->
                         go(IssueRoute.of(TvId(key.tvId), ReportContext("Home screen", ReportContext.named(lead, state.tvName), "HOME_BLOCKED_${state.notOnTv?.reason ?: "NONE"}")))
-                    }, onOpenUrl = { url -> scope.launch { onManageEffect(ManageEffect.OpenUrl(url)) } })
+                    }, onOpenUrl = { url -> scope.launch { onManageEffect(ManageEffect.OpenUrl(url)) } },
+                        layout = { HomeExtrasSection(extras, x::dispatch, inPage = true) })
                 }
                 entry<Dest.Modules> { key ->
                     val m = rememberMachine("modules:${key.tvId}") { graph.modules(it, TvId(key.tvId)) }

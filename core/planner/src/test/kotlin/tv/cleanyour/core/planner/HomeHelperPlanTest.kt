@@ -120,6 +120,10 @@ class HomeHelperPlanTest {
         assertEquals(HomeHelper.Refusal.OTHERS_WOULD_BIND, refusal(tv.acc(reader, "0")))   // S3
         assertEquals(HomeHelper.Refusal.OTHERS_WOULD_BIND, refusal(tv.acc(reader, null)))
         assertEquals(HomeHelper.Refusal.OTHERS_WOULD_BIND, refusal(tv.acc("com.gathin.tvhome/com.gathin.tvhome.InputKeyService", "0")))
+        // 1.9.3: a service of an app the person installed may start with ours (Button Mapper, the launcher's own).
+        val withLauncher = snapshot(extra = mapOf(PlannerFixtures.installedLauncher()))
+        assertEquals(null, refusal(withLauncher.acc("com.gathin.tvhome/com.gathin.tvhome.InputKeyService", "0")))
+        assertEquals(HomeHelper.Refusal.OTHERS_WOULD_BIND, refusal(withLauncher.acc(reader, "0")))
         assertEquals(null, refusal(tv.acc(reader, "1")))   // S8: a reader with accessibility on is allowed
         // Through the planner: the plan says why, and nothing is planned.
         assertTrue(refusedWith(planner().plan(helperSetup(), tv.acc(reader, "0"), facts, emptyList())).single().startsWith("accessibility is off"))

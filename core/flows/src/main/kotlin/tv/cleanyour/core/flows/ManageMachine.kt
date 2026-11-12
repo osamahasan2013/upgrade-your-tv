@@ -80,6 +80,7 @@ enum class ManageSection(val key: String) {
     BUTTONS("buttons"),    // what the remote's buttons open (RemoteButtonsMachine)
     EXTRAS("extras"),      // dot type, sidebar and the Continue card (HomeExtrasMachine)
     SPEED("speed"),        // Speed up the TV (SpeedMachine)
+    HOME_START("homestart"), // the Home button helper and "Open when the TV starts" (HomeStartMachine)
 }
 
 sealed interface ManageIntent {

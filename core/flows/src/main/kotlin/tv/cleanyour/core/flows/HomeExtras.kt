@@ -55,6 +55,9 @@ data class HomeExtras(
         const val THEME_PICTURE = "uytv_theme_bg"
         const val POWER_ON_HOME = "power_on_home_always"
         const val CLOCK_OPPOSITE = "uytv_clock_opposite"
+        const val ALWAYS_NAMES = "always_show_names"   // the look's own key (LookKeys)
+        // The Style button on Home's top bar and the Continue card clear of it (patches/launcher/0006).
+        const val LAUNCHER_VERSION_6 = 1006L
         // The launcher that reads them (patches/launcher/0002-home-choices.patch).
         const val LAUNCHER_VERSION = 1002L
         // The launcher that reads names, side and dock only (patches/launcher/0003).
@@ -78,6 +81,13 @@ data class HomeExtras(
             if (extras.signal) unknown[SIGNAL] = JsonPrimitive(true)
             if (extras.sidebar) unknown[SIDEBAR] = JsonPrimitive(true)
             if (extras.continueCard) unknown[CONTINUE] = JsonPrimitive(true)
+            // 1.9.3: one answer for names. "No names" here wins over the look's "Names under every app" and the dock's
+            // title, so the two pages cannot disagree on the TV.
+            if (extras.names == NameSize.HIDDEN) {
+                unknown[ALWAYS_NAMES] = JsonPrimitive(false)
+                val out = doc.copy(unknown = unknown, dockTitle = false)
+                return if (out == doc) doc else out
+            }
             return if (unknown == doc.unknown) doc else doc.copy(unknown = unknown)
         }
     }
@@ -176,6 +186,6 @@ class HomeExtrasMachine(
         val snap = attempt { d.snapshots.latest(tvId) }.getOrNull()
         val ours = snap?.packages?.get(SwitchOffRule.OUR_LAUNCHER)
         send(Loaded(HomeExtrasState(tvName = tv?.nickname.orEmpty(), loading = false, extras = saved, saved = saved,
-            launcherOn = ours != null, launcherOld = ours != null && ours.versionCode < HomeExtras.LAUNCHER_VERSION_5)))
+            launcherOn = ours != null, launcherOld = ours != null && ours.versionCode < HomeExtras.LAUNCHER_VERSION_6)))
     }
 }

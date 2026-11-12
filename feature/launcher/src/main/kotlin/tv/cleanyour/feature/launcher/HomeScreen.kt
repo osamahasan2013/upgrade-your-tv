@@ -83,6 +83,9 @@ import tv.cleanyour.ui.design.component.toTvLook
 fun HomeScreen(
     state: HomeScreenState, onIntent: (HomeScreenIntent) -> Unit, onBack: () -> Unit, modifier: Modifier = Modifier, photos: PhotoPicker? = null,
     onReport: (String) -> Unit = {}, onOpenUrl: (String) -> Unit = {},
+    // Upgrade Your TV 1.9.3: the theme and layout section (feature:manage's HomeExtrasSection), so the dock, the look
+    // and the layout are one page.
+    layout: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val notOnTv = state.notOnTv
     if (notOnTv != null) { NotOnTvScreen(state.tvName, notOnTv, onIntent, onBack, modifier, onReport, onOpenUrl, state.canInstallAsApp, state.installingApp, state.installAppFailed); return }
@@ -159,6 +162,7 @@ fun HomeScreen(
                     onClick = if (busy == null) ({ onIntent(HomeScreenIntent.PreviewStock) }) else null)
             }
         }
+        if (layout != null && busy == null) layout()
     }
     if (dockOpen) {
         DockSheet(state.dock, state.apps, state.columns, onDone = { onIntent(HomeScreenIntent.SetDock(it)); dockOpen = false }, onDismiss = { dockOpen = false },

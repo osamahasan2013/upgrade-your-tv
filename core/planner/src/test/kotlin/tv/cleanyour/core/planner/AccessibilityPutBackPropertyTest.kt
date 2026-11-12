@@ -128,7 +128,8 @@ class AccessibilityPutBackPropertyTest {
                     assertTrue(op.component == HomeHelper.SERVICE && op.expected == list, "#$i adds ${op.component.flat} over ${op.expected}, the TV had $list")
                 }
                 if (op == Op.SettingsPut(SettingKey.ACCESSIBILITY_ENABLED, "1") && s.group == DefaultPlanner.GROUP_HELPER) {
-                    assertTrue(HelperLines.others(list).isEmpty(), "#$i S3: accessibility on with $list")
+                    // 1.9.3: or with only services of apps the person installed (Button Mapper, our own launcher's).
+                    assertTrue(HelperLines.others(list).all { HomeHelper.userInstalled(it, snap) }, "#$i S3: accessibility on with $list")
                 }
             }
             plan.sections.flatMap { it.rollback }.forEach { removalKeepsTheRest(it, list, "#$i step R") }

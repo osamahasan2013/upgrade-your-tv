@@ -99,7 +99,8 @@ import tv.cleanyour.core.trust.LauncherPin
 // WizardDraft at the TV's remembered address, or at the resume prompt for a run with no End.
 sealed interface SetupStart {
     data object Fresh : SetupStart
-    data class Continue(val tvId: TvId) : SetupStart
+    // `helper` (Upgrade Your TV 1.9.3): opened to switch the Home button helper on; it is chosen once Setup offers it.
+    data class Continue(val tvId: TvId, val helper: Boolean = false) : SetupStart
     data class Resume(val tvId: TvId, val planId: PlanId) : SetupStart
 }
 
@@ -285,6 +286,8 @@ class SetupMachine(
 ) : Machine<SetupState, SetupIntent, SetupEffect>(initialState(start), scope), SetupActions {
 
     private val mutableExtras = MutableStateFlow(SetupExtras(addOns = deps.store.addOns))
+    // 1.9.3: Setup opened from "Turn on the Home button helper" (SetupStart.Continue.helper).
+    private var helperAsked = (start as? SetupStart.Continue)?.helper == true
     val extras: StateFlow<SetupExtras> = mutableExtras.asStateFlow()
 
     // Live context of this wizard run. Only handlers touch it.
@@ -963,6 +966,11 @@ class SetupMachine(
         // RFC-HELPER-1 (test build): the Home button helper instead of the switch, when the person
         // switched it on in Customise and this TV meets its rules (HomeHelper.refusal, as the planner).
         val helperStock = helperStock(snap, block)
+        if (helperAsked && helperStock != null && !draft.homeHelper && block != HomeBlock.NONE) {
+            helperAsked = false
+            editDraft { it.copy(homeHelper = true) }
+            return
+        }
         val helper = helperStock != null && draft.homeHelper
         val possible = block == HomeBlock.NONE && !helper
         val choices = Choices(
