@@ -16,6 +16,14 @@ data class PushResult(val bytes: Long, val millis: Long, val remoteSha256: Sha25
 sealed interface InstallOutcome { data object Installed : InstallOutcome; data class Failed(val code: String, val detail: String) : InstallOutcome }
 sealed interface BootOutcome { data class Back(val bootId: String) : BootOutcome; data object Timeout : BootOutcome }
 interface SessionHold : AutoCloseable
+// Upgrade Your TV 1.9.4: an open shell (TvSession.channel). `send` writes one line to its stdin (false once it ended);
+// `readLine` waits up to `timeoutMs` for one line of its stdout (null when none came or it ended).
+interface ShellChannel {
+    val open: Boolean
+    suspend fun send(line: String): Boolean
+    suspend fun readLine(timeoutMs: Long): String?
+    suspend fun close()
+}
 // R0: 12 what the session itself reads at every connect (D37, D38); Prober.facts builds the full DeviceFacts from it
 data class TvIdentity(val tvId: TvId, val serialLast4: String, val device: String, val model: String, val sdk: Int,
     val adbSecure: Boolean, val features: Set<String>, val maxPayload: Int)
@@ -34,6 +42,9 @@ interface TvSession {
     // the real ADB session sends it; any other session refuses.
     suspend fun pushStream(open: () -> java.io.InputStream, size: Long, dest: RemotePath, onProgress: (Long) -> Unit = {}): PushResult =
         throw UnsupportedOperationException("this session cannot send files")
+    // Upgrade Your TV 1.9.4 (the phone's remote): one shell that stays open and takes lines on its stdin, so a
+    // process on the TV started once answers many requests. Only the real ADB session opens one.
+    suspend fun channel(line: ShellLine): ShellChannel = throw UnsupportedOperationException("this session opens no channels")
     suspend fun reboot()
     suspend fun awaitBoot(timeoutMs: Long): BootOutcome              // R0: 16 relative to the call, not a wall-clock deadline
     fun hold(): SessionHold                           // keeps the socket open; last hold closed starts the 60 s idle close

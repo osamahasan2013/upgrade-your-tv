@@ -121,7 +121,20 @@ class RemoteMachine(
         send(Update { it.copy(connecting = true, tvName = tv?.nickname.orEmpty()) })
         val ok = tv != null && d.access.session(tvId) is AccessResult.Ok
         send(Update { it.copy(connecting = false, connected = ok, note = if (ok) null else RemoteNote.NoTv) })
+        // 1.9.4: the TV's key injector started now, so the first press goes as fast as the rest; ended with the page.
+        val input = d.prober as? RemoteInput
+        val s = if (ok) session() else null
+        if (input != null && s != null) {
+            attempt { input.warmKeys(s) }
+            if (keysEnder == null) keysEnder = scope.launch {
+                try { kotlinx.coroutines.awaitCancellation() } finally {
+                    withContext(NonCancellable) { attempt { input.endKeys(s) } }
+                }
+            }
+        }
     }
+
+    private var keysEnder: kotlinx.coroutines.Job? = null
 
     private suspend fun session(): TvSession? = d.access.live(tvId) ?: (d.access.session(tvId) as? AccessResult.Ok)?.session
 

@@ -40,6 +40,9 @@ interface VideoBackground {
 interface RemoteInput {
     suspend fun key(session: TvSession, code: Int, long: Boolean = false)
     suspend fun text(session: TvSession, text: String)
+    // 1.9.4: the key injector on the TV (the launcher's UytvKeys) started ahead of the first press, and ended.
+    suspend fun warmKeys(session: TvSession) {}
+    suspend fun endKeys(session: TvSession) {}
 }
 
 // "Speed up the TV" (1.9.1): Android's animation speed (the three animation scales), free memory (background

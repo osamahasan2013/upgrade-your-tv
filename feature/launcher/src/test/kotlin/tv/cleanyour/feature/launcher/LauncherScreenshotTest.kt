@@ -1,5 +1,6 @@
 package tv.cleanyour.feature.launcher
 
+import tv.cleanyour.feature.manage.HomeExtrasSection
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -169,6 +170,13 @@ object LauncherShots {
         // 0.4.8 (beta1 QA): the helper switched off, the TV's own home screen is Home: no "Use the TV's own home screen".
         Shot("home_stock_is_home") { HomeScreen(home().copy(stockIsHome = true, helper = tv.cleanyour.core.flows.HelperCard(tv.cleanyour.core.flows.HelperShown.REDIRECT_ONLY, googleTv = false)), {}, {}) },
         // 0.4.8 (PLAN item 3): "This is your TV now" after a look went to the TV.
+        Shot("home_one_page", 3000.dp) {
+            val extras = tv.cleanyour.core.flows.HomeExtras().withTheme(tv.cleanyour.core.flows.HomeTheme.SIGNAL_DARK)
+            HomeScreen(home(), {}, {}, layout = {
+                HomeExtrasSection(tv.cleanyour.core.flows.HomeExtrasState("Living room TV", loading = false, extras = extras,
+                    saved = tv.cleanyour.core.flows.HomeExtras(), launcherOn = true), {}, inPage = true)
+            })
+        },
         Shot("home_tv_now", 1100.dp) { HomeScreen(home().copy(lookShot = remember { tvShot() }), {}, {}) },
         Shot("home_empty_dock") { HomeScreen(home(dock = emptyList()), {}, {}) },
         Shot("home_dock_rows") { HomeScreen(home(dock = rowsDock), {}, {}) },

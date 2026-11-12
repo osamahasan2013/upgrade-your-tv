@@ -8,4 +8,6 @@ plugins {
 // settings; the build-logic test timeout covers hangs.
 dependencies {
     testImplementation(project(":testing:fixtures"))
+    // 1.9.3: the Home screen page as the app draws it, with the theme and layout section the app puts in its slot.
+    testImplementation(project(":feature:manage"))
 }

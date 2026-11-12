@@ -284,6 +284,15 @@ class AdbTvSession internal constructor(
         return call(spec.retry) { conn -> Exec.run(conn, line, spec, clock) }
     }
 
+    // Upgrade Your TV 1.9.4: an open shell beside the one-call-at-a-time execs. Its stream is its own on the same
+    // connection (ADB multiplexes), so a frame of the TV's screen being read does not hold up a key press. The
+    // mutex is taken only to connect when there is no connection.
+    override suspend fun channel(line: ShellLine): tv.cleanyour.core.session.ShellChannel {
+        PmGuard.refusal(line.text)?.let { throw AdbException(AdbError.Policy.GuardFailed(0, it)) }
+        val conn = connection?.takeIf { !it.isClosed } ?: mutex.withLock { ensureConnectedLocked() }
+        return OpenShell(conn.openBounded(AdbService.ShellV2(line), 10_000), scope)
+    }
+
     // Lines of stdout, each cut at 8 KiB; output over stdoutCap fails the flow (a parser must never
     // see a silently shortened listing); a non-zero exit fails it with NonZeroExit at the end.
     override fun lines(line: ShellLine, spec: ExecSpec): Flow<String> = flow {
@@ -631,5 +640,57 @@ class AdbTvSession internal constructor(
 
     companion object {
         private val INSTALL_FAILURE = Regex("Failure \\[([A-Z_0-9]+)(?::\\s*([^\\]]*))?\\]")
+    }
+}
+
+// TvSession.channel's shell: stdout read on its own coroutine into lines (the last 64 kept, each cut at 512
+// characters); stdin written as shell v2 packets.
+internal class OpenShell(private val stream: tv.cleanyour.adb.wire.AdbStream, scope: CoroutineScope) : tv.cleanyour.core.session.ShellChannel {
+    private val lines = kotlinx.coroutines.channels.Channel<String>(64, kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST)
+    @Volatile private var alive = true
+    private val reader: Job = scope.launch {
+        try {
+            val r = AdbStreamReader(stream)
+            val buf = StringBuilder()
+            while (isActive) {
+                when (val p = ShellV2.next(r)) {
+                    null, is ShellPacket.Exit -> break
+                    is ShellPacket.Stderr -> {}
+                    is ShellPacket.Stdout -> for (c in String(p.bytes, Charsets.UTF_8)) {
+                        if (c == '\n') { lines.trySend(buf.toString()); buf.setLength(0) } else if (buf.length < 512) buf.append(c)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            // ended: the TV closed it, the connection went, or close()
+        } finally {
+            alive = false
+            lines.close()
+        }
+    }
+
+    override val open: Boolean get() = alive
+
+    override suspend fun send(line: String): Boolean {
+        if (!alive) return false
+        return try {
+            stream.write(ShellV2.encode(ShellV2.ID_STDIN, (line + "\n").toByteArray(Charsets.UTF_8)))
+            true
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            alive = false
+            false
+        }
+    }
+
+    override suspend fun readLine(timeoutMs: Long): String? =
+        kotlinx.coroutines.withTimeoutOrNull(timeoutMs) { lines.receiveCatching().getOrNull() }
+
+    override suspend fun close() {
+        alive = false
+        try { stream.write(ShellV2.encode(ShellV2.ID_CLOSE_STDIN)) } catch (e: CancellationException) { throw e } catch (e: Exception) {}
+        reader.cancel()
+        stream.close()
     }
 }

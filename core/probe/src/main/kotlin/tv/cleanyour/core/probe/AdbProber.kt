@@ -1,6 +1,7 @@
 package tv.cleanyour.core.probe
 
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import tv.cleanyour.core.model.AdbError
 import tv.cleanyour.core.model.AdbException
@@ -230,8 +231,37 @@ class AdbProber(
     }
 
     // RemoteInput: one press, sent as the TV's own remote would (input keyevent), or typed text.
+    // 1.9.4: through the launcher's key injector when the TV has it (one line on an open shell, a few ms), else
+    // `input keyevent` (a new Java process on the TV for every press: half a second or more on a slow TV).
     override suspend fun key(session: TvSession, code: Int, long: Boolean) {
+        require(code in 1..400) { "not a key code: $code" }
+        val ch = keyChannel(session)
+        if (ch != null && ch.send(if (long) "l $code" else "k $code")) return
         session.exec(ProbeScripts.keyEvent(code, long), ExecSpec(timeoutMs = 10_000, stdoutCap = 4096, retry = RetryClass.NEVER))
+    }
+
+    override suspend fun warmKeys(session: TvSession) { keyChannel(session) }
+
+    override suspend fun endKeys(session: TvSession) {
+        keyLock.withLock { keyChannels.remove(session) }?.let { ch -> runCatching { ch.close() } }
+    }
+
+    private val keyLock = kotlinx.coroutines.sync.Mutex()
+    private val keyChannels = HashMap<TvSession, tv.cleanyour.core.session.ShellChannel>()
+    private val keyRefusedAt = HashMap<TvSession, Long>()
+
+    private suspend fun keyChannel(session: TvSession): tv.cleanyour.core.session.ShellChannel? = keyLock.withLock {
+        keyChannels[session]?.let { if (it.open) return@withLock it else keyChannels.remove(session) }
+        val refused = keyRefusedAt[session]
+        if (refused != null && clock.nowMs() - refused < KEY_RETRY_MS) return@withLock null
+        val ch = try { session.channel(ProbeScripts.keyServer()) } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) { null }
+        if (ch == null || ch.readLine(KEY_READY_MS) != "ready") {
+            ch?.let { runCatching { it.close() } }
+            keyRefusedAt[session] = clock.nowMs()
+            return@withLock null
+        }
+        keyChannels[session] = ch
+        ch
     }
 
     override suspend fun text(session: TvSession, text: String) {
@@ -407,6 +437,8 @@ class AdbProber(
     }
 
     companion object {
+        const val KEY_READY_MS = 4_000L      // app_process starting on a slow TV
+        const val KEY_RETRY_MS = 60_000L     // a TV without the injector (older launcher) tries again after this
         const val OVERLAY_CAP = 256L * 1024
         const val SCREENSHOT_CAP = ShellRenderer.MAX_PNG_BYTES
         const val SIGNER_APK_CAP = 16L * 1024 * 1024

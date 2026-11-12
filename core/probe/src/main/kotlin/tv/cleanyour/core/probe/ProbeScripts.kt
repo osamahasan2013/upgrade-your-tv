@@ -99,6 +99,11 @@ object ProbeScripts {
     }
 
     // The remote (RemoteInput): `input keyevent` for one of the remote's own key codes.
+    // 1.9.4: the launcher's key injector (patches/launcher/0007, UytvKeys), run from its APK as the shell user and
+    // kept open: one line per press on its stdin. Fixed text; nothing of the person's goes in.
+    fun keyServer(): ShellLine = ShellLine(
+        "CLASSPATH=\$(pm path com.gathin.tvhome | sed -n 's/^package://p' | head -n 1) exec app_process / com.gathin.tvhome.UytvKeys")
+
     fun keyEvent(code: Int, long: Boolean = false): ShellLine {
         require(code in 1..400) { "not a key code: $code" }
         return ShellLine(if (long) "input keyevent --longpress $code" else "input keyevent $code")
