@@ -423,6 +423,8 @@ object ManageShots {
             extras = tv.cleanyour.core.flows.HomeExtras(signal = true, sidebar = true, continueCard = true), launcherOn = true), {}, {}) },
         Shot("extras_signal_row", 1600.dp) { HomeExtrasScreen(tv.cleanyour.core.flows.HomeExtrasState("Living room TV", loading = false,
             extras = tv.cleanyour.core.flows.HomeExtras(signal = true, continueCard = true), launcherOn = true), {}, {}) },
+        Shot("extras_small_right_dockonly", 1800.dp) { HomeExtrasScreen(tv.cleanyour.core.flows.HomeExtrasState("Living room TV", loading = false,
+            extras = tv.cleanyour.core.flows.HomeExtras(sidebar = true, sideRight = true, names = tv.cleanyour.core.flows.NameSize.SMALL, dockOnly = true, continueCard = true), launcherOn = true), {}, {}) },
         Shot("extras_glass_sidebar", 1600.dp) { HomeExtrasScreen(tv.cleanyour.core.flows.HomeExtrasState("Living room TV", loading = false,
             extras = tv.cleanyour.core.flows.HomeExtras(sidebar = true), launcherOn = true), {}, {}) },
         Shot("video_offer_app") { VideoBackgroundScreen(VideoBackgroundState("Living room TV", loading = false, home = VideoHome.NOT_INSTALLED), {}, {}, {}) },

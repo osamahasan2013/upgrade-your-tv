@@ -52,16 +52,25 @@ object HomeHelper {
     // The TV's own home screen the helper sends on from: what Home resolves to now (S2, S9).
     fun stock(snapshot: Snapshot, stockLaunchers: List<Component>): Component? {
         val home = snapshot.home.resolved ?: return null
-        if (!sendsOnFrom(home, stockLaunchers)) return null
-        if (stockLaunchers.isNotEmpty() && stockLaunchers.none { it.pkg == home.pkg }) return null
+        if (!sendsOnFrom(home, stockLaunchers, snapshot)) return null
+        if (stockLaunchers.isNotEmpty() && stockLaunchers.none { it.pkg == home.pkg } && !vendorHome(home, snapshot)) return null
         return home
     }
 
     // A home screen the helper may send on from: one of Google's, or (Upgrade Your TV 1.7.0) the TV's own one
     // its profile lists (a TCL's or another maker's), never a placeholder or a Home answer that is not a screen.
-    fun sendsOnFrom(home: Component, stockLaunchers: List<Component>): Boolean =
+    fun sendsOnFrom(home: Component, stockLaunchers: List<Component>, snapshot: Snapshot? = null): Boolean =
         KnownLaunchers.generic.any { it.pkg == home.pkg } ||
-            (stockLaunchers.any { it.pkg == home.pkg } && !StockHome.isPlaceholder(home) && home.pkg != SwitchOffRule.OUR_LAUNCHER)
+            (stockLaunchers.any { it.pkg == home.pkg } && !StockHome.isPlaceholder(home) && home.pkg != SwitchOffRule.OUR_LAUNCHER) ||
+            (snapshot != null && vendorHome(home, snapshot))
+
+    // Upgrade Your TV 1.8.3: the TV's own home screen when no list names it (a TCL's on Realtek, say): what HOME
+    // resolves to now, a system app that claims HOME, not a placeholder (FallbackHome, a key service) and not ours.
+    // Nothing is switched off for the helper, and its guarded section takes our service out again when the new
+    // home screen does not come up.
+    fun vendorHome(home: Component, snapshot: Snapshot): Boolean =
+        snapshot.home.resolved == home && !StockHome.isPlaceholder(home) && home.pkg != SwitchOffRule.OUR_LAUNCHER &&
+            snapshot.packages[home.pkg]?.system == true && snapshot.home.claimants.any { it.component.pkg == home.pkg && it.priority >= 0 }
 
     fun list(snapshot: Snapshot): String? = snapshot.settings[SettingKey.ENABLED_ACCESSIBILITY]?.takeIf { it.isNotEmpty() && it != "null" }
     fun on(snapshot: Snapshot): Boolean = snapshot.settings[SettingKey.ACCESSIBILITY_ENABLED] == "1"
@@ -77,7 +86,7 @@ object HomeHelper {
         if (snapshot.facts.sdk < DefaultPlanner.TV_MIN_SDK) return Refusal.OLD_ANDROID
         if (snapshot.facts.installRefusal) return Refusal.NO_INSTALLS
         val home = snapshot.home.resolved
-        if (home == null || !sendsOnFrom(home, stockLaunchers)) return Refusal.NOT_GOOGLE_HOME
+        if (home == null || !sendsOnFrom(home, stockLaunchers, snapshot)) return Refusal.NOT_GOOGLE_HOME
         if (stock(snapshot, stockLaunchers) == null) return Refusal.NOT_PROFILE_HOME
         val list = list(snapshot)
         if (list != null && !COMPONENT_LIST_RE.matches(list)) return Refusal.LIST_UNREADABLE

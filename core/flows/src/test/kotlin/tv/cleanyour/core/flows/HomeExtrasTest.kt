@@ -20,4 +20,11 @@ class HomeExtrasTest {
         val off = HomeExtras.apply(on, HomeExtras(sidebar = true))
         assertEquals(setOf(HomeExtras.SIDEBAR), off.unknown.keys)
     }
+
+    @Test fun namesSideAndDockOnlyGoInAsTheLauncherReadsThem() {
+        val doc = HomeExtras.apply(LauncherConfigDoc(), HomeExtras(names = NameSize.HIDDEN, sideRight = true, dockOnly = true))
+        assertEquals(JsonPrimitive("hidden"), doc.unknown[HomeExtras.NAMES])
+        assertEquals(JsonPrimitive("right"), doc.unknown[HomeExtras.SIDE])
+        assertEquals(JsonPrimitive(true), doc.unknown[HomeExtras.DOCK_ONLY])
+    }
 }

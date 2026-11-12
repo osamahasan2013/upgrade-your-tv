@@ -338,7 +338,13 @@ class HomeScreenMachine(
     private suspend fun load() {
         val tv = d.tv(tvId) ?: return
         val profile = d.profileOf(tv)
-        val snap = d.snapshots.latest(tvId)
+        // 1.8.3: apps installed since the TV was last read were missing from the dock sheet (the stored read does not
+        // have them): when the TV is connected and names a launchable app the read lacks, the TV is read again.
+        val liveSession = d.access.live(tvId)
+        val launchableNow = liveSession?.let { s -> (d.prober as? LaunchableApps)?.let { q -> attempt { q.launchable(s) }.getOrNull() } }
+        val stored = d.snapshots.latest(tvId)
+        val snap = if (liveSession != null && launchableNow != null && stored != null && launchableNow.any { it !in stored.packages })
+            attempt { d.runner.freshSnapshot(liveSession) }.getOrNull() ?: stored else stored
         val packages = snap?.packages.orEmpty()
         val choice = d.homePrefs.load(tvId)
         val today = d.clock.today()
@@ -349,7 +355,7 @@ class HomeScreenMachine(
         // offered user apps with nothing to open (our TV curtain, token services). With the TV connected, the apps a
         // launcher would show are asked, as Setup's dock sheet does; the rule stays for a TV that is not connected or
         // could not say.
-        val launchable = d.access.live(tvId)?.let { s -> (d.prober as? LaunchableApps)?.let { q -> attempt { q.launchable(s) }.getOrNull() } }
+        val launchable = launchableNow
         val apps = (snap?.let { DockCandidates.of(it, launchable, profile, d.facts) } ?: emptySet())
             .map { AppChoice(it, d.nameOf(it, packages[it]?.label)) }.sortedBy { it.name.lowercase() }
         // The dock as the TV shows it: an app no longer there (gone, switched off) is skipped and the

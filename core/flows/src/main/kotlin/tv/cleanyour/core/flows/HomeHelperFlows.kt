@@ -56,8 +56,8 @@ object HomeHelperFlows {
         val unread = snap.launcherOverlay == null
         // 1.7.0: the TV's own home screens its profile lists count as well (HomeHelper.sendsOnFrom).
         val stocks = d.tv(tvId)?.let { attempt { d.profileOf(it) }.getOrNull() }?.stockLaunchers.orEmpty()
-        val also = stocks.map { it.pkg }
-        val home = snap.home.resolved?.takeIf { HomeHelper.sendsOnFrom(it, stocks) }?.pkg
+        val home = snap.home.resolved?.takeIf { HomeHelper.sendsOnFrom(it, stocks, snap) }?.pkg
+        val also = stocks.map { it.pkg } + listOfNotNull(home)
         return { doc ->
             if (listed && unread && home != null && HomeHelperKeys.REDIRECT !in doc.unknown) HomeHelperKeys.with(doc, home, also + home)
             else HomeHelperKeys.carry(doc, snap.launcherOverlay, listed, also)

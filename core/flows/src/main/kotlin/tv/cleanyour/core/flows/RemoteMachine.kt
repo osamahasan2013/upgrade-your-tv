@@ -84,6 +84,10 @@ class RemoteMachine(
 
     private val queue = Channel<Send>(Channel.UNLIMITED)
     private var liveJob: Job? = null
+    // 1.8.3: a screenshot holds the connection for a second or more, so a press waited behind it. While the
+    // person presses buttons the picture stops (the frame in progress is dropped) and comes back once they pause.
+    private var liveWanted = false
+    private var resumeJob: Job? = null
 
     init {
         scope.launch { connect() }
@@ -98,15 +102,15 @@ class RemoteMachine(
 
     override fun handle(event: Any, before: RemoteState, after: RemoteState) {
         when (event) {
-            is RemoteIntent.Press -> if (event.code in RemoteKeyCodes.ALL) queue.trySend(Send.Key(event.code, false))
-            is RemoteIntent.Hold -> if (event.code in RemoteKeyCodes.ALL) queue.trySend(Send.Key(event.code, true))
+            is RemoteIntent.Press -> if (event.code in RemoteKeyCodes.ALL) { pauseLive(); queue.trySend(Send.Key(event.code, false)) }
+            is RemoteIntent.Hold -> if (event.code in RemoteKeyCodes.ALL) { pauseLive(); queue.trySend(Send.Key(event.code, true)) }
             is RemoteIntent.Type -> {
                 val t = event.text.trim()
                 if (t.isEmpty()) return
                 if (!ProbeScripts.isSafeText(t)) send(Update { it.copy(note = RemoteNote.CannotType) })
                 else queue.trySend(Send.Text(t))
             }
-            is RemoteIntent.Live -> if (event.on) startLive() else stopLive()
+            is RemoteIntent.Live -> { liveWanted = event.on; if (event.on) startLive() else { resumeJob?.cancel(); stopLive() } }
             RemoteIntent.Reconnect -> if (!before.connecting) scope.launch { connect() }
             else -> {}
         }
@@ -160,8 +164,19 @@ class RemoteMachine(
 
     private fun stopLive() { liveJob?.cancel(); liveJob = null }
 
+    private fun pauseLive() {
+        if (!liveWanted) return
+        stopLive()
+        resumeJob?.cancel()
+        resumeJob = scope.launch {
+            delay(RESUME_AFTER_MS)
+            if (liveWanted) startLive()
+        }
+    }
+
     companion object {
         const val LIVE_GAP_MS = 150L
+        const val RESUME_AFTER_MS = 1_200L
         const val LIVE_IDLE_MS = 2_000L
     }
 }

@@ -79,6 +79,9 @@ data class RemoteButtonsState(
     val saved: List<ButtonMapping> = emptyList(),
     val apps: List<TargetChoice> = emptyList(),
     val editing: Pair<RemoteButton, Boolean>? = null,   // the button and whether its hold is being chosen
+    // 1.8.3: why Setup does not offer the helper on this TV (HomeHelper.refusal), and what Home answers to now.
+    val helperWhy: String? = null,
+    val homeNow: String? = null,
 ) {
     val changed: Boolean get() = map.toSet() != saved.toSet()
     fun targetOf(b: RemoteButton, hold: Boolean): String? = map.firstOrNull { it.button == b && it.hold == hold }?.target
@@ -138,6 +141,10 @@ class RemoteButtonsMachine(
             .filter { it.value != ButtonTargets.NEW_HOME && pkgs[it]?.enabled?.name?.startsWith("DISABLED") != true }
             .map { TargetChoice(it.value, d.nameOf(it, pkgs[it]?.label)) }
             .sortedBy { it.name.lowercase() }
-        send(Loaded(RemoteButtonsState(tvName = tv?.nickname.orEmpty(), loading = false, helperOn = helperOn, map = saved, saved = saved, apps = apps)))
+        val stocks = tv?.let { attempt { d.profileOf(it) }.getOrNull() }?.stockLaunchers.orEmpty()
+        val why = if (helperOn || snap == null) null else HomeHelper.refusal(snap, stocks, refusesOtherHomes = false, build = true)?.reason
+        val homeNow = snap?.home?.resolved?.let { "${it.pkg.value}/${it.cls}" }
+        send(Loaded(RemoteButtonsState(tvName = tv?.nickname.orEmpty(), loading = false, helperOn = helperOn, map = saved, saved = saved, apps = apps,
+            helperWhy = why, homeNow = homeNow)))
     }
 }

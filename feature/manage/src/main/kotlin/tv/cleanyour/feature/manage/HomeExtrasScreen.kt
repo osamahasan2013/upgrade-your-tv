@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import tv.cleanyour.core.flows.HomeExtras
 import tv.cleanyour.core.flows.HomeExtrasIntent
 import tv.cleanyour.core.flows.HomeExtrasState
+import tv.cleanyour.core.flows.NameSize
 import tv.cleanyour.ui.design.component.Banner
 import tv.cleanyour.ui.design.component.BannerTone
 import tv.cleanyour.ui.design.component.CytTopBar
@@ -88,8 +89,26 @@ fun HomeExtrasScreen(state: HomeExtrasState, onIntent: (HomeExtrasIntent) -> Uni
                 SegmentOption("sidebar", stringResource(R.string.extras_layout_sidebar), stringResource(R.string.extras_layout_sidebar_cd))),
             if (state.extras.sidebar) "sidebar" else "row", { onIntent(HomeExtrasIntent.Sidebar(it.key == "sidebar")) },
         )
+        if (state.extras.sidebar) {
+            Overline(stringResource(R.string.extras_side), Modifier.padding(top = 20.dp, bottom = 8.dp))
+            SegmentedChoice(
+                listOf(SegmentOption("left", stringResource(R.string.extras_side_left), stringResource(R.string.extras_side_left)),
+                    SegmentOption("right", stringResource(R.string.extras_side_right), stringResource(R.string.extras_side_right))),
+                if (state.extras.sideRight) "right" else "left", { onIntent(HomeExtrasIntent.SideRight(it.key == "right")) },
+            )
+        }
+        Overline(stringResource(R.string.extras_names), Modifier.padding(top = 20.dp, bottom = 8.dp))
+        SegmentedChoice(
+            listOf(SegmentOption(NameSize.LARGE.id, stringResource(R.string.extras_names_large), stringResource(R.string.extras_names_large)),
+                SegmentOption(NameSize.SMALL.id, stringResource(R.string.extras_names_small), stringResource(R.string.extras_names_small)),
+                SegmentOption(NameSize.HIDDEN.id, stringResource(R.string.extras_names_hidden), stringResource(R.string.extras_names_hidden))),
+            state.extras.names.id, { o -> onIntent(HomeExtrasIntent.Names(NameSize.entries.first { it.id == o.key })) },
+        )
         Overline(stringResource(R.string.extras_widgets), Modifier.padding(top = 20.dp, bottom = 8.dp))
         ListGroup {
+            SwitchRow(stringResource(R.string.extras_dock_only), state.extras.dockOnly, { onIntent(HomeExtrasIntent.DockOnly(it)) },
+                subtitle = stringResource(R.string.extras_dock_only_sub))
+            ListDivider()
             SwitchRow(stringResource(R.string.extras_continue), state.extras.continueCard, { onIntent(HomeExtrasIntent.Continue(it)) },
                 subtitle = stringResource(R.string.extras_continue_sub))
             ListDivider()
@@ -118,10 +137,15 @@ internal fun HomePreview(e: HomeExtras, modifier: Modifier = Modifier) {
         Text(if (e.signal) "SAT 31.10" else "Saturday, 31 October", Modifier.align(Alignment.TopEnd).padding(top = 44.dp, end = 14.dp),
             color = Color.White.copy(alpha = 0.8f), fontFamily = font, fontSize = 8.sp)
         val apps = listOf(Color(0xFFE50914), Color(0xFF113CCF), Color(0xFFFF0000), Color(0xFF111111), Color(0xFF00A8E1), Color(0xFFFA2D48))
+        // Below the row, the rest of the apps unless only the dock shows.
+        if (!e.sidebar && !e.dockOnly) Row(Modifier.align(Alignment.BottomStart).padding(start = 14.dp, bottom = 0.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            repeat(9) { Box(Modifier.size(28.dp, 8.dp).clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)).background(Color.White.copy(alpha = 0.35f))) }
+        }
         val names = listOf("Netflix", "Disney+", "YouTube", "Apple TV", "Prime Video", "Music")
         if (e.sidebar) {
             Column(
-                Modifier.align(Alignment.CenterStart).padding(start = 12.dp).width(110.dp).fillMaxHeight(0.82f)
+                Modifier.align(if (e.sideRight) Alignment.CenterEnd else Alignment.CenterStart).padding(horizontal = 12.dp)
+                    .width(when (e.names) { NameSize.HIDDEN -> 30.dp; NameSize.SMALL -> 90.dp; NameSize.LARGE -> 110.dp }).fillMaxHeight(0.82f)
                     .clip(RoundedCornerShape(12.dp)).background(Color.White.copy(alpha = 0.18f))
                     .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(12.dp)).padding(6.dp),
                 verticalArrangement = Arrangement.spacedBy(3.dp),
@@ -131,14 +155,15 @@ internal fun HomePreview(e: HomeExtras, modifier: Modifier = Modifier) {
                     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(if (focused) Color.White.copy(alpha = 0.95f) else Color.Transparent)
                         .padding(horizontal = 4.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.size(12.dp).clip(RoundedCornerShape(3.dp)).background(c))
-                        Text(if (e.signal) names[i].uppercase() else names[i], Modifier.padding(start = 5.dp), color = if (focused) Color(0xFF111111) else Color.White,
-                            fontFamily = font, fontSize = 7.sp, maxLines = 1)
+                        if (e.names != NameSize.HIDDEN) Text(if (e.signal) names[i].uppercase() else names[i], Modifier.padding(start = 5.dp),
+                            color = if (focused) Color(0xFF111111) else Color.White, fontFamily = font, fontSize = if (e.names == NameSize.SMALL) 6.sp else 7.sp, maxLines = 1)
                     }
                 }
             }
         } else {
-            if (e.signal) Text("03 YOUTUBE", Modifier.align(Alignment.BottomStart).padding(start = 18.dp, bottom = 46.dp), color = Color.White,
-                fontFamily = Dots, fontSize = 14.sp)
+            if (e.names != NameSize.HIDDEN) Text(if (e.signal) "YOUTUBE" else "YouTube", Modifier.align(Alignment.BottomStart).padding(start = 66.dp, bottom = 52.dp),
+                color = Color.White, fontFamily = font, fontSize = if (e.names == NameSize.SMALL) 9.sp else 14.sp)
+            if (e.signal && e.names != NameSize.HIDDEN) Box(Modifier.align(Alignment.BottomStart).padding(start = 66.dp, bottom = 40.dp).width(1.dp).size(1.dp, 12.dp).background(Color.White))
             Row(
                 Modifier.align(Alignment.BottomStart).padding(start = 14.dp, bottom = 12.dp).clip(RoundedCornerShape(10.dp))
                     .background(Color.White.copy(alpha = 0.18f)).border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(10.dp)).padding(5.dp),
@@ -152,7 +177,7 @@ internal fun HomePreview(e: HomeExtras, modifier: Modifier = Modifier) {
         }
         if (e.continueCard) {
             Row(
-                Modifier.align(Alignment.BottomEnd).padding(end = 12.dp, bottom = 12.dp).clip(RoundedCornerShape(16.dp))
+                Modifier.align(if (e.sidebar && e.sideRight) Alignment.BottomStart else Alignment.BottomEnd).padding(end = 12.dp, bottom = 12.dp).clip(RoundedCornerShape(16.dp))
                     .background(Color.White.copy(alpha = 0.2f)).border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
                     .padding(horizontal = 7.dp, vertical = 5.dp),
                 verticalAlignment = Alignment.CenterVertically,

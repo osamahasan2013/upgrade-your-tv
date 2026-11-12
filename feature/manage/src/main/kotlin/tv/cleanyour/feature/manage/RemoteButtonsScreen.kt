@@ -51,6 +51,8 @@ fun RemoteButtonsScreen(state: RemoteButtonsState, onIntent: (RemoteButtonsInten
         if (state.loading) return@ScreenScaffold
         if (!state.helperOn) {
             Banner(stringResource(R.string.buttons_needs_helper), BannerTone.INFO, Modifier.padding(top = 16.dp))
+            state.helperWhy?.let { Body(msg(R.string.buttons_helper_why, "why" to it), Modifier.padding(top = 12.dp), color = CytTheme.colors.textPrimary) }
+            state.homeNow?.let { Body(msg(R.string.buttons_home_now, "home" to it), Modifier.padding(top = 6.dp)) }
             PrimaryButton(stringResource(R.string.video_set_up_again), { onIntent(RemoteButtonsIntent.SetUpHelper) }, Modifier.padding(top = 16.dp))
             return@ScreenScaffold
         }
