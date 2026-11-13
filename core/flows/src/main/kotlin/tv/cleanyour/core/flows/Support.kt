@@ -47,7 +47,10 @@ sealed interface StartDestination {
 suspend fun resolveStart(tvs: List<Tv>, journal: Journal): StartDestination {
     val byRecent = tvs.sortedByDescending { it.lastSeenAt }
     for (tv in byRecent) journal.openRuns(tv.id).firstOrNull()?.let { return StartDestination.ResumeRun(tv.id, it) }
-    byRecent.firstOrNull { it.wizard != null }?.let { return StartDestination.ContinueSetup(it.id) }
+    // Upgrade Your TV 1.9.9: only a TV still being set up for the first time. A TV that already has the new home
+    // screen opens on Manage even with a Setup left half way (Setup run again and left, the helper's Setup): the
+    // app kept opening on Setup's first page, with no way back and only "Switch the home screen" to go on.
+    byRecent.firstOrNull { it.wizard != null && it.launcher == null }?.let { return StartDestination.ContinueSetup(it.id) }
     return byRecent.firstOrNull()?.let { StartDestination.Manage(it.id) } ?: StartDestination.Welcome
 }
 
