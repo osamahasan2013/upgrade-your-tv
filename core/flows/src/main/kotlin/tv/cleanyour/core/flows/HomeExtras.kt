@@ -70,6 +70,8 @@ data class HomeExtras(
         const val LAUNCHER_VERSION_11 = 1011L
         // The date under the clock never cut after midnight (patches/launcher/0012).
         const val LAUNCHER_VERSION_12 = 1013L   // uytv12 withdrawn: uytv13 is uytv11 again
+        // "Add to dock" in the TV's App library (patches/launcher/0013).
+        const val LAUNCHER_VERSION_14 = 1014L
         // The launcher that reads them (patches/launcher/0002-home-choices.patch).
         const val LAUNCHER_VERSION = 1002L
         // The launcher that reads names, side and dock only (patches/launcher/0003).
@@ -198,6 +200,6 @@ class HomeExtrasMachine(
         val snap = attempt { d.snapshots.latest(tvId) }.getOrNull()
         val ours = snap?.packages?.get(SwitchOffRule.OUR_LAUNCHER)
         send(Loaded(HomeExtrasState(tvName = tv?.nickname.orEmpty(), loading = false, extras = saved, saved = saved,
-            launcherOn = ours != null, launcherOld = ours != null && ours.versionCode < HomeExtras.LAUNCHER_VERSION_12)))
+            launcherOn = ours != null, launcherOld = ours != null && ours.versionCode < HomeExtras.LAUNCHER_VERSION_14)))
     }
 }
