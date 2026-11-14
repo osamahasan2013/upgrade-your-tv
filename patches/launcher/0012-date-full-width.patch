@@ -1,0 +1,31 @@
+diff --git a/launcher/app/build.gradle b/launcher/app/build.gradle
+index 9f806b85..9c3c9c70 100644
+--- a/launcher/app/build.gradle
++++ b/launcher/app/build.gradle
+@@ -12,8 +12,8 @@ android {
+         minSdk 26
+         targetSdk 34
+         // Upgrade Your TV: launcher 3.0 with the video background, dot type, sidebar and Continue card; above upstream's 9.
+-        versionCode 1011
+-        versionName '3.0-uytv11'
++        versionCode 1012
++        versionName '3.0-uytv12'
+     }
+ 
+     buildTypes {
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java b/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
+index 698abc9f..7d947fcb 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
+@@ -2324,6 +2324,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+             lp.gravity = Gravity.RIGHT;
+             ((LinearLayout.LayoutParams) clockRow.getLayoutParams()).gravity = Gravity.RIGHT;
+         }
++        // Upgrade Your TV (3.0-uytv12): the date as wide as its own text. With match_parent a TextView keeps its
++        // measured width when the text changes, so after midnight a longer day name ("SATURDAY" after "FRIDAY")
++        // was cut with "..." until Home started again.
++        View dateView = findViewById(R.id.date);
++        dateView.getLayoutParams().width = ViewGroup.LayoutParams.WRAP_CONTENT;
+         clockColumn.addView(column, clockColumn.indexOfChild(clockRow) + 1, lp);
+     }
+ 
