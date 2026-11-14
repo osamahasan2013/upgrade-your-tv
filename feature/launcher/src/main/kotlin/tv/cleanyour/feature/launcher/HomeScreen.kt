@@ -105,6 +105,23 @@ fun HomeScreen(
                     actionLabel = stringResource(R.string.home_look_ended_restore), onAction = { onIntent(HomeScreenIntent.RestoreMine) }, guardAction = true)
             }
         }
+        // Upgrade Your TV 1.10.0: the home screen is gone from a TV that had it (removed on the TV): put it back as
+        // an app from here; the dock, look and layout below are sent after that.
+        if (state.canInstallAsApp && busy == null) {
+            Banner(stringResource(R.string.home_gone_banner), BannerTone.WARNING, Modifier.padding(top = 16.dp))
+            state.installAppFailed?.let { Banner(msg(R.string.home_as_app_failed, "detail" to it), BannerTone.DANGER, Modifier.padding(top = 12.dp)) }
+            val installing = state.installingApp
+            if (installing != null) {
+                val ctx = androidx.compose.ui.platform.LocalContext.current
+                fun bytes(v: Long) = android.text.format.Formatter.formatShortFileSize(ctx, v)
+                Body(msg(R.string.home_as_app_installing, "sent" to bytes(installing.first), "size" to bytes(installing.second)),
+                    Modifier.padding(top = 12.dp, start = 4.dp, end = 4.dp))
+                ProgressBar(if (installing.second > 0) installing.first.toFloat() / installing.second else 0f, Modifier.padding(top = 10.dp))
+            } else {
+                PrimaryButton(stringResource(R.string.home_as_app_button), { onIntent(HomeScreenIntent.InstallAsApp) },
+                    Modifier.fillMaxWidth().padding(top = 12.dp))
+            }
+        }
         if (busy != null) {
             LiveLine(stringResource(R.string.home_applying))
             if (busy is Busy.Working) ProgressBar(busy.percent / 100f, Modifier.padding(top = 16.dp))

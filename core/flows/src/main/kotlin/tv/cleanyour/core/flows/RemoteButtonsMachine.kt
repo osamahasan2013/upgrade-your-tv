@@ -23,8 +23,8 @@ enum class RemoteButton(val keyName: String) {
     RED("KEYCODE_PROG_RED"), GREEN("KEYCODE_PROG_GREEN"), YELLOW("KEYCODE_PROG_YELLOW"), BLUE("KEYCODE_PROG_BLUE"),
     INPUT("KEYCODE_TV_INPUT"), LIVE_TV("KEYCODE_TV"), GUIDE("KEYCODE_GUIDE"), INFO("KEYCODE_INFO"), APPS("KEYCODE_ALL_APPS"),
     BOOKMARK("KEYCODE_BOOKMARK"), CAPTIONS("KEYCODE_CAPTIONS"), PLAY_PAUSE("KEYCODE_MEDIA_PLAY_PAUSE"), HOME_HOLD("KEYCODE_HOME");
-    // Home is only offered held: a short press already opens the new home screen with the helper on.
-    val holdOnly: Boolean get() = this == HOME_HOLD
+    // 1.10.0: Home is offered for a tap too (left alone, a tap opens the new home screen with the helper on).
+    val holdOnly: Boolean get() = false
 }
 
 // One mapping: the button, held or tapped, and its target as the launcher reads it (a package, "inputs",
@@ -125,7 +125,7 @@ class RemoteButtonsMachine(
                 // The look goes again with the buttons in it (LookCarry); that page asks for the screen lock.
                 effect(ManageEffect.Navigate("home/${tvId.value}/again"))
             }
-            RemoteButtonsIntent.SetUpHelper -> effect(ManageEffect.Navigate("setup/${tvId.value}/helper"))   // 1.9.3: the helper chosen
+            RemoteButtonsIntent.SetUpHelper -> effect(ManageEffect.Navigate("homestart/${tvId.value}"))   // 1.10.0: its own page turns it on
             else -> {}
         }
     }

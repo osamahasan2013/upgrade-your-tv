@@ -447,7 +447,9 @@ fun AppRoot(graph: AppGraph, start: Dest, onExit: () -> Unit) {
                     HomeScreen(state, m::dispatch, onBack = { go("back") }, photos = photoPicker, onReport = { lead ->
                         go(IssueRoute.of(TvId(key.tvId), ReportContext("Home screen", ReportContext.named(lead, state.tvName), "HOME_BLOCKED_${state.notOnTv?.reason ?: "NONE"}")))
                     }, onOpenUrl = { url -> scope.launch { onManageEffect(ManageEffect.OpenUrl(url)) } },
-                        layout = { HomeExtrasSection(extras, x::dispatch, inPage = true, onInstallAsApp = { go("video/${key.tvId}") }) })
+                        layout = { HomeExtrasSection(extras, x::dispatch, inPage = true) })
+                    // The layout section follows the TV: after the home screen was installed or updated from this page.
+                    LaunchedEffect(state.launcherVersionCode) { x.dispatch(tv.cleanyour.core.flows.HomeExtrasIntent.Reload) }
                 }
                 entry<Dest.Modules> { key ->
                     val m = rememberMachine("modules:${key.tvId}") { graph.modules(it, TvId(key.tvId)) }

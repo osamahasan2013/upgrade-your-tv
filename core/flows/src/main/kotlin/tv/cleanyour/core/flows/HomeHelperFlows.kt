@@ -58,8 +58,12 @@ object HomeHelperFlows {
         val stocks = d.tv(tvId)?.let { attempt { d.profileOf(it) }.getOrNull() }?.stockLaunchers.orEmpty()
         val home = snap.home.resolved?.takeIf { HomeHelper.sendsOnFrom(it, stocks, snap) }?.pkg
         val also = stocks.map { it.pkg } + listOfNotNull(home)
+        // Upgrade Your TV 1.10.0: the helper belongs to the remote, not to a look. While it is on the TV's list its
+        // keys go with every look the app sends, whether or not the look on the TV had them (a home screen put on
+        // again as an app starts with none, and the helper then "did nothing" until Setup ran again).
+        val named = HomeHelperKeys.redirectOf(snap.launcherOverlay) != null
         return { doc ->
-            if (listed && unread && home != null && HomeHelperKeys.REDIRECT !in doc.unknown) HomeHelperKeys.with(doc, home, also + home)
+            if (listed && (unread || !named) && home != null && HomeHelperKeys.REDIRECT !in doc.unknown) HomeHelperKeys.with(doc, home, also + home)
             else HomeHelperKeys.carry(doc, snap.launcherOverlay, listed, also)
         }
     }

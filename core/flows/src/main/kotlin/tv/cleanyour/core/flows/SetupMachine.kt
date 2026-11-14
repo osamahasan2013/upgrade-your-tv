@@ -827,11 +827,15 @@ class SetupMachine(
         val profile = (res as? ProfileResolution.Exact)?.profile
         // RFC-LOOK-SETUP-1: a Setup run again starts from the look this phone saved for the TV (its
         // look, apps in a row and picture), so it never clears them.
-        val saved = if (existing?.wizard != null) null else deps.homePrefs?.let { p -> attempt { p.load(s.tvId) }.getOrNull() }
+        // Upgrade Your TV 1.10.0: a draft left half way on a TV that already has the new home screen is dropped, so
+        // Setup run again starts from what this phone saved for the TV (its look and its dock), not from a first
+        // run's defaults (the "Netflix, YouTube, Prime Video" dock the summary showed).
+        val wizard = existing?.wizard?.takeIf { existing.launcher == null }
+        val saved = if (wizard != null) null else deps.homePrefs?.let { p -> attempt { p.load(s.tvId) }.getOrNull() }
         // look2: a saved choice in the new form is the look step's choice as it is (WizardDraft.look).
         val lookId = saved?.takeUnless { it.isNew }?.lookOn(deps.clock.today())
-        val draft = existing?.wizard ?: WizardDraft(step = 3, level = existing?.level ?: Level.SIMPLE, kept = emptySet(), extraOff = emptySet(),
-            dock = null, themeId = lookId, keepDebuggingOn = false, planId = null, updatedAtMs = now,
+        val draft = wizard ?: WizardDraft(step = 3, level = existing?.level ?: Level.SIMPLE, kept = emptySet(), extraOff = emptySet(),
+            dock = saved?.dock?.takeIf { it.isNotEmpty() && saved.dockChosen }, themeId = lookId, keepDebuggingOn = false, planId = null, updatedAtMs = now,
             columns = drafts.override(lookId, saved?.takeUnless { it.isNew }?.columns),
             picture = saved?.takeUnless { it.isNew }?.picture?.takeUnless { Looks.dated(lookId) },
             look = saved?.takeIf { it.isNew }?.let { HomePrefs.encode(it.copy(dock = emptyList(), cards = null, dockChosen = true)) })

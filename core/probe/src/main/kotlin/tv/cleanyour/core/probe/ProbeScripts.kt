@@ -95,6 +95,24 @@ object ProbeScripts {
     // it open Home from its boot receiver. Each alone on its line (PmGuard).
     val HELPER_KEEP_GRANT = ShellLine("pm grant com.gathin.tvhome android.permission.WRITE_SECURE_SETTINGS")
     val HELPER_KEEP_OPEN = ShellLine("appops set com.gathin.tvhome SYSTEM_ALERT_WINDOW allow")
+    // 1.10.0: what brings the launcher's process back after a TCL force-stops it at start (upstream's recipe,
+    // docs/TROUBLESHOOTING.md): its GuardRevival as a notification listener (the system binds it again; it reads
+    // no notification), and TCL's own auto-start op for the app, saved. Each may be unknown to a TV: never an error.
+    val HELPER_KEEP_REVIVE = ShellLine("cmd notification allow_listener com.gathin.tvhome/.GuardRevival >/dev/null 2>&1; " +
+        "appops set com.gathin.tvhome APP_AUTO_START allow >/dev/null 2>&1; appops write-settings >/dev/null 2>&1; true")
+    // The Home button helper switched on or off by itself, with no Setup and no look: only the launcher's
+    // HomeKeyService entry on the TV's accessibility list changes; every other entry stays, in order. On: the
+    // entry leaves the list and comes back a second later (Android binds a service it had marked crashed only
+    // after seeing it leave), and accessibility goes on. Off: the entry leaves; with nothing else listed the
+    // list is deleted and accessibility goes off. The list is printed last.
+    private const val HELPER_OTHERS = "a=\$(settings get secure enabled_accessibility_services 2>/dev/null); " +
+        "o=\$(echo \"\$a\" | tr ':' '\\n' | grep -v -e 'com.gathin.tvhome/.*HomeKeyService' -e '^null\$' -e '^\$' | tr '\\n' ':' | sed 's/:\$//'); " +
+        "if [ -n \"\$o\" ]; then settings put secure enabled_accessibility_services \"\$o\"; else settings delete secure enabled_accessibility_services >/dev/null; fi; "
+    val HELPER_ON = ShellLine(HELPER_OTHERS + "sleep 1; " +
+        "if [ -n \"\$o\" ]; then settings put secure enabled_accessibility_services \"\$o:com.gathin.tvhome/com.gathin.tvhome.HomeKeyService\"; " +
+        "else settings put secure enabled_accessibility_services com.gathin.tvhome/com.gathin.tvhome.HomeKeyService; fi; " +
+        "settings put secure accessibility_enabled 1; settings get secure enabled_accessibility_services")
+    val HELPER_OFF = ShellLine(HELPER_OTHERS + "if [ -z \"\$o\" ]; then settings put secure accessibility_enabled 0; fi; settings get secure enabled_accessibility_services")
     private const val ACC_READ = "a=\$(settings get secure enabled_accessibility_services 2>/dev/null); e=\$(settings get secure accessibility_enabled 2>/dev/null); "
     private const val ACC_BACK = "case \"\$e:\$a\" in 1:*com.gathin.tvhome/*) sleep 1; settings put secure accessibility_enabled 0; sleep 1; " +
         "settings put secure enabled_accessibility_services \"\$a\"; settings put secure accessibility_enabled 1;; esac; true"
@@ -202,6 +220,7 @@ object ProbeScripts {
         "NOOP_INSTALL" to NOOP_INSTALL, "NOOP_UNINSTALL" to NOOP_UNINSTALL, "NOOP_CLEANUP" to NOOP_CLEANUP, "PS_ARGS" to PS_ARGS, "STORAGE" to STORAGE, "DOWNLOADS" to DOWNLOADS,
         "VIDEO_PRESENT" to VIDEO_PRESENT, "VIDEO_FROM_STAGED" to VIDEO_FROM_STAGED, "VIDEO_REMOVE" to VIDEO_REMOVE, "HOME_RESTART" to HOME_RESTART, "HOME_OPEN" to HOME_OPEN,
         "HELPER_KEEP_GRANT" to HELPER_KEEP_GRANT, "HELPER_KEEP_OPEN" to HELPER_KEEP_OPEN,
+        "HELPER_KEEP_REVIVE" to HELPER_KEEP_REVIVE, "HELPER_ON" to HELPER_ON, "HELPER_OFF" to HELPER_OFF,
         "WIFI_OWNERS" to WIFI_OWNERS,
     )
 }

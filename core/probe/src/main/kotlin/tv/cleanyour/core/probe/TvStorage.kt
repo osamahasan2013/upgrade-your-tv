@@ -40,6 +40,10 @@ interface VideoBackground {
 // 1.9.8: the launcher allowed to put its Home button helper back after the TV was off. True when both lines ran.
 interface HelperKeep {
     suspend fun keepHelper(session: TvSession): Boolean
+    // 1.10.0: the helper on or off by itself (ProbeScripts.HELPER_ON / HELPER_OFF). True when the TV's list
+    // reads as asked afterwards.
+    suspend fun helperOn(session: TvSession): Boolean
+    suspend fun helperOff(session: TvSession): Boolean
 }
 
 interface RemoteInput {

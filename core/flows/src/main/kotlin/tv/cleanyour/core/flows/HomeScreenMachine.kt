@@ -19,6 +19,7 @@ import tv.cleanyour.core.planner.HomeHelper
 import tv.cleanyour.core.planner.Plan
 import tv.cleanyour.core.planner.PlanRequest
 import tv.cleanyour.core.planner.TclGoogleTv
+import tv.cleanyour.core.probe.HelperKeep
 import tv.cleanyour.core.probe.LaunchableApps
 import tv.cleanyour.core.spec.DockLayers
 import tv.cleanyour.core.spec.Looks
@@ -326,6 +327,8 @@ class HomeScreenMachine(
         when (val out = r.getOrNull()) {
             InstallOutcome.Installed -> {
                 d.sessionEnd.touched(tvId)
+                // 1.10.0: a home screen installed afresh has none of what lets it keep the helper on by itself.
+                (d.prober as? HelperKeep)?.let { k -> attempt { k.keepHelper(s) } }
                 attempt { d.runner.freshSnapshot(s) }
                 send(InstallingApp(null))
                 load()
@@ -343,8 +346,10 @@ class HomeScreenMachine(
         val liveSession = d.access.live(tvId)
         val launchableNow = liveSession?.let { s -> (d.prober as? LaunchableApps)?.let { q -> attempt { q.launchable(s) }.getOrNull() } }
         val stored = d.snapshots.latest(tvId)
-        val snap = if (liveSession != null && launchableNow != null && stored != null && launchableNow.any { it !in stored.packages })
-            attempt { d.runner.freshSnapshot(liveSession) }.getOrNull() ?: stored else stored
+        // 1.10.0: with the TV connected the page always starts from the TV as it is now (before: only when an app
+        // was missing from the last read, so a home screen removed on the TV, or a helper the TV dropped, still
+        // showed as they were).
+        val snap = if (liveSession != null) attempt { d.runner.freshSnapshot(liveSession) }.getOrNull() ?: stored else stored
         val packages = snap?.packages.orEmpty()
         val choice = d.homePrefs.load(tvId)
         val today = d.clock.today()
@@ -384,9 +389,12 @@ class HomeScreenMachine(
             else choice?.endedLook(today)?.let { id -> theme(id)?.name ?: id }
         // 1.8.2: the new home screen can go on as an ordinary app (NotOnTvScreen's "Install it as an app").
         val notHere = notOnTv(tv, snap)
-        val installable = notHere != null && snap != null && !notHere.installed && snap.packages[Launcher.pkg] == null &&
-            notHere.reason != HomeBlock.TV_REFUSES && notHere.reason != HomeBlock.OLD_ANDROID && !snap.facts.installRefusal &&
-            snap.facts.sdk >= DefaultPlanner.TV_MIN_SDK
+        // 1.10.0: also on the usual page, when the TV was set up before and the home screen is gone from it (removed
+        // on the TV): the page offers to put it back as an app, here, not on another page.
+        val gone = notHere == null && snap != null && snap.packages[Launcher.pkg] == null
+        val installable = snap != null && snap.packages[Launcher.pkg] == null && !snap.facts.installRefusal &&
+            snap.facts.sdk >= DefaultPlanner.TV_MIN_SDK &&
+            (gone || (notHere != null && !notHere.installed && notHere.reason != HomeBlock.TV_REFUSES && notHere.reason != HomeBlock.OLD_ANDROID))
         send(Loaded(HomeScreenState(tv.nickname, dock, apps, if (choice?.isNew == true) null else lookId, offeredThemes(d),
             // 0.4.6: a TV on a brand set or none (R0) has no list of its own; the stock home the
             // switch armed its watchdog with is the TV's own then.

@@ -77,12 +77,10 @@ fun VideoBackgroundScreen(state: VideoBackgroundState, onIntent: (VideoBackgroun
                 else -> R.string.video_not_installed
             }
             Banner(stringResource(why), BannerTone.INFO, Modifier.padding(top = 16.dp))
-            // 1.9.11: back here too (1.8.2 moved it to a page that only shows while the TV's record says the
-            // home screen was never installed; after removing it on the TV there was no way to put it back).
+            // 1.10.0: the home screen is installed from the Home screen page (one place for it); this page leads there.
             if (state.home == VideoHome.NOT_INSTALLED || state.home == VideoHome.OLD_LAUNCHER) {
-                PrimaryButton(stringResource(R.string.video_install_app), { onIntent(VideoBackgroundIntent.InstallAsApp) },
+                PrimaryButton(stringResource(R.string.video_open_home_page), { onIntent(VideoBackgroundIntent.OpenHomeScreen) },
                     Modifier.fillMaxWidth().padding(top = 16.dp), enabled = !state.busy, guardObscured = false)
-                Body(stringResource(R.string.video_install_app_sub), Modifier.padding(top = 8.dp))
             }
             PrimaryButton(stringResource(R.string.video_set_up_again), { onIntent(VideoBackgroundIntent.SetUpAgain) }, Modifier.padding(top = 16.dp))
             // A TV that keeps its own home screen: the Home screen page can put the new one on as an app.

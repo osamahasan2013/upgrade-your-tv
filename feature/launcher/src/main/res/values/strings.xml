@@ -40,6 +40,7 @@
          The lead, then why (the reason Setup recorded), then what can change it, when something can. -->
     <string name="home_as_app_title">Or: the new home screen as an app</string>
     <string name="home_as_app_body">It can still go on this TV as an ordinary app. Nothing on the TV is switched off and its Home button keeps opening the TV\'s own home screen; you open the new one as \"Home\" from the TV\'s apps. Its look, picture, video background and layout then work, and All apps can uninstall it again.</string>
+    <string name="home_gone_banner">The new home screen is not on this TV any more. Install it again here; then send your dock and look, and turn the Home button helper back on from Home button &amp; start.</string>
     <string name="home_as_app_button">Install it as an app</string>
     <string name="home_as_app_installing">Installing the home screen as an app ({sent} of {size})…</string>
     <string name="home_as_app_failed">That did not work: {detail}</string>
@@ -131,7 +132,7 @@
     <string name="helper_card_title">Home button helper</string>
     <string name="helper_card_on">The Home button opens the new home screen through a small helper. The TV\'s own stays on, so casting keeps working.</string>
     <string name="helper_card_off_by_tv">The TV has switched the helper off (a restart or a cleaner app). Run Setup again to switch it back on.</string>
-    <string name="helper_card_no_redirect">The helper is on, but the look on the TV does not name the TV\'s home screen, so it does nothing. Switch it off, or run Setup again.</string>
+    <string name="helper_card_no_redirect">The helper is on, but the home screen on the TV has not been told about it yet, so Home still opens the TV\'s own. Save and send from this page once (or use Home button &amp; start) and it works.</string>
     <string name="helper_card_redirect_only">The new home screen is set up for the helper, but the helper is off. Run Setup again to switch it back on.</string>
     <string name="helper_card_escape">On the TV: Settings &gt; Accessibility &gt; Home button switches it off too.</string>
     <string name="helper_card_apps_only">Google TV keeps running in the background. Its Apps only mode quiets it, but it also switches Search and the Assistant off; you can switch it on in the TV\'s settings.</string>

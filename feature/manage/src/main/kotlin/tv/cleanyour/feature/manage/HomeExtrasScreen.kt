@@ -83,8 +83,7 @@ fun HomeExtrasScreen(state: HomeExtrasState, onIntent: (HomeExtrasIntent) -> Uni
 // The layout section: one theme picker, and every part of the theme changeable after it (a theme only sets the
 // parts out to start with). Its Save sends the look again, so the dock and the look above go with it.
 @Composable
-fun ColumnScope.HomeExtrasSection(state: HomeExtrasState, onIntent: (HomeExtrasIntent) -> Unit, inPage: Boolean = false,
-    onInstallAsApp: (() -> Unit)? = null) {
+fun ColumnScope.HomeExtrasSection(state: HomeExtrasState, onIntent: (HomeExtrasIntent) -> Unit, inPage: Boolean = false) {
     if (inPage) ScreenTitle(stringResource(R.string.extras_section), Modifier.padding(top = 32.dp))
     Lead(stringResource(if (inPage) R.string.extras_intro_page else R.string.extras_intro), Modifier.padding(top = 12.dp))
     if (state.loading) return
@@ -92,7 +91,6 @@ fun ColumnScope.HomeExtrasSection(state: HomeExtrasState, onIntent: (HomeExtrasI
     if (!state.launcherOn) {
         Banner(stringResource(R.string.extras_no_launcher), BannerTone.INFO, Modifier.padding(top = 16.dp))
         if (!inPage) PrimaryButton(stringResource(R.string.video_set_up_again), { onIntent(HomeExtrasIntent.SetUpAgain) }, Modifier.padding(top = 16.dp))
-        if (onInstallAsApp != null) PrimaryButton(stringResource(R.string.extras_install_app), onInstallAsApp, Modifier.fillMaxWidth().padding(top = 16.dp), guardObscured = false)
         return
     }
     if (state.launcherOld) Banner(stringResource(R.string.extras_old_launcher), BannerTone.INFO, Modifier.padding(top = 16.dp))

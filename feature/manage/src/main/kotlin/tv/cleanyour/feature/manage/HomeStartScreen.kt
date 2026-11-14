@@ -19,6 +19,7 @@ import tv.cleanyour.ui.design.component.ListGroup
 import tv.cleanyour.ui.design.component.ListRow
 import tv.cleanyour.ui.design.component.Overline
 import tv.cleanyour.ui.design.component.PrimaryButton
+import tv.cleanyour.ui.design.component.SecondaryButton
 import tv.cleanyour.ui.design.component.ScreenScaffold
 import tv.cleanyour.ui.design.component.ScreenTitle
 import tv.cleanyour.ui.design.component.Spinner
@@ -44,15 +45,23 @@ fun HomeStartScreen(state: HomeStartState, onIntent: (HomeStartIntent) -> Unit, 
         }
 
         Overline(stringResource(R.string.start_helper), Modifier.padding(top = 22.dp, bottom = 8.dp))
+        state.failed?.let { Banner(msg(R.string.start_failed, "why" to it), BannerTone.DANGER, Modifier.padding(bottom = 12.dp)) }
+        if (state.working) LiveLine(stringResource(R.string.start_working))
         if (state.helperOn) {
-            Banner(stringResource(R.string.start_helper_on), BannerTone.SUCCESS)
+            Banner(stringResource(if (state.needsLook) R.string.start_helper_needs_look else R.string.start_helper_on),
+                if (state.needsLook) BannerTone.WARNING else BannerTone.SUCCESS)
+            if (state.needsLook) PrimaryButton(stringResource(R.string.start_send_again), { onIntent(HomeStartIntent.TurnOnHelper) },
+                Modifier.fillMaxWidth().padding(top = 14.dp), enabled = !state.working && state.launcherOn, guardObscured = false)
+            SecondaryButton(stringResource(R.string.start_turn_off), { onIntent(HomeStartIntent.TurnOffHelper) },
+                Modifier.fillMaxWidth().padding(top = 12.dp), enabled = !state.working)
         } else {
-            Body(stringResource(R.string.start_helper_off), color = CytTheme.colors.textPrimary)
-            state.helperWhy?.let { Body(msg(R.string.start_helper_why, "why" to it), Modifier.padding(top = 6.dp)) }
+            Body(stringResource(if (state.droppedByTv) R.string.start_helper_dropped else R.string.start_helper_off), color = CytTheme.colors.textPrimary)
             state.homeNow?.let { Body(msg(R.string.buttons_home_now, "home" to it), Modifier.padding(top = 6.dp)) }
             PrimaryButton(stringResource(R.string.start_turn_on), { onIntent(HomeStartIntent.TurnOnHelper) }, Modifier.fillMaxWidth().padding(top = 14.dp),
-                enabled = state.launcherOn, guardObscured = false)
+                enabled = state.launcherOn && !state.working, guardObscured = false)
             Body(stringResource(R.string.start_turn_on_sub), Modifier.padding(top = 8.dp))
+            if (!state.launcherOn) SecondaryButton(stringResource(R.string.start_open_home), { onIntent(HomeStartIntent.OpenHomeScreen) },
+                Modifier.fillMaxWidth().padding(top = 12.dp))
         }
         when (state.keeps) {
             true -> Body(stringResource(R.string.start_keeps), Modifier.padding(top = 12.dp))

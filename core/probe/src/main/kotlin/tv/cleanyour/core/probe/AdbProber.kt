@@ -246,7 +246,18 @@ class AdbProber(
         val spec = ExecSpec(timeoutMs = 10_000, stdoutCap = 4096, retry = RetryClass.NEVER)
         val grant = session.exec(ProbeScripts.HELPER_KEEP_GRANT, spec)
         val open = session.exec(ProbeScripts.HELPER_KEEP_OPEN, spec)
+        session.exec(ProbeScripts.HELPER_KEEP_REVIVE, spec)
         return grant.exit == 0 && open.exit == 0
+    }
+
+    override suspend fun helperOn(session: TvSession): Boolean {
+        val r = session.exec(ProbeScripts.HELPER_ON, ExecSpec(timeoutMs = 20_000, stdoutCap = 8192, retry = RetryClass.NEVER))
+        return r.exit == 0 && "HomeKeyService" in r.stdout
+    }
+
+    override suspend fun helperOff(session: TvSession): Boolean {
+        val r = session.exec(ProbeScripts.HELPER_OFF, ExecSpec(timeoutMs = 20_000, stdoutCap = 8192, retry = RetryClass.NEVER))
+        return r.exit == 0 && "HomeKeyService" !in r.stdout
     }
 
     override suspend fun endKeys(session: TvSession) {
