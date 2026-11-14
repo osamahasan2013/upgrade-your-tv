@@ -346,10 +346,14 @@ class HomeScreenMachine(
         val liveSession = d.access.live(tvId)
         val launchableNow = liveSession?.let { s -> (d.prober as? LaunchableApps)?.let { q -> attempt { q.launchable(s) }.getOrNull() } }
         val stored = d.snapshots.latest(tvId)
-        // 1.10.0: with the TV connected the page always starts from the TV as it is now (before: only when an app
-        // was missing from the last read, so a home screen removed on the TV, or a helper the TV dropped, still
-        // showed as they were).
-        val snap = if (liveSession != null) attempt { d.runner.freshSnapshot(liveSession) }.getOrNull() ?: stored else stored
+        // 1.10.0: also when the home screen's version or the helper's state on the TV is not what the last read has
+        // (a home screen removed or updated on the TV, a helper the TV dropped): three facts asked fast (TvNow),
+        // and the TV is read again when one differs. Before, the page showed them as they had been.
+        val now = liveSession?.let { s -> (d.prober as? HelperKeep)?.let { k -> attempt { k.tvNow(s) }.getOrNull() } }
+        val moved = now != null && stored != null && (now.launcherVersion != stored.packages[Launcher.pkg]?.versionCode ||
+            now.helperListed != HomeHelper.listed(stored) || now.accessibilityOn != HomeHelper.on(stored))
+        val snap = if (liveSession != null && stored != null && (moved || (launchableNow != null && launchableNow.any { it !in stored.packages })))
+            attempt { d.runner.freshSnapshot(liveSession) }.getOrNull() ?: stored else stored
         val packages = snap?.packages.orEmpty()
         val choice = d.homePrefs.load(tvId)
         val today = d.clock.today()

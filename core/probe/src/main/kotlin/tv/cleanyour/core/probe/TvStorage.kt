@@ -44,7 +44,13 @@ interface HelperKeep {
     // reads as asked afterwards.
     suspend fun helperOn(session: TvSession): Boolean
     suspend fun helperOff(session: TvSession): Boolean
+    // Three facts read fast (ProbeScripts.TV_NOW); null when the TV did not answer.
+    suspend fun tvNow(session: TvSession): TvNow?
 }
+
+// The new home screen's version on the TV (null: not installed), and whether its HomeKeyService is on the TV's
+// accessibility list with accessibility on.
+data class TvNow(val launcherVersion: Long?, val helperListed: Boolean, val accessibilityOn: Boolean)
 
 interface RemoteInput {
     suspend fun key(session: TvSession, code: Int, long: Boolean = false)

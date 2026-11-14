@@ -255,6 +255,14 @@ class AdbProber(
         return r.exit == 0 && "HomeKeyService" in r.stdout
     }
 
+    override suspend fun tvNow(session: TvSession): TvNow? {
+        val r = session.exec(ProbeScripts.TV_NOW, ExecSpec(timeoutMs = 10_000, stdoutCap = 8192, retry = RetryClass.NEVER))
+        val parts = r.stdout.split("#")
+        if (parts.size < 3) return null
+        val version = Regex("versionCode=(\\d+)").find(parts[0])?.groupValues?.get(1)?.toLongOrNull()
+        return TvNow(version, Regex("com[.]gathin[.]tvhome/[^:\\s]*HomeKeyService").containsMatchIn(parts[1]), parts[2].trim() == "1")
+    }
+
     override suspend fun helperOff(session: TvSession): Boolean {
         val r = session.exec(ProbeScripts.HELPER_OFF, ExecSpec(timeoutMs = 20_000, stdoutCap = 8192, retry = RetryClass.NEVER))
         return r.exit == 0 && "HomeKeyService" !in r.stdout

@@ -105,6 +105,10 @@ object ProbeScripts {
     // entry leaves the list and comes back a second later (Android binds a service it had marked crashed only
     // after seeing it leave), and accessibility goes on. Off: the entry leaves; with nothing else listed the
     // list is deleted and accessibility goes off. The list is printed last.
+    // 1.10.0: three facts read fast, to tell whether the last full read of the TV still holds: the new home
+    // screen's version (no line when it is not installed), the accessibility list, and its switch.
+    val TV_NOW = ShellLine("dumpsys package com.gathin.tvhome 2>/dev/null | grep -m 1 'versionCode='; echo '#'; " +
+        "settings get secure enabled_accessibility_services 2>/dev/null; echo '#'; settings get secure accessibility_enabled 2>/dev/null")
     private const val HELPER_OTHERS = "a=\$(settings get secure enabled_accessibility_services 2>/dev/null); " +
         "o=\$(echo \"\$a\" | tr ':' '\\n' | grep -v -e 'com.gathin.tvhome/.*HomeKeyService' -e '^null\$' -e '^\$' | tr '\\n' ':' | sed 's/:\$//'); " +
         "if [ -n \"\$o\" ]; then settings put secure enabled_accessibility_services \"\$o\"; else settings delete secure enabled_accessibility_services >/dev/null; fi; "
@@ -220,7 +224,7 @@ object ProbeScripts {
         "NOOP_INSTALL" to NOOP_INSTALL, "NOOP_UNINSTALL" to NOOP_UNINSTALL, "NOOP_CLEANUP" to NOOP_CLEANUP, "PS_ARGS" to PS_ARGS, "STORAGE" to STORAGE, "DOWNLOADS" to DOWNLOADS,
         "VIDEO_PRESENT" to VIDEO_PRESENT, "VIDEO_FROM_STAGED" to VIDEO_FROM_STAGED, "VIDEO_REMOVE" to VIDEO_REMOVE, "HOME_RESTART" to HOME_RESTART, "HOME_OPEN" to HOME_OPEN,
         "HELPER_KEEP_GRANT" to HELPER_KEEP_GRANT, "HELPER_KEEP_OPEN" to HELPER_KEEP_OPEN,
-        "HELPER_KEEP_REVIVE" to HELPER_KEEP_REVIVE, "HELPER_ON" to HELPER_ON, "HELPER_OFF" to HELPER_OFF,
+        "HELPER_KEEP_REVIVE" to HELPER_KEEP_REVIVE, "HELPER_ON" to HELPER_ON, "HELPER_OFF" to HELPER_OFF, "TV_NOW" to TV_NOW,
         "WIFI_OWNERS" to WIFI_OWNERS,
     )
 }
