@@ -1,0 +1,207 @@
+package tv.cleanyour.core.probe
+
+import tv.cleanyour.core.model.PACKAGE_RE
+import tv.cleanyour.core.model.PackageName
+import tv.cleanyour.core.model.RawShell
+import tv.cleanyour.core.model.RemoteDir
+import tv.cleanyour.core.model.RemotePath
+import tv.cleanyour.core.model.RunToken
+import tv.cleanyour.core.model.ShellLine
+
+// D40: the probe's shell lines. Reads are batched into one fixed script per stage, with marker
+// lines between the commands; every script is a constant (golden test in ProbeScriptsTest), so
+// the injection argument does not apply. The few lines that take an argument take only a typed
+// value whose grammar admits no quote or shell metacharacter (RemotePath, PackageName, RunToken)
+// and single-quote it. `pm` stays one per script where a later command matters, because
+// upstream saw chained `pm` calls stop early on some sets.
+@OptIn(RawShell::class)
+object ProbeScripts {
+    const val MARK = "@@cyt@@"
+
+    private fun mark(name: String) = "echo '$MARK $name'"
+    private fun q(s: String): String {
+        require('\'' !in s && s.all { it in ' '..'~' }) { "refusing to quote $s" }
+        return "'$s'"
+    }
+
+    const val HOME_ARGS = "-a android.intent.action.MAIN -c android.intent.category.HOME"
+    const val SCREEN_FILE = "probe-screen.png"
+    const val NOOP_FILE = "noop.apk"
+    // The no-op APK the install-refusal check uses (W5 bundles it) must have this package name.
+    val NOOP_PACKAGE = PackageName("tv.cleanyour.noop")
+
+    // Stage FACTS: every property, memory, and whether Play Services exists.
+    val FACTS = ShellLine("getprop; ${mark("meminfo")}; cat /proc/meminfo; ${mark("gms")}; pm path com.google.android.gms")
+
+    // Stage PACKAGES: three calls, the package manager's own lists plus the flags and state of each.
+    val PACKAGES = ShellLine("pm list packages -f")
+    val DISABLED = ShellLine("pm list packages -d")
+    val PACKAGE_FLAGS = ShellLine(
+        "dumpsys package packages | grep -E '^(Packages:|Hidden system packages:)|^ +(Package \\[|codePath=|versionCode=|pkgFlags=|User 0: )'",
+    )
+
+    // Stage HOME: every HOME claimant with its priority, then what HOME resolves to now.
+    val HOME = ShellLine("cmd package query-activities --brief $HOME_ARGS; ${mark("resolved")}; cmd package resolve-activity --brief $HOME_ARGS")
+    val HOME_RESOLVED = ShellLine("cmd package resolve-activity --brief $HOME_ARGS")
+
+    // The dock sheet's candidates: every activity a TV launcher (LEANBACK_LAUNCHER) or a phone
+    // launcher (LAUNCHER) would show. Read-only, one call, outside the snapshot (no frozen field).
+    const val LEANBACK_ARGS = "-a android.intent.action.MAIN -c android.intent.category.LEANBACK_LAUNCHER"
+    const val LAUNCHER_ARGS = "-a android.intent.action.MAIN -c android.intent.category.LAUNCHER"
+    val LAUNCHABLE = ShellLine("cmd package query-activities --brief $LEANBACK_ARGS; ${mark("launcher")}; cmd package query-activities --brief $LAUNCHER_ARGS")
+
+    // Stage INPUTS: TIF inputs with their HDMI ports, then CEC device names.
+    val INPUTS = ShellLine("dumpsys tv_input; ${mark("hdmi")}; dumpsys hdmi_control")
+
+    // Stage SETTINGS: the secure and global tables (the allowlisted keys, the IME, the screensaver).
+    val SETTINGS = ShellLine("settings list secure; ${mark("global")}; settings list global")
+
+    val HOME_FOCUS = ShellLine("dumpsys activity activities | grep -E 'ResumedActivity'")
+    val BOOT_ID = ShellLine("cat /proc/sys/kernel/random/boot_id")
+    val FREE_DATA = ShellLine("df -k /data")
+    val SCREENSHOT = ShellLine("mkdir -p ${RemoteDir.TMP.path} && screencap -p ${RemoteDir.TMP.path}/$SCREEN_FILE")
+    // Only the file goes, never the directory: the run takes thumbnails between steps, and an rmdir
+    // here removed the TMP directory the plan had just made for the home watchdog, so the watchdog
+    // could not start and the home screen switch rolled back (first device test, 2026-10-20). An
+    // empty /data/local/tmp/cleanyourtv may stay after an identity check; it holds nothing.
+    val SCREENSHOT_CLEANUP = ShellLine("rm -f ${RemoteDir.TMP.path}/$SCREEN_FILE")
+    val MKDIR_TMP = ShellLine("mkdir -p ${RemoteDir.TMP.path}")
+    val NOOP_INSTALL = ShellLine("pm install -r ${RemoteDir.TMP.path}/$NOOP_FILE")
+    val NOOP_UNINSTALL = ShellLine("pm uninstall ${NOOP_PACKAGE.value}")
+    val NOOP_CLEANUP = ShellLine("rm -f ${RemoteDir.TMP.path}/$NOOP_FILE")
+    val PS_ARGS = ShellLine("ps -A -o ARGS")
+
+    // Upgrade Your TV (Storage and files): every mount's space, and the Download folder's files. Read-only.
+    val STORAGE = ShellLine("df -k 2>/dev/null; true")
+    val DOWNLOADS = ShellLine("stat -c '%F|%s|%Y|%n' ${RemoteDir.DOWNLOAD.path}/* 2>/dev/null; true")
+
+    // Upgrade Your TV (Video background): wallpaper.mp4 in the launcher's theme folder. Android 10 and
+    // later reach the folder only through the launcher's ThemeProvider (`content`), from a copy staged in
+    // TMP; older TVs take the sync push straight into the folder. All constant lines.
+    const val VIDEO_NAME = "wallpaper.mp4"
+    private const val THEME_URI = "content://com.gathin.tvhome.theme"
+    val videoStaged = RemotePath(RemoteDir.TMP, listOf(VIDEO_NAME))
+    val videoInFolder = RemotePath(RemoteDir.OVERLAY, listOf(VIDEO_NAME))
+    val VIDEO_PRESENT = ShellLine("(content read --uri $THEME_URI/$VIDEO_NAME 2>/dev/null || cat '${RemoteDir.OVERLAY.path}/$VIDEO_NAME' 2>/dev/null) | head -c 16 | wc -c")
+    val VIDEO_FROM_STAGED = ShellLine("content write --uri $THEME_URI/$VIDEO_NAME < '${RemoteDir.TMP.path}/$VIDEO_NAME'; r=\$?; rm -f '${RemoteDir.TMP.path}/$VIDEO_NAME'; exit \$r")
+    val VIDEO_REMOVE = ShellLine("content delete --uri $THEME_URI/$VIDEO_NAME 2>/dev/null; rm -f '${RemoteDir.OVERLAY.path}/$VIDEO_NAME' 2>/dev/null; true")
+    // The launcher reads its theme folder when it starts, as a look's RestartHome does it.
+    // 1.9.6: a force-stop drops the launcher's accessibility services (the Home button helper) from the TV's list
+    // and can turn accessibility off, so Home, the remote's buttons and "Open when the TV starts" stopped after
+    // every video change. As the planner's restoreAccessibility: when the TV had one of ours on, the list and
+    // the switch are put back exactly as they were, off and on again so the service binds.
+    // 1.9.8: what lets the launcher put the Home button helper back by itself after the TV was off (its
+    // ServiceRepair and UytvBoot, patches/launcher/0011): the secure-settings permission, and the app-op that lets
+    // it open Home from its boot receiver. Each alone on its line (PmGuard).
+    val HELPER_KEEP_GRANT = ShellLine("pm grant com.gathin.tvhome android.permission.WRITE_SECURE_SETTINGS")
+    val HELPER_KEEP_OPEN = ShellLine("appops set com.gathin.tvhome SYSTEM_ALERT_WINDOW allow")
+    private const val ACC_READ = "a=\$(settings get secure enabled_accessibility_services 2>/dev/null); e=\$(settings get secure accessibility_enabled 2>/dev/null); "
+    private const val ACC_BACK = "case \"\$e:\$a\" in 1:*com.gathin.tvhome/*) sleep 1; settings put secure accessibility_enabled 0; sleep 1; " +
+        "settings put secure enabled_accessibility_services \"\$a\"; settings put secure accessibility_enabled 1;; esac; true"
+    val HOME_RESTART = ShellLine(ACC_READ + "am force-stop com.gathin.tvhome; am start -a android.intent.action.MAIN -c android.intent.category.HOME >/dev/null 2>&1; " + ACC_BACK)
+    // Upgrade Your TV: the launcher as an app (not Home), opened by its own activity.
+    val HOME_OPEN = ShellLine(ACC_READ + "am force-stop com.gathin.tvhome; am start -n com.gathin.tvhome/.MainActivity >/dev/null 2>&1; " + ACC_BACK)
+
+    // Storage and files: one file of the Download folder removed. The name is the TV's own (any
+    // language), so it is checked here instead of by RemotePath: one path segment, no quote, no control
+    // character, never "." or "..". Single quotes keep everything else literal; `--` ends the options.
+    fun removeDownload(name: String): ShellLine {
+        require(isSafeDownloadName(name)) { "refusing to remove $name" }
+        return ShellLine("rm -f -- '${RemoteDir.DOWNLOAD.path}/$name'")
+    }
+
+    // The remote (RemoteInput): `input keyevent` for one of the remote's own key codes.
+    // 1.9.4: the launcher's key injector (patches/launcher/0007, UytvKeys), run from its APK as the shell user and
+    // kept open: one line per press on its stdin. Fixed text; nothing of the person's goes in.
+    fun keyServer(): ShellLine = ShellLine(
+        "CLASSPATH=\$(pm path com.gathin.tvhome | sed -n 's/^package://p' | head -n 1) exec app_process / com.gathin.tvhome.UytvKeys")
+
+    fun keyEvent(code: Int, long: Boolean = false): ShellLine {
+        require(code in 1..400) { "not a key code: $code" }
+        return ShellLine(if (long) "input keyevent --longpress $code" else "input keyevent $code")
+    }
+
+    // `input text` takes no spaces (%s stands for one) and the shell must see nothing it reads: letters,
+    // digits and a short list of marks only, each word sent as it is.
+    fun inputText(text: String): ShellLine {
+        require(isSafeText(text)) { "refusing to type that" }
+        return ShellLine("input text '" + text.replace(" ", "%s") + "'")
+    }
+
+    // Speed up the TV (SpeedUp): only 0, 0.5 and 1 are ever written.
+    fun animationRead(): ShellLine = ShellLine("settings get global window_animation_scale")
+    fun animationWrite(scale: Float): ShellLine {
+        val v = when (scale) { 0f -> "0"; 0.5f -> "0.5"; 1f -> "1"; else -> throw IllegalArgumentException("not an animation scale: $scale") }
+        return ShellLine("settings put global window_animation_scale $v; settings put global transition_animation_scale $v; settings put global animator_duration_scale $v")
+    }
+    fun freeMemory(): ShellLine = ShellLine("am kill-all")
+    fun trimCaches(): ShellLine = ShellLine("pm trim-caches 999G")
+
+    fun isSafeText(text: String): Boolean = text.isNotEmpty() && text.length <= 200 &&
+        text.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' || it in " .,_-@:/+=?!#" }
+
+    fun isSafeDownloadName(name: String): Boolean =
+        name.isNotEmpty() && name.length <= 255 && name != "." && name != ".." && name.none { it == '/' || it == '\'' || it == '\\' || it < ' ' || it == '\u007f' }
+
+    // After a file is sent to the Download folder: the media scanner looks at it, so players and
+    // galleries on the TV show it. Best effort; the path is a typed RemotePath (no quote can reach it).
+    fun mediaScan(path: RemotePath): ShellLine {
+        require(path.dir == RemoteDir.DOWNLOAD)
+        return ShellLine("am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d ${q("file://" + path.absolute)} >/dev/null 2>&1; true")
+    }
+
+    // Launcher v2.4.0's guard (tools/disable.sh): who saved each Wi-Fi network. Only fixed words leave
+    // the TV (SavedWifi): the cname= owners, WifiConfigManager's list markers and "ID: <n> SSID" per
+    // saved network, the match ending before the network's name.
+    val WIFI_OWNERS = ShellLine("dumpsys wifi | grep -o -E -e 'cname=[^ ]*' -e 'Configured networks (Begin|End)' -e 'ID: -?[0-9]+ SSID'")
+
+    val screenPath = RemotePath(RemoteDir.TMP, listOf(SCREEN_FILE))
+    val noopPath = RemotePath(RemoteDir.TMP, listOf(NOOP_FILE))
+    // A per-copy name (RF-LAUNCHER-240 F11): two snapshots on one session never touch each other's copy.
+    fun signerPath(token: String) = RemotePath(RemoteDir.TMP, listOf("signer-$token.apk"))
+    fun signerCleanup(path: RemotePath) = ShellLine("rm -f ${q(path.absolute)}")
+    val overlayConfig = RemotePath(RemoteDir.OVERLAY, listOf("config.json"))
+
+    fun fileSha256(path: RemotePath) = ShellLine("sha256sum ${q(path.absolute)}")
+
+    // The installed APK's own hash: the path never leaves the TV, so no TV output is ever quoted back.
+    fun installedSha256(pkg: PackageName): ShellLine {
+        require(PACKAGE_RE.matches(pkg.value))
+        return ShellLine("p=\$(pm path ${q(pkg.value)} | grep base.apk | head -n 1); sha256sum \"\${p#package:}\"")
+    }
+
+    // RFC-INSTALL-1: why installedSha256 read nothing, in one read-only script. One `pm path` (its
+    // answer is kept in a variable, so `pm` runs once), then only counts and codes leave the TV: how
+    // many base.apk lines it printed, the hash command's exit code (the hash and the path stay on
+    // the TV), the user in front, and each user's state line of the package's dump.
+    fun installedApkState(pkg: PackageName): ShellLine {
+        require(PACKAGE_RE.matches(pkg.value))
+        return ShellLine("p=\$(pm path ${q(pkg.value)}); echo \"\$p\" | grep -c base.apk; ${mark("hash")}; " +
+            "b=\$(echo \"\$p\" | grep base.apk | head -n 1); sha256sum \"\${b#package:}\" >/dev/null 2>&1; echo \$?; " +
+            "${mark("current")}; cmd activity get-current-user; ${mark("users")}; dumpsys package ${q(pkg.value)} | grep -E '^ +User [0-9]+: '")
+    }
+
+    // A copy of the installed APK in the app's TMP folder, for its signer (ApkSigners): the installed
+    // file itself is outside the folders a pull may read (RemotePath). Like installedSha256, the path
+    // never leaves the TV. Nothing is copied when the APK is larger than `cap` bytes (RF-LAUNCHER-240
+    // F11), so a large foreign APK never fills a small TV's /data.
+    fun copyApk(pkg: PackageName, dest: RemotePath, cap: Long): ShellLine {
+        require(PACKAGE_RE.matches(pkg.value) && dest.dir == RemoteDir.TMP && cap > 0)
+        return ShellLine("mkdir -p ${RemoteDir.TMP.path} && p=\$(pm path ${q(pkg.value)} | grep base.apk | head -n 1) && [ -n \"\$p\" ] && " +
+            "[ \"\$(stat -c %s \"\${p#package:}\")\" -le $cap ] && cp \"\${p#package:}\" ${q(dest.absolute)}")
+    }
+
+    // The bracket keeps pgrep from matching the shell that runs it.
+    fun watchdogAlive(token: RunToken) = ShellLine("pgrep -f ${q("[c]leanyourtv-rollback-${token.value}")}")
+
+    // Every constant line, for the golden test and for anyone auditing what a probe can send.
+    val all: Map<String, ShellLine> = linkedMapOf(
+        "FACTS" to FACTS, "PACKAGES" to PACKAGES, "DISABLED" to DISABLED, "PACKAGE_FLAGS" to PACKAGE_FLAGS, "HOME" to HOME,
+        "HOME_RESOLVED" to HOME_RESOLVED, "LAUNCHABLE" to LAUNCHABLE, "INPUTS" to INPUTS, "SETTINGS" to SETTINGS, "HOME_FOCUS" to HOME_FOCUS, "BOOT_ID" to BOOT_ID,
+        "FREE_DATA" to FREE_DATA, "SCREENSHOT" to SCREENSHOT, "SCREENSHOT_CLEANUP" to SCREENSHOT_CLEANUP, "MKDIR_TMP" to MKDIR_TMP,
+        "NOOP_INSTALL" to NOOP_INSTALL, "NOOP_UNINSTALL" to NOOP_UNINSTALL, "NOOP_CLEANUP" to NOOP_CLEANUP, "PS_ARGS" to PS_ARGS, "STORAGE" to STORAGE, "DOWNLOADS" to DOWNLOADS,
+        "VIDEO_PRESENT" to VIDEO_PRESENT, "VIDEO_FROM_STAGED" to VIDEO_FROM_STAGED, "VIDEO_REMOVE" to VIDEO_REMOVE, "HOME_RESTART" to HOME_RESTART, "HOME_OPEN" to HOME_OPEN,
+        "HELPER_KEEP_GRANT" to HELPER_KEEP_GRANT, "HELPER_KEEP_OPEN" to HELPER_KEEP_OPEN,
+        "WIFI_OWNERS" to WIFI_OWNERS,
+    )
+}

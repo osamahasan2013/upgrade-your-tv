@@ -1,0 +1,309 @@
+diff --git a/launcher/app/build.gradle b/launcher/app/build.gradle
+index 3ceec7b4..b8f64935 100644
+--- a/launcher/app/build.gradle
++++ b/launcher/app/build.gradle
+@@ -11,8 +11,9 @@ android {
+         applicationId providers.gradleProperty('launcherApplicationId').getOrElse('com.gathin.tvhome')
+         minSdk 26
+         targetSdk 34
+-        versionCode 9
+-        versionName '3.0'
++        // Upgrade Your TV: launcher 3.0 with the video background (wallpaper.mp4); above upstream's 9 so it updates over it.
++        versionCode 1001
++        versionName '3.0-uytv1'
+     }
+ 
+     buildTypes {
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/ThemeFiles.java b/launcher/app/src/main/java/com/gathin/tvhome/ThemeFiles.java
+index 18fded94..b1cd1886 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/ThemeFiles.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/ThemeFiles.java
+@@ -18,6 +18,7 @@ final class ThemeFiles {
+         if (segments.size() == 1) {
+             String name = segments.get(0);
+             return Config.FILE_NAME.equals(name) || "wallpaper.jpg".equals(name) || "theme_revision".equals(name)
++                    || VideoWallpaper.FILE_NAME.equals(name)   // Upgrade Your TV: the video background
+                     ? name : null;
+         }
+         if (segments.size() == 2 && WALLPAPERS.equals(segments.get(0))
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/VideoWallpaper.java b/launcher/app/src/main/java/com/gathin/tvhome/VideoWallpaper.java
+new file mode 100644
+index 00000000..90c3572c
+--- /dev/null
++++ b/launcher/app/src/main/java/com/gathin/tvhome/VideoWallpaper.java
+@@ -0,0 +1,210 @@
++package com.gathin.tvhome;
++
++import android.content.Context;
++import android.graphics.Matrix;
++import android.graphics.SurfaceTexture;
++import android.media.MediaPlayer;
++import android.util.Log;
++import android.view.Surface;
++import android.view.TextureView;
++import android.view.View;
++import android.view.ViewGroup;
++import android.widget.FrameLayout;
++
++import java.io.File;
++
++/**
++ * Upgrade Your TV: a short MP4 played as Home's background, muted and looping, while Home is on screen.
++ * It sits above the picture wallpaper, which shows until the first video frame is drawn and again if the
++ * video cannot be played. Playback pauses whenever Home is hidden and the decoder is released under memory
++ * pressure or when Home is destroyed, so a TV app never shares the hardware decoder with it.
++ */
++final class VideoWallpaper implements TextureView.SurfaceTextureListener {
++    /** The file the phone app sends (ThemeFiles allows it); its presence turns the video background on. */
++    static final String FILE_NAME = "wallpaper.mp4";
++    /** A bigger file is skipped: a background should be a short loop, and a TV's storage is small. */
++    static final long MAX_BYTES = 200L * 1024 * 1024;
++
++    private static final String TAG = "TvHome.Video";
++
++    private final TextureView view;
++    private final View shade;
++    private final File file;
++    private final Runnable onFailed;
++    private MediaPlayer player;
++    private Surface surface;
++    private boolean prepared;
++    private boolean wanted;
++    private boolean failed;
++    private boolean closed;
++    private int videoWidth, videoHeight;
++
++    /** The video file in the theme folder, or null when there is none to play. */
++    static File find(Context context) {
++        File dir = Config.dir(context);
++        if (dir == null) return null;
++        File f = new File(dir, FILE_NAME);
++        return f.isFile() && f.length() > 0 && f.length() <= MAX_BYTES ? f : null;
++    }
++
++    VideoWallpaper(Context context, FrameLayout root, int index, File file, int dimPercent, Runnable onFailed) {
++        this.file = file;
++        this.onFailed = onFailed;
++        view = new TextureView(context);
++        view.setFocusable(false);
++        view.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
++        view.setAlpha(0f);   // until the first frame, the picture wallpaper (or the plain colour) shows
++        view.setSurfaceTextureListener(this);
++        root.addView(view, index, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
++        if (dimPercent > 0) {
++            shade = new View(context);
++            shade.setFocusable(false);
++            shade.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
++            shade.setBackgroundColor((Math.min(90, dimPercent) * 255 / 100) << 24);
++            shade.setAlpha(0f);
++            root.addView(shade, index + 1, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
++        } else {
++            shade = null;
++        }
++        view.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> fit());
++    }
++
++    boolean playing() {
++        return !failed && !closed;
++    }
++
++    void start() {
++        wanted = true;
++        if (surface != null) play();
++    }
++
++    void stop() {
++        wanted = false;
++        if (player != null && prepared) {
++            try {
++                player.pause();
++            } catch (IllegalStateException ignored) {
++                // a released or errored player: nothing to pause
++            }
++        }
++    }
++
++    /** Home hidden and memory short: the decoder goes; start() makes a new one. */
++    void releaseForMemoryPressure() {
++        stop();
++        releasePlayer();
++    }
++
++    void close() {
++        closed = true;
++        wanted = false;
++        releasePlayer();
++        if (surface != null) {
++            surface.release();
++            surface = null;
++        }
++    }
++
++    private void play() {
++        if (closed || failed || surface == null) return;
++        if (player != null) {
++            if (prepared && !player.isPlaying()) player.start();
++            return;
++        }
++        try {
++            MediaPlayer mp = new MediaPlayer();
++            player = mp;
++            prepared = false;
++            mp.setDataSource(file.getPath());
++            mp.setSurface(surface);
++            mp.setLooping(true);
++            mp.setVolume(0f, 0f);
++            mp.setOnVideoSizeChangedListener((p, w, h) -> {
++                videoWidth = w;
++                videoHeight = h;
++                fit();
++            });
++            mp.setOnInfoListener((p, what, extra) -> {
++                if (what == MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START) {
++                    view.animate().alpha(1f).setDuration(250).start();
++                    if (shade != null) shade.animate().alpha(1f).setDuration(250).start();
++                }
++                return false;
++            });
++            mp.setOnPreparedListener(p -> {
++                prepared = true;
++                if (wanted && !closed) p.start();
++            });
++            mp.setOnErrorListener((p, what, extra) -> {
++                fail("playback error " + what + "/" + extra);
++                return true;
++            });
++            mp.prepareAsync();
++        } catch (Exception e) {
++            fail(e.toString());
++        }
++    }
++
++    private void fail(String why) {
++        Log.w(TAG, "Video background off: " + why);
++        failed = true;
++        releasePlayer();
++        view.setVisibility(View.GONE);
++        if (shade != null) shade.setVisibility(View.GONE);
++        if (onFailed != null) onFailed.run();
++    }
++
++    private void releasePlayer() {
++        MediaPlayer mp = player;
++        player = null;
++        prepared = false;
++        if (mp != null) {
++            try {
++                mp.reset();
++            } catch (Exception ignored) {
++                // released anyway below
++            }
++            mp.release();
++        }
++        view.setAlpha(0f);
++        if (shade != null) shade.setAlpha(0f);
++    }
++
++    /** Centre crop: the video covers the screen and keeps its proportions. */
++    private void fit() {
++        int w = view.getWidth(), h = view.getHeight();
++        if (w <= 0 || h <= 0 || videoWidth <= 0 || videoHeight <= 0) return;
++        float sx = (float) w / videoWidth, sy = (float) h / videoHeight;
++        float scale = Math.max(sx, sy);
++        Matrix m = new Matrix();
++        m.setScale(videoWidth * scale / w, videoHeight * scale / h, w / 2f, h / 2f);
++        view.setTransform(m);
++    }
++
++    @Override
++    public void onSurfaceTextureAvailable(SurfaceTexture texture, int width, int height) {
++        if (closed) return;
++        surface = new Surface(texture);
++        if (wanted) play();
++    }
++
++    @Override
++    public void onSurfaceTextureSizeChanged(SurfaceTexture texture, int width, int height) {
++        fit();
++    }
++
++    @Override
++    public boolean onSurfaceTextureDestroyed(SurfaceTexture texture) {
++        releasePlayer();
++        if (surface != null) {
++            surface.release();
++            surface = null;
++        }
++        return true;
++    }
++
++    @Override
++    public void onSurfaceTextureUpdated(SurfaceTexture texture) {
++        // every frame: nothing to do
++    }
++}
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/WallpaperPlayer.java b/launcher/app/src/main/java/com/gathin/tvhome/WallpaperPlayer.java
+index 8da8dfa6..a052fc3f 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/WallpaperPlayer.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/WallpaperPlayer.java
+@@ -61,6 +61,8 @@ final class WallpaperPlayer {
+     private final String latitude, longitude;
+     private LocalDate sunDay;
+     private int[] sun;
++    /** Upgrade Your TV: wallpaper.mp4 in the theme folder, played over the picture; null when there is none. */
++    private final VideoWallpaper video;
+ 
+     WallpaperPlayer(Context context, FrameLayout root, Config config) {
+         this.root = root;
+@@ -91,11 +93,17 @@ final class WallpaperPlayer {
+         names = config.wallpaperCaptions && config.wallpaperEnabled && !files.isEmpty()
+                 ? WallpaperCaptions.read(files.get(0).getParentFile()) : Collections.emptyMap();
+         caption = names.isEmpty() ? null : makeCaption(context, root);
+-        if (config.wallpaperEnabled && !files.isEmpty()) {
++        boolean hasImage = config.wallpaperEnabled && !files.isEmpty();
++        if (hasImage) {
+             root.addView(image, 0, new FrameLayout.LayoutParams(
+                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+             showFirst();
+         }
++        // A theme that switches the wallpaper off switches the video off too ("wallpaper": false).
++        File clip = config.wallpaperEnabled ? VideoWallpaper.find(context) : null;
++        video = clip == null ? null : new VideoWallpaper(context, root, hasImage ? 1 : 0, clip, config.wallpaperDim, () -> {
++            if (active) update();   // the pictures take over again
++        });
+     }
+ 
+     /**
+@@ -130,15 +138,18 @@ final class WallpaperPlayer {
+ 
+     void start() {
+         active = true;
++        if (video != null) video.start();
+         update();
+     }
+ 
+     void stop() {
+         active = false;
++        if (video != null) video.stop();
+     }
+ 
+     /** Drops the wallpaper texture when Home is hidden and Android asks the process to free memory. */
+     void releaseForMemoryPressure() {
++        if (video != null) video.releaseForMemoryPressure();
+         if (current == null) return;
+         image.setImageDrawable(null);
+         // The renderer may still have a queued frame that references this hardware bitmap. Drop our references and
+@@ -162,11 +173,13 @@ final class WallpaperPlayer {
+     void close() {
+         active = false;
+         closed = true;
++        if (video != null) video.close();
+         decoder.shutdownNow();
+     }
+ 
+     void update() {
+         if (!active || closed || loading || files.isEmpty()) return;
++        if (video != null && video.playing()) return;   // the video covers the pictures: no rotation under it
+         String previous = preferences.getString("image", "");
+         // A picture outside the time of day's group (the group changed) is replaced at once, not after the interval.
+         List<File> playable = playable();

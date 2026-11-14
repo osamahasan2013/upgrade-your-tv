@@ -1,0 +1,107 @@
+diff --git a/launcher/app/build.gradle b/launcher/app/build.gradle
+index ca1a0382..5c5e5198 100644
+--- a/launcher/app/build.gradle
++++ b/launcher/app/build.gradle
+@@ -12,8 +12,8 @@ android {
+         minSdk 26
+         targetSdk 34
+         // Upgrade Your TV: launcher 3.0 with the video background, dot type, sidebar and Continue card; above upstream's 9.
+-        versionCode 1009
+-        versionName '3.0-uytv9'
++        versionCode 1010
++        versionName '3.0-uytv10'
+     }
+ 
+     buildTypes {
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/VideoWallpaper.java b/launcher/app/src/main/java/com/gathin/tvhome/VideoWallpaper.java
+index 90c3572c..4651cbbf 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/VideoWallpaper.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/VideoWallpaper.java
+@@ -38,6 +38,21 @@ final class VideoWallpaper implements TextureView.SurfaceTextureListener {
+     private boolean failed;
+     private boolean closed;
+     private int videoWidth, videoHeight;
++    /** 3.0-uytv10: errors in a row; the video is given up only after MAX_ERRORS, and a drawn frame clears them. */
++    private int errors;
++    private static final int MAX_ERRORS = 3;
++    private final Context context;
++    /**
++     * 3.0-uytv10: a TV going to sleep takes the hardware decoder away, often with no error and no onStop, and
++     * the video came back as a still frame. When the screen comes on again the player is made anew.
++     */
++    private final android.content.BroadcastReceiver screenOn = new android.content.BroadcastReceiver() {
++        @Override public void onReceive(Context c, android.content.Intent intent) {
++            if (closed || failed) return;
++            releasePlayer();
++            if (wanted && surface != null) play();
++        }
++    };
+ 
+     /** The video file in the theme folder, or null when there is none to play. */
+     static File find(Context context) {
+@@ -50,6 +65,12 @@ final class VideoWallpaper implements TextureView.SurfaceTextureListener {
+     VideoWallpaper(Context context, FrameLayout root, int index, File file, int dimPercent, Runnable onFailed) {
+         this.file = file;
+         this.onFailed = onFailed;
++        this.context = context.getApplicationContext();
++        try {
++            this.context.registerReceiver(screenOn, new android.content.IntentFilter(android.content.Intent.ACTION_SCREEN_ON));
++        } catch (RuntimeException e) {
++            Log.w(TAG, "no screen-on restart: " + e);
++        }
+         view = new TextureView(context);
+         view.setFocusable(false);
+         view.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+@@ -80,13 +101,9 @@ final class VideoWallpaper implements TextureView.SurfaceTextureListener {
+ 
+     void stop() {
+         wanted = false;
+-        if (player != null && prepared) {
+-            try {
+-                player.pause();
+-            } catch (IllegalStateException ignored) {
+-                // a released or errored player: nothing to pause
+-            }
+-        }
++        // 3.0-uytv10: the decoder goes whenever Home is hidden (before: paused). A paused player did not always
++        // come back after the TV slept, and a TV app gets the decoder to itself; start() makes a new one.
++        releasePlayer();
+     }
+ 
+     /** Home hidden and memory short: the decoder goes; start() makes a new one. */
+@@ -98,6 +115,11 @@ final class VideoWallpaper implements TextureView.SurfaceTextureListener {
+     void close() {
+         closed = true;
+         wanted = false;
++        try {
++            context.unregisterReceiver(screenOn);
++        } catch (RuntimeException ignored) {
++            // never registered
++        }
+         releasePlayer();
+         if (surface != null) {
+             surface.release();
+@@ -126,6 +148,7 @@ final class VideoWallpaper implements TextureView.SurfaceTextureListener {
+             });
+             mp.setOnInfoListener((p, what, extra) -> {
+                 if (what == MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START) {
++                    errors = 0;
+                     view.animate().alpha(1f).setDuration(250).start();
+                     if (shade != null) shade.animate().alpha(1f).setDuration(250).start();
+                 }
+@@ -136,7 +159,14 @@ final class VideoWallpaper implements TextureView.SurfaceTextureListener {
+                 if (wanted && !closed) p.start();
+             });
+             mp.setOnErrorListener((p, what, extra) -> {
+-                fail("playback error " + what + "/" + extra);
++                // A decoder lost to sleep or to another app is not a bad file: try again, a few times.
++                if (++errors >= MAX_ERRORS) {
++                    fail("playback error " + what + "/" + extra);
++                } else {
++                    Log.w(TAG, "Video background: error " + what + "/" + extra + ", starting again");
++                    releasePlayer();
++                    view.postDelayed(() -> { if (wanted && !closed && !failed && surface != null) play(); }, 1500);
++                }
+                 return true;
+             });
+             mp.prepareAsync();

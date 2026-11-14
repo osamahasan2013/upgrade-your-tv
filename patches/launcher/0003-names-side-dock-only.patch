@@ -1,0 +1,310 @@
+diff --git a/launcher/app/build.gradle b/launcher/app/build.gradle
+index d5233412..d3160f56 100644
+--- a/launcher/app/build.gradle
++++ b/launcher/app/build.gradle
+@@ -12,8 +12,8 @@ android {
+         minSdk 26
+         targetSdk 34
+         // Upgrade Your TV: launcher 3.0 with the video background, dot type, sidebar and Continue card; above upstream's 9.
+-        versionCode 1002
+-        versionName '3.0-uytv2'
++        versionCode 1003
++        versionName '3.0-uytv3'
+     }
+ 
+     buildTypes {
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/AppAdapter.java b/launcher/app/src/main/java/com/gathin/tvhome/AppAdapter.java
+index 478c3219..be59230a 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/AppAdapter.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/AppAdapter.java
+@@ -229,7 +229,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+         this.animations = cfg.animations;
+         this.advancedEffects = cfg.animations && cfg.advancedEffects;
+         this.showHomeSettings = cfg.showHomeSettingsShortcut;
+-        this.showLibrary = LibraryApps.showPill(cfg.appLibrary, cfg.libraryButton, cfg.showLibraryPill);
++        // Upgrade Your TV: with uytv_dock_only the pill is how every other app is reached, so it always shows.
++        this.showLibrary = LibraryApps.showPill(cfg.appLibrary, cfg.libraryButton, cfg.showLibraryPill) || UytvHome.dockOnly();
+         this.reducedMotion = cfg.reducedMotion;
+         this.focusOvershoot = cfg.focusOvershoot;
+         this.rowsBelowDock = cfg.rowsBelowDock;
+@@ -331,6 +332,15 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+         docked = 0;
+         while (docked < fresh.size() && isDocked(fresh.get(docked))) docked++;
+         emptySlots = dockRow && !reordering ? DockSlots.empty(docked, dockSize, fresh.size(), fillDock) : 0;
++        // Upgrade Your TV (uytv_dock_only): Home shows the dock alone; the rest are in All apps (the library pill).
++        // Without a dock recorded yet, the first row of apps stands for it.
++        if (UytvHome.dockOnly() && !reordering) {
++            int keep = docked > 0 ? docked : Math.min(dockSize, fresh.size());
++            Entry homeSettings = !fresh.isEmpty() && fresh.get(fresh.size() - 1).kind == Entry.HOME_SETTINGS ? fresh.get(fresh.size() - 1) : null;
++            while (fresh.size() > keep) fresh.remove(fresh.size() - 1);
++            if (homeSettings != null && !fresh.contains(homeSettings)) fresh.add(homeSettings);
++            emptySlots = 0;
++        }
+         for (int i = 0; i < emptySlots; i++) {
+             fresh.add(docked + i, new Entry(Entry.EMPTY, "", new ComponentName(ctx, "empty-dock-slot-" + i),
+                     null, null, null, 0));
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/UytvHome.java b/launcher/app/src/main/java/com/gathin/tvhome/UytvHome.java
+index 0c6832b4..6c9fd40f 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/UytvHome.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/UytvHome.java
+@@ -31,16 +31,28 @@ import org.json.JSONObject;
+  *       the grid; "All apps" at its foot opens the App library.</li>
+  *   <li>{@code uytv_continue}: a frosted card at the bottom right, "Continue in {app}", for the app Home opened
+  *       last, with how long ago.</li>
++ *   <li>3.0-uytv3: {@code uytv_names} ("large", "small" or "hidden"): the apps' names in the sidebar, and the big name
++ *       above the row; {@code uytv_side} ("left" or "right"): where the sidebar goes; {@code uytv_dock_only}: Home
++ *       shows only the dock and the All apps pill (AppAdapter); with dot type and the row, a line runs from the
++ *       focused app up to its name, which moves over it, with a red dot at the top.</li>
+  * </ul>
+  * Every step is guarded: if anything here fails, Home stays as the look made it.
+  */
+ final class UytvHome {
+     private static final String TAG = "TvHome.Uytv";
+-    static final int MAX_SIDEBAR_APPS = 7;
++    static final int MAX_SIDEBAR_APPS = 9;
++
++    /** uytv_dock_only from the overlay the last Config.load read (AppAdapter keeps only the dock then). */
++    static boolean dockOnly() {
++        JSONObject json = Config.lastOverlay;
++        return json != null && json.optBoolean("uytv_dock_only", false);
++    }
+ 
+     final boolean signal;
+     final boolean sidebar;
+     final boolean continueCard;
++    final String names;        // large, small, hidden
++    final boolean rightSide;
+ 
+     private final Activity activity;
+     private final AppAdapter adapter;
+@@ -58,13 +70,16 @@ final class UytvHome {
+         this.signal = json != null && json.optBoolean("uytv_signal", false);
+         this.sidebar = json != null && json.optBoolean("uytv_sidebar", false);
+         this.continueCard = json != null && json.optBoolean("uytv_continue", false);
++        String n = json != null ? json.optString("uytv_names", "large") : "large";
++        this.names = "small".equals(n) || "hidden".equals(n) ? n : "large";
++        this.rightSide = json != null && "right".equals(json.optString("uytv_side", "left"));
+     }
+ 
+     /** Null when none of the three is on. */
+     static UytvHome attach(Activity activity, AppAdapter adapter, AppAdapter.TileListener listener) {
+         try {
+             UytvHome home = new UytvHome(activity, adapter, listener, Config.lastOverlay);
+-            if (!home.signal && !home.sidebar && !home.continueCard) return null;
++            if (!home.signal && !home.sidebar && !home.continueCard && "large".equals(home.names)) return null;
+             home.build();
+             return home;
+         } catch (RuntimeException e) {
+@@ -97,6 +112,13 @@ final class UytvHome {
+             }
+         }
+         ViewGroup root = activity.findViewById(R.id.root);
++        // The big name over the row: smaller, or none.
++        TextView heroName = activity.findViewById(R.id.heroName);
++        if (!sidebar && heroName != null) {
++            if ("small".equals(names)) heroName.setTextSize(TypedValue.COMPLEX_UNIT_SP, 34f);
++            if ("hidden".equals(names)) heroName.setAlpha(0f);
++        }
++        if (!sidebar && signal && !"hidden".equals(names)) addConnector(root);
+         if (sidebar) {
+             View grid = activity.findViewById(R.id.grid);
+             if (grid != null && grid.getParent() instanceof View) ((View) grid.getParent()).setVisibility(View.GONE);
+@@ -106,9 +128,10 @@ final class UytvHome {
+             panel.setOrientation(LinearLayout.VERTICAL);
+             panel.setPadding(dp(10), dp(10), dp(10), dp(10));
+             panel.setBackground(glass(28, 0x2EFFFFFF));
+-            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(dp(330), ViewGroup.LayoutParams.WRAP_CONTENT,
+-                    Gravity.START | Gravity.CENTER_VERTICAL);
+-            lp.setMarginStart(dp(56));
++            int width = "hidden".equals(names) ? dp(84) : "small".equals(names) ? dp(260) : dp(330);
++            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(width, ViewGroup.LayoutParams.WRAP_CONTENT,
++                    (rightSide ? Gravity.END : Gravity.START) | Gravity.CENTER_VERTICAL);
++            if (rightSide) lp.setMarginEnd(dp(56)); else lp.setMarginStart(dp(56));
+             lp.topMargin = dp(120);
+             lp.bottomMargin = dp(40);
+             root.addView(panel, lp);
+@@ -122,10 +145,13 @@ final class UytvHome {
+             card.setFocusable(true);
+             card.setClickable(true);
+             card.setVisibility(View.GONE);
++            // Across from the sidebar: right of a left one, left of a right one. With the row, the dock runs along
++            // the bottom, so the card goes top right, under the clock row's buttons, clear of it (3.0-uytv3).
++            boolean cardLeft = sidebar && rightSide;
+             FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+-                    ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.END | Gravity.BOTTOM);
+-            lp.setMarginEnd(dp(56));
+-            lp.bottomMargin = dp(40);
++                    ViewGroup.LayoutParams.WRAP_CONTENT, (cardLeft ? Gravity.START : Gravity.END) | (sidebar ? Gravity.BOTTOM : Gravity.TOP));
++            if (cardLeft) lp.setMarginStart(dp(56)); else lp.setMarginEnd(dp(56));
++            if (sidebar) lp.bottomMargin = dp(40); else lp.topMargin = dp(118);
+             root.addView(card, lp);
+         }
+     }
+@@ -149,15 +175,20 @@ final class UytvHome {
+         for (int i = 0; i < adapter.getItemCount() && shown < MAX_SIDEBAR_APPS; i++) {
+             if (adapter.kindAt(i) != AppAdapter.Entry.APP) continue;
+             final int position = i;
+-            View row = row(adapter.iconAt(i), adapter.labelAt(i), 26, v -> adapter.launchAt(position));
++            View row = row(appIcon(i), "hidden".equals(names) ? null : adapter.labelAt(i), 26, v -> adapter.launchAt(position));
++            row.setContentDescription(adapter.labelAt(i));
+             panel.addView(row);
+             if (first == null) first = row;
+             shown++;
+         }
+-        View all = row(null, activity.getString(R.string.uytv_all_apps), 17, v -> listener.onLibraryRequested());
++        View all = "hidden".equals(names) ? row(allAppsIcon(), null, 17, v -> listener.onLibraryRequested())
++                : row(null, activity.getString(R.string.uytv_all_apps), 17, v -> listener.onLibraryRequested());
+         panel.addView(all);
+         if (card != null) {
+-            for (int i = 0; i < panel.getChildCount(); i++) panel.getChildAt(i).setNextFocusRightId(cardId());
++            for (int i = 0; i < panel.getChildCount(); i++) {
++                if (rightSide) panel.getChildAt(i).setNextFocusLeftId(cardId());
++                else panel.getChildAt(i).setNextFocusRightId(cardId());
++            }
+         }
+         if (first != null && (hadFocus || focused == null || !focused.isShown())) {
+             final View target = first;
+@@ -197,6 +228,10 @@ final class UytvHome {
+         TextView title = text(activity.getString(R.string.uytv_continue_in, best), 18, Color.WHITE);
+         CharSequence ago = DateUtils.getRelativeTimeSpanString(when, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS);
+         TextView sub = text(activity.getString(R.string.uytv_last_opened, ago), 13, 0xB3FFFFFF);
++        // The small line in the plain type even with dot type: dots that small run into the line above.
++        sub.setTypeface(android.graphics.Typeface.DEFAULT);
++        sub.setAllCaps(false);
++        sub.setPadding(0, dp(3), 0, 0);
+         texts.addView(title);
+         texts.addView(sub);
+         card.addView(texts);
+@@ -209,6 +244,95 @@ final class UytvHome {
+         card.setVisibility(View.VISIBLE);
+     }
+ 
++    /** The app's own square icon, not its 16:9 banner cut to a square (3.0-uytv2 showed banners cropped). */
++    private Drawable appIcon(int position) {
++        String pkg = adapter.packageAt(position);
++        try {
++            if (pkg != null) return activity.getPackageManager().getApplicationIcon(pkg);
++        } catch (android.content.pm.PackageManager.NameNotFoundException ignored) {
++        }
++        return adapter.iconAt(position);
++    }
++
++    private Drawable allAppsIcon() {
++        android.graphics.drawable.ShapeDrawable d = new android.graphics.drawable.ShapeDrawable(new android.graphics.drawable.shapes.Shape() {
++            @Override
++            public void draw(android.graphics.Canvas c, android.graphics.Paint p) {
++                p.setColor(Color.WHITE);
++                p.setStyle(android.graphics.Paint.Style.STROKE);
++                p.setStrokeWidth(getWidth() / 16f);
++                float s = getWidth() / 2f - getWidth() / 10f, g = getWidth() / 10f;
++                for (int i = 0; i < 4; i++) {
++                    float x = (i % 2) * (s + 2 * g) + g / 2, y = (i / 2) * (s + 2 * g) + g / 2;
++                    c.drawRoundRect(x, y, x + s, y + s, g, g, p);
++                }
++            }
++        });
++        d.setIntrinsicWidth(dp(28));
++        d.setIntrinsicHeight(dp(28));
++        return d;
++    }
++
++    // ---- the line from the focused app up to its name (dot type, row) ----------------------------------------
++
++    private View connector;
++    private View connectorDot;
++
++    private void addConnector(ViewGroup root) {
++        connector = new View(activity);
++        connector.setBackgroundColor(0xE6FFFFFF);
++        connector.setVisibility(View.INVISIBLE);
++        root.addView(connector, new FrameLayout.LayoutParams(Math.max(2, dp(1.5f)), 1));
++        connectorDot = new View(activity);
++        GradientDrawable dot = new GradientDrawable();
++        dot.setShape(GradientDrawable.OVAL);
++        dot.setColor(0xFFD71921);
++        connectorDot.setBackground(dot);
++        connectorDot.setVisibility(View.INVISIBLE);
++        root.addView(connectorDot, new FrameLayout.LayoutParams(dp(9), dp(9)));
++        root.getViewTreeObserver().addOnGlobalFocusChangeListener((oldFocus, newFocus) -> root.postDelayed(this::placeConnector, 120));
++        root.getViewTreeObserver().addOnGlobalLayoutListener(this::placeConnector);
++    }
++
++    private void placeConnector() {
++        if (connector == null) return;
++        View focus = activity.getCurrentFocus();
++        View grid = activity.findViewById(R.id.grid);
++        TextView name = activity.findViewById(R.id.heroName);
++        View hero = activity.findViewById(R.id.hero);
++        if (focus == null || grid == null || name == null || hero == null || hero.getVisibility() != View.VISIBLE
++                || !isInside(focus, grid) || name.getText().length() == 0) {
++            connector.setVisibility(View.INVISIBLE);
++            connectorDot.setVisibility(View.INVISIBLE);
++            return;
++        }
++        int[] f = new int[2], n = new int[2], r = new int[2];
++        focus.getLocationOnScreen(f);
++        name.getLocationOnScreen(n);
++        ((View) connector.getParent()).getLocationOnScreen(r);
++        float x = f[0] + focus.getWidth() / 2f - r[0];
++        float top = n[1] - r[1] + name.getHeight() + dp(6);
++        float bottom = f[1] - r[1] - dp(6);
++        if (bottom - top < dp(8)) {
++            connector.setVisibility(View.INVISIBLE);
++            connectorDot.setVisibility(View.INVISIBLE);
++            return;
++        }
++        // The name moves over the focused app, its start on the line.
++        name.setTranslationX(name.getTranslationX() + (x - (n[0] - r[0])) - dp(1));
++        ViewGroup.LayoutParams lp = connector.getLayoutParams();
++        if (lp.height != (int) (bottom - top)) {
++            lp.height = (int) (bottom - top);
++            connector.setLayoutParams(lp);
++        }
++        connector.setX(x - connector.getWidth() / 2f);
++        connector.setY(top);
++        connectorDot.setX(x - dp(4.5f));
++        connectorDot.setY(top - dp(4.5f));
++        connector.setVisibility(View.VISIBLE);
++        connectorDot.setVisibility(View.VISIBLE);
++    }
++
+     private View row(Drawable art, String label, int iconDp, View.OnClickListener click) {
+         LinearLayout row = new LinearLayout(activity);
+         row.setOrientation(LinearLayout.HORIZONTAL);
+@@ -218,14 +342,23 @@ final class UytvHome {
+         row.setClickable(true);
+         row.setBackground(focusable(18, 0x00FFFFFF, 0xF2FFFFFF));
+         if (art != null) {
+-            row.addView(icon(art, 40));
++            row.addView(icon(art, "small".equals(names) ? 34 : 40));
++        }
++        row.setOnClickListener(click);
++        if (label == null) {
++            row.setGravity(Gravity.CENTER);
++            row.setContentDescription(art != null ? null : activity.getString(R.string.uytv_all_apps));
++            return finish(row);
+         }
+-        TextView name = text(label, signal ? 18 : 20, Color.WHITE);
+-        name.setPadding(dp(art != null ? 16 : 6), 0, 0, 0);
++        TextView name = text(label, "small".equals(names) ? (signal ? 14 : 15) : (signal ? 18 : 20), Color.WHITE);
++        name.setPadding(dp(art != null ? 14 : 6), 0, 0, 0);
+         if (art == null) name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+         row.addView(name, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+-        row.setOnClickListener(click);
+         row.setOnFocusChangeListener((v, has) -> name.setTextColor(has ? 0xFF111111 : Color.WHITE));
++        return finish(row);
++    }
++
++    private View finish(LinearLayout row) {
+         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+         lp.topMargin = dp(2);
+         row.setLayoutParams(lp);
+@@ -235,7 +368,7 @@ final class UytvHome {
+     private ImageView icon(Drawable art, int sizeDp) {
+         ImageView v = new ImageView(activity);
+         v.setImageDrawable(art);
+-        v.setScaleType(ImageView.ScaleType.CENTER_CROP);
++        v.setScaleType(ImageView.ScaleType.FIT_CENTER);
+         final float radius = dp(10);
+         v.setOutlineProvider(new ViewOutlineProvider() {
+             @Override

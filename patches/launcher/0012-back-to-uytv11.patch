@@ -1,0 +1,15 @@
+diff --git a/launcher/app/build.gradle b/launcher/app/build.gradle
+index 9f806b85..d179ce50 100644
+--- a/launcher/app/build.gradle
++++ b/launcher/app/build.gradle
+@@ -12,8 +12,8 @@ android {
+         minSdk 26
+         targetSdk 34
+         // Upgrade Your TV: launcher 3.0 with the video background, dot type, sidebar and Continue card; above upstream's 9.
+-        versionCode 1011
+-        versionName '3.0-uytv11'
++        versionCode 1013
++        versionName '3.0-uytv13'
+     }
+ 
+     buildTypes {

@@ -1,0 +1,6 @@
+SHA256=7fb712e87c8d17b0de74d2d187fdc178406ea91793029a58b49c37be8b018b42
+SIZE=2024988
+SIGNER_SHA256=bc3d58326548f5b2da4bfec975586d8641bb3f27e33e6956a3f479976ba9176e
+BADGING=package: name='com.gathin.tvhome' versionCode='1015' versionName='3.0-uytv15' platformBuildVersionName='14' platformBuildVersionCode='34' compileSdkVersion='34' compileSdkVersionCodename='14'
+UPSTREAM_COMMIT=b06ab21105c49900cb1ed76b24414dba1e21d0db
+PATCHES=0001-video-background.patch 0002-home-choices.patch 0003-names-side-dock-only.patch 0004-themes-style-page.patch 0005-all-apps-icon-clock-side.patch 0006-style-button-card.patch 0007-fast-keys-line.patch 0008-four-painted-themes.patch 0009-video-own-colours.patch 0010-video-after-sleep.patch 0011-helper-after-power-off.patch 0012-back-to-uytv11.patch 0013-library-add-to-dock.patch 0014-helper-kept-home-tap.patch make_dots_font.py 

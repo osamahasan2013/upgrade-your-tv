@@ -1,0 +1,35 @@
+FACTS	getprop; echo '@@cyt@@ meminfo'; cat /proc/meminfo; echo '@@cyt@@ gms'; pm path com.google.android.gms
+PACKAGES	pm list packages -f
+DISABLED	pm list packages -d
+PACKAGE_FLAGS	dumpsys package packages | grep -E '^(Packages:|Hidden system packages:)|^ +(Package \[|codePath=|versionCode=|pkgFlags=|User 0: )'
+HOME	cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.HOME; echo '@@cyt@@ resolved'; cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME
+HOME_RESOLVED	cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME
+LAUNCHABLE	cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.LEANBACK_LAUNCHER; echo '@@cyt@@ launcher'; cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.LAUNCHER
+INPUTS	dumpsys tv_input; echo '@@cyt@@ hdmi'; dumpsys hdmi_control
+SETTINGS	settings list secure; echo '@@cyt@@ global'; settings list global
+HOME_FOCUS	dumpsys activity activities | grep -E 'ResumedActivity'
+BOOT_ID	cat /proc/sys/kernel/random/boot_id
+FREE_DATA	df -k /data
+SCREENSHOT	mkdir -p /data/local/tmp/cleanyourtv && screencap -p /data/local/tmp/cleanyourtv/probe-screen.png
+SCREENSHOT_CLEANUP	rm -f /data/local/tmp/cleanyourtv/probe-screen.png
+MKDIR_TMP	mkdir -p /data/local/tmp/cleanyourtv
+NOOP_INSTALL	pm install -r /data/local/tmp/cleanyourtv/noop.apk
+NOOP_UNINSTALL	pm uninstall tv.cleanyour.noop
+NOOP_CLEANUP	rm -f /data/local/tmp/cleanyourtv/noop.apk
+PS_ARGS	ps -A -o ARGS
+WIFI_OWNERS	dumpsys wifi | grep -o -E -e 'cname=[^ ]*' -e 'Configured networks (Begin|End)' -e 'ID: -?[0-9]+ SSID'
+fileSha256(OVERLAY/config.json)	sha256sum '/sdcard/Android/data/com.gathin.tvhome/files/config.json'
+installedSha256(com.gathin.tvhome)	p=$(pm path 'com.gathin.tvhome' | grep base.apk | head -n 1); sha256sum "${p#package:}"
+watchdogAlive(0123456789abcdef)	pgrep -f '[c]leanyourtv-rollback-0123456789abcdef'
+copyApk(com.gathin.tvhome, signer-0123456789abcdef.apk, 16777216)	mkdir -p /data/local/tmp/cleanyourtv && p=$(pm path 'com.gathin.tvhome' | grep base.apk | head -n 1) && [ -n "$p" ] && [ "$(stat -c %s "${p#package:}")" -le 16777216 ] && cp "${p#package:}" '/data/local/tmp/cleanyourtv/signer-0123456789abcdef.apk'
+signerCleanup(signer-0123456789abcdef.apk)	rm -f '/data/local/tmp/cleanyourtv/signer-0123456789abcdef.apk'
+installedApkState(com.gathin.tvhome)	p=$(pm path 'com.gathin.tvhome'); echo "$p" | grep -c base.apk; echo '@@cyt@@ hash'; b=$(echo "$p" | grep base.apk | head -n 1); sha256sum "${b#package:}" >/dev/null 2>&1; echo $?; echo '@@cyt@@ current'; cmd activity get-current-user; echo '@@cyt@@ users'; dumpsys package 'com.gathin.tvhome' | grep -E '^ +User [0-9]+: '
+STORAGE	df -k 2>/dev/null; true
+DOWNLOADS	stat -c '%F|%s|%Y|%n' /sdcard/Download/* 2>/dev/null; true
+VIDEO_PRESENT	(content read --uri content://com.gathin.tvhome.theme/wallpaper.mp4 2>/dev/null || cat '/sdcard/Android/data/com.gathin.tvhome/files/wallpaper.mp4' 2>/dev/null) | head -c 16 | wc -c
+VIDEO_FROM_STAGED	content write --uri content://com.gathin.tvhome.theme/wallpaper.mp4 < '/data/local/tmp/cleanyourtv/wallpaper.mp4'; r=$?; rm -f '/data/local/tmp/cleanyourtv/wallpaper.mp4'; exit $r
+VIDEO_REMOVE	content delete --uri content://com.gathin.tvhome.theme/wallpaper.mp4 2>/dev/null; rm -f '/sdcard/Android/data/com.gathin.tvhome/files/wallpaper.mp4' 2>/dev/null; true
+HOME_RESTART	a=$(settings get secure enabled_accessibility_services 2>/dev/null); e=$(settings get secure accessibility_enabled 2>/dev/null); am force-stop com.gathin.tvhome; am start -a android.intent.action.MAIN -c android.intent.category.HOME >/dev/null 2>&1; case "$e:$a" in 1:*com.gathin.tvhome/*) sleep 1; settings put secure accessibility_enabled 0; sleep 1; settings put secure enabled_accessibility_services "$a"; settings put secure accessibility_enabled 1;; esac; true
+HOME_OPEN	a=$(settings get secure enabled_accessibility_services 2>/dev/null); e=$(settings get secure accessibility_enabled 2>/dev/null); am force-stop com.gathin.tvhome; am start -n com.gathin.tvhome/.MainActivity >/dev/null 2>&1; case "$e:$a" in 1:*com.gathin.tvhome/*) sleep 1; settings put secure accessibility_enabled 0; sleep 1; settings put secure enabled_accessibility_services "$a"; settings put secure accessibility_enabled 1;; esac; true
+HELPER_KEEP_GRANT	pm grant com.gathin.tvhome android.permission.WRITE_SECURE_SETTINGS
+HELPER_KEEP_OPEN	appops set com.gathin.tvhome SYSTEM_ALERT_WINDOW allow

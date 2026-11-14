@@ -1,0 +1,104 @@
+diff --git a/launcher/app/build.gradle b/launcher/app/build.gradle
+index 395d2799..11a4398c 100644
+--- a/launcher/app/build.gradle
++++ b/launcher/app/build.gradle
+@@ -12,8 +12,8 @@ android {
+         minSdk 26
+         targetSdk 34
+         // Upgrade Your TV: launcher 3.0 with the video background, dot type, sidebar and Continue card; above upstream's 9.
+-        versionCode 1005
+-        versionName '3.0-uytv5'
++        versionCode 1006
++        versionName '3.0-uytv6'
+     }
+ 
+     buildTypes {
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/UytvHome.java b/launcher/app/src/main/java/com/gathin/tvhome/UytvHome.java
+index 022d012b..a1cc4c08 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/UytvHome.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/UytvHome.java
+@@ -86,11 +86,11 @@ final class UytvHome {
+         this.clockOpposite = c.clockOpposite;
+     }
+ 
+-    /** Null when none of the three is on. */
++    /** Null only when something throws. */
+     static UytvHome attach(Activity activity, AppAdapter adapter, AppAdapter.TileListener listener) {
+         try {
+             UytvChoices c = UytvChoices.read(activity);
+-            if (!c.any()) return null;
++            // 3.0-uytv6: always attached, for the top bar's Style button; with no choice nothing else changes.
+             UytvHome home = new UytvHome(activity, adapter, listener, c);
+             home.build();
+             return home;
+@@ -105,6 +105,7 @@ final class UytvHome {
+     }
+ 
+     private void build() {
++        addStyleButton();
+         if (theme != null) applyTheme();
+         if (signal && theme == null) {
+             try {
+@@ -164,9 +165,10 @@ final class UytvHome {
+             // the bottom, so the card goes top right, under the clock row's buttons, clear of it (3.0-uytv3).
+             boolean cardLeft = sidebar && rightSide;
+             FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+-                    ViewGroup.LayoutParams.WRAP_CONTENT, (cardLeft ? Gravity.START : Gravity.END) | (sidebar ? Gravity.BOTTOM : Gravity.TOP));
++                    ViewGroup.LayoutParams.WRAP_CONTENT, (cardLeft ? Gravity.START : Gravity.END) | (sidebar ? Gravity.BOTTOM : Gravity.CENTER_VERTICAL));
+             if (cardLeft) lp.setMarginStart(dp(56)); else lp.setMarginEnd(dp(56));
+-            if (sidebar) lp.bottomMargin = dp(40); else lp.topMargin = dp(118);
++            // The row runs along the bottom and the clock's buttons along the top: the card sits between, at the side.
++            if (sidebar) lp.bottomMargin = dp(40);
+             root.addView(card, lp);
+         }
+     }
+@@ -407,6 +409,32 @@ final class UytvHome {
+     }
+ 
+ 
++    /**
++     * A Style button at the start of the top bar (the round pills by the network pill): the theme and layout on
++     * the TV itself (UytvSettingsActivity), one press from Home.
++     */
++    private void addStyleButton() {
++        ViewGroup bar = activity.findViewById(R.id.topButtons);
++        if (bar == null) return;
++        TextView button = (TextView) activity.getLayoutInflater().inflate(R.layout.top_app_button, bar, false);
++        button.setId(View.generateViewId());
++        Drawable icon = activity.getDrawable(R.drawable.uytv_ic_style);
++        if (icon != null) {
++            int size = dp(22);
++            icon.setBounds(0, 0, size, size);
++            button.setCompoundDrawablesRelative(icon, null, null, null);
++        }
++        button.setContentDescription(activity.getString(R.string.uytv_style));
++        button.setOnClickListener(v -> {
++            try {
++                activity.startActivity(new android.content.Intent(activity, UytvSettingsActivity.class));
++            } catch (RuntimeException e) {
++                Log.w(TAG, "no Style page: " + e);
++            }
++        });
++        bar.addView(button, 0);
++    }
++
+     /** With the sidebar on the left, the clock and the date move to the right and the top buttons to the left. */
+     private void moveClockRight() {
+         View block = activity.findViewById(R.id.leftBlock);
+diff --git a/launcher/app/src/main/res/drawable/uytv_ic_style.xml b/launcher/app/src/main/res/drawable/uytv_ic_style.xml
+new file mode 100644
+index 00000000..08a9f1ef
+--- /dev/null
++++ b/launcher/app/src/main/res/drawable/uytv_ic_style.xml
+@@ -0,0 +1,11 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Upgrade Your TV: the top bar's Style button (sliders, the Material "tune" icon, Apache 2.0). -->
++<vector xmlns:android="http://schemas.android.com/apk/res/android"
++    android:width="24dp"
++    android:height="24dp"
++    android:viewportWidth="24"
++    android:viewportHeight="24">
++    <path
++        android:fillColor="#FFFFFFFF"
++        android:pathData="M3,17v2h6v-2L3,17zM3,5v2h10L13,5L3,5zM13,21v-2h8v-2h-8v-2h-2v6h2zM7,9v2L3,11v2h4v2h2L9,9L7,9zM21,13v-2L11,11v2h10zM15,9h2L17,7h4L21,5h-4L17,3h-2v6z" />
++</vector>
