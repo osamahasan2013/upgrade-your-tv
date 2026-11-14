@@ -1,0 +1,300 @@
+> Task :feature:backup:generateDebugUnitTestAssets UP-TO-DATE
+> Task :feature:backup:mergeDebugUnitTestAssets
+> Task :feature:backup:packageDebugUnitTestForUnitTest
+> Task :feature:backup:generateDebugUnitTestConfig
+> Task :feature:backup:processDebugUnitTestJavaRes
+> Task :core:spec:compileTestJava
+> Task :core:spec:testClasses
+> Task :feature:backup:testDebugUnitTest
+> Task :feature:backup:finalizeTestRoborazziDebug SKIPPED
+> Task :feature:backup:test
+> Task :feature:backup:check
+> Task :feature:connect:generateDebugLintReportModel
+
+> Task :feature:connect:lintReportDebug
+Wrote HTML report to file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/connect/build/reports/lint-results-debug.html
+Wrote SARIF report to file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/connect/build/reports/lint-results-debug.sarif
+
+> Task :feature:connect:lintDebug
+> Task :feature:connect:lint
+> Task :feature:connect:checkDebugUnitTestAarMetadata
+> Task :feature:connect:mapDebugUnitTestSourceSetPaths
+> Task :feature:connect:generateDebugUnitTestResources FROM-CACHE
+> Task :feature:connect:mergeDebugUnitTestResources FROM-CACHE
+> Task :feature:connect:mergeDebugUnitTestManifest
+> Task :feature:connect:processDebugUnitTestManifest
+> Task :feature:connect:processDebugUnitTestResources FROM-CACHE
+
+> Task :feature:connect:compileDebugUnitTestKotlin
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/connect/src/test/kotlin/tv/cleanyour/feature/connect/ConnectReportTest.kt:32:29 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/connect/src/test/kotlin/tv/cleanyour/feature/connect/ConnectScreenshotTest.kt:94:19 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/connect/src/test/kotlin/tv/cleanyour/feature/connect/PairingStepsTest.kt:22:16 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/connect/src/test/kotlin/tv/cleanyour/feature/connect/WelcomeFoldTest.kt:41:19 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+
+> Task :feature:connect:javaPreCompileDebugUnitTest FROM-CACHE
+> Task :feature:connect:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :feature:connect:generateDebugUnitTestAssets UP-TO-DATE
+> Task :feature:connect:mergeDebugUnitTestAssets
+> Task :feature:connect:packageDebugUnitTestForUnitTest
+> Task :feature:connect:generateDebugUnitTestConfig
+> Task :feature:connect:processDebugUnitTestJavaRes
+> Task :core:spec:test
+> Task :feature:connect:testDebugUnitTest
+> Task :feature:connect:finalizeTestRoborazziDebug SKIPPED
+> Task :feature:connect:test
+> Task :feature:connect:check
+> Task :feature:launcher:generateDebugLintReportModel
+
+> Task :feature:launcher:lintReportDebug
+Wrote HTML report to file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/launcher/build/reports/lint-results-debug.html
+Wrote SARIF report to file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/launcher/build/reports/lint-results-debug.sarif
+
+> Task :feature:launcher:lintDebug
+> Task :feature:launcher:lint
+> Task :feature:launcher:checkDebugUnitTestAarMetadata
+> Task :feature:launcher:mapDebugUnitTestSourceSetPaths
+> Task :feature:launcher:generateDebugUnitTestResources FROM-CACHE
+> Task :feature:launcher:mergeDebugUnitTestResources
+> Task :feature:launcher:mergeDebugUnitTestManifest
+> Task :feature:launcher:processDebugUnitTestManifest
+> Task :feature:launcher:processDebugUnitTestResources
+
+> Task :feature:launcher:compileDebugUnitTestKotlin
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/launcher/src/test/kotlin/tv/cleanyour/feature/launcher/GuardedActionsTest.kt:46:29 'fun <reified A : ComponentActivity> createAndroidComposeRule(effectContext: CoroutineContext = ...): AndroidComposeTestRule<ActivityScenarioRule<A>, A>' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createAndroidComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/launcher/src/test/kotlin/tv/cleanyour/feature/launcher/LauncherScreenshotTest.kt:290:29 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/launcher/src/test/kotlin/tv/cleanyour/feature/launcher/LookPagesTest.kt:50:29 'fun <reified A : ComponentActivity> createAndroidComposeRule(effectContext: CoroutineContext = ...): AndroidComposeTestRule<ActivityScenarioRule<A>, A>' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createAndroidComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+
+> Task :feature:launcher:javaPreCompileDebugUnitTest FROM-CACHE
+> Task :feature:launcher:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :feature:launcher:generateDebugUnitTestAssets UP-TO-DATE
+> Task :feature:launcher:mergeDebugUnitTestAssets
+> Task :feature:launcher:packageDebugUnitTestForUnitTest
+> Task :feature:launcher:generateDebugUnitTestConfig
+> Task :feature:launcher:processDebugUnitTestJavaRes
+> Task :feature:launcher:testDebugUnitTest
+> Task :feature:launcher:finalizeTestRoborazziDebug SKIPPED
+> Task :feature:launcher:test
+> Task :feature:launcher:check
+> Task :feature:manage:generateDebugLintReportModel
+
+> Task :feature:manage:lintReportDebug
+Wrote HTML report to file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/manage/build/reports/lint-results-debug.html
+Wrote SARIF report to file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/manage/build/reports/lint-results-debug.sarif
+
+> Task :feature:manage:lintDebug
+> Task :feature:manage:lint
+> Task :feature:manage:checkDebugUnitTestAarMetadata
+> Task :feature:manage:mapDebugUnitTestSourceSetPaths
+> Task :feature:manage:generateDebugUnitTestResources FROM-CACHE
+> Task :feature:manage:mergeDebugUnitTestResources
+> Task :feature:manage:mergeDebugUnitTestManifest
+> Task :feature:manage:processDebugUnitTestManifest
+> Task :feature:manage:processDebugUnitTestResources
+
+> Task :feature:manage:compileDebugUnitTestKotlin
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/manage/src/test/kotlin/tv/cleanyour/feature/manage/GuardedActionsTest.kt:32:29 'fun <reified A : ComponentActivity> createAndroidComposeRule(effectContext: CoroutineContext = ...): AndroidComposeTestRule<ActivityScenarioRule<A>, A>' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createAndroidComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/manage/src/test/kotlin/tv/cleanyour/feature/manage/ManageScreenshotTest.kt:502:29 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/manage/src/test/kotlin/tv/cleanyour/feature/manage/OpenWriteStaleTest.kt:28:29 'fun <reified A : ComponentActivity> createAndroidComposeRule(effectContext: CoroutineContext = ...): AndroidComposeTestRule<ActivityScenarioRule<A>, A>' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createAndroidComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/manage/src/test/kotlin/tv/cleanyour/feature/manage/ReachAddressTest.kt:31:29 'fun <reified A : ComponentActivity> createAndroidComposeRule(effectContext: CoroutineContext = ...): AndroidComposeTestRule<ActivityScenarioRule<A>, A>' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createAndroidComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+
+> Task :feature:manage:javaPreCompileDebugUnitTest FROM-CACHE
+> Task :feature:manage:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :feature:manage:generateDebugUnitTestAssets UP-TO-DATE
+> Task :feature:manage:mergeDebugUnitTestAssets
+> Task :feature:manage:packageDebugUnitTestForUnitTest
+> Task :feature:manage:generateDebugUnitTestConfig
+> Task :feature:manage:processDebugUnitTestJavaRes
+> Task :feature:manage:testDebugUnitTest
+> Task :feature:manage:finalizeTestRoborazziDebug SKIPPED
+> Task :feature:manage:test
+> Task :feature:manage:check
+> Task :feature:modules:generateDebugLintReportModel
+
+> Task :feature:modules:lintReportDebug
+Wrote HTML report to file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/modules/build/reports/lint-results-debug.html
+Wrote SARIF report to file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/modules/build/reports/lint-results-debug.sarif
+
+> Task :feature:modules:lintDebug
+> Task :feature:modules:lint
+> Task :feature:modules:checkDebugUnitTestAarMetadata
+> Task :feature:modules:mapDebugUnitTestSourceSetPaths
+> Task :feature:modules:generateDebugUnitTestResources FROM-CACHE
+> Task :feature:modules:mergeDebugUnitTestResources FROM-CACHE
+> Task :feature:modules:mergeDebugUnitTestManifest
+> Task :feature:modules:processDebugUnitTestManifest
+> Task :feature:modules:processDebugUnitTestResources FROM-CACHE
+
+> Task :feature:modules:compileDebugUnitTestKotlin
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/modules/src/test/kotlin/tv/cleanyour/feature/modules/GuardedActionsTest.kt:27:29 'fun <reified A : ComponentActivity> createAndroidComposeRule(effectContext: CoroutineContext = ...): AndroidComposeTestRule<ActivityScenarioRule<A>, A>' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createAndroidComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/modules/src/test/kotlin/tv/cleanyour/feature/modules/ModulesScreenshotTest.kt:135:29 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+
+> Task :feature:modules:javaPreCompileDebugUnitTest FROM-CACHE
+> Task :feature:modules:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :feature:modules:generateDebugUnitTestAssets UP-TO-DATE
+> Task :feature:modules:mergeDebugUnitTestAssets
+> Task :feature:modules:packageDebugUnitTestForUnitTest
+> Task :feature:modules:generateDebugUnitTestConfig
+> Task :feature:modules:processDebugUnitTestJavaRes
+> Task :core:spec:check
+> Task :feature:setup:generateDebugLintReportModel
+
+> Task :feature:setup:lintReportDebug
+Wrote HTML report to file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/setup/build/reports/lint-results-debug.html
+Wrote SARIF report to file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/setup/build/reports/lint-results-debug.sarif
+
+> Task :feature:setup:lintDebug
+> Task :feature:setup:lint
+> Task :feature:setup:checkDebugUnitTestAarMetadata
+> Task :feature:setup:mapDebugUnitTestSourceSetPaths
+> Task :feature:setup:generateDebugUnitTestResources FROM-CACHE
+> Task :feature:setup:mergeDebugUnitTestResources FROM-CACHE
+> Task :feature:setup:mergeDebugUnitTestManifest
+> Task :feature:setup:processDebugUnitTestManifest
+> Task :feature:setup:processDebugUnitTestResources FROM-CACHE
+
+> Task :feature:setup:compileDebugUnitTestKotlin
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/setup/src/test/kotlin/tv/cleanyour/feature/setup/DoneDebugLineTest.kt:28:29 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/setup/src/test/kotlin/tv/cleanyour/feature/setup/DoneHomeKeptTest.kt:34:29 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/setup/src/test/kotlin/tv/cleanyour/feature/setup/ReportThisTest.kt:34:29 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/setup/src/test/kotlin/tv/cleanyour/feature/setup/SetupScreenshotTest.kt:96:19 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/setup/src/test/kotlin/tv/cleanyour/feature/setup/StopAsksFirstTest.kt:33:29 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+
+> Task :feature:setup:javaPreCompileDebugUnitTest FROM-CACHE
+> Task :feature:setup:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :feature:setup:generateDebugUnitTestAssets UP-TO-DATE
+> Task :feature:setup:mergeDebugUnitTestAssets
+> Task :feature:setup:packageDebugUnitTestForUnitTest
+> Task :feature:setup:generateDebugUnitTestConfig
+> Task :feature:setup:processDebugUnitTestJavaRes
+> Task :feature:modules:testDebugUnitTest
+> Task :feature:modules:finalizeTestRoborazziDebug SKIPPED
+> Task :feature:modules:test
+> Task :feature:modules:check
+> Task :testing:fake-adbd:compileTestKotlin FROM-CACHE
+> Task :testing:fake-adbd:compileTestJava NO-SOURCE
+> Task :testing:fake-adbd:processTestResources NO-SOURCE
+> Task :testing:fake-adbd:testClasses UP-TO-DATE
+> Task :testing:fake-adbd:test FROM-CACHE
+> Task :testing:fake-adbd:check UP-TO-DATE
+> Task :testing:fixtures:compileTestKotlin
+> Task :testing:fixtures:compileTestJava NO-SOURCE
+> Task :testing:fixtures:processTestResources NO-SOURCE
+> Task :testing:fixtures:testClasses UP-TO-DATE
+> Task :feature:setup:testDebugUnitTest
+> Task :testing:fixtures:test
+> Task :testing:fixtures:check
+> Task :tv:curtain:preBuild UP-TO-DATE
+> Task :tv:curtain:preDebugBuild UP-TO-DATE
+> Task :tv:curtain:generateDebugResources FROM-CACHE
+> Task :tv:curtain:packageDebugResources FROM-CACHE
+> Task :tv:curtain:processDebugNavigationResources FROM-CACHE
+> Task :tv:curtain:parseDebugLocalResources FROM-CACHE
+> Task :tv:curtain:generateDebugRFile FROM-CACHE
+> Task :tv:curtain:compileDebugKotlin NO-SOURCE
+> Task :tv:curtain:javaPreCompileDebug FROM-CACHE
+> Task :tv:curtain:compileDebugJavaWithJavac FROM-CACHE
+> Task :tv:curtain:checkDebugAarMetadata
+> Task :tv:curtain:mapDebugSourceSetPaths
+> Task :tv:curtain:compileDebugNavigationResources FROM-CACHE
+> Task :tv:curtain:mergeDebugResources FROM-CACHE
+> Task :tv:curtain:createDebugCompatibleScreenManifests
+> Task :tv:curtain:extractDeepLinksDebug FROM-CACHE
+> Task :tv:curtain:processDebugMainManifest FROM-CACHE
+> Task :tv:curtain:processDebugManifest FROM-CACHE
+> Task :tv:curtain:processDebugManifestForPackage FROM-CACHE
+> Task :tv:curtain:processDebugResources FROM-CACHE
+> Task :tv:curtain:bundleDebugClassesToCompileJar
+> Task :tv:curtain:preDebugAndroidTestBuild SKIPPED
+> Task :tv:curtain:generateDebugAndroidTestLintModel
+> Task :tv:curtain:extractProguardFiles
+> Task :tv:curtain:generateDebugLintReportModel
+> Task :tv:curtain:preDebugUnitTestBuild UP-TO-DATE
+> Task :tv:curtain:generateDebugUnitTestLintModel
+> Task :tv:curtain:lintAnalyzeDebug FROM-CACHE
+> Task :tv:curtain:lintAnalyzeDebugAndroidTest FROM-CACHE
+> Task :tv:curtain:lintAnalyzeDebugUnitTest FROM-CACHE
+
+> Task :tv:curtain:lintReportDebug
+Wrote HTML report to file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/tv/curtain/build/reports/lint-results-debug.html
+Wrote SARIF report to file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/tv/curtain/build/reports/lint-results-debug.sarif
+
+> Task :tv:curtain:lintDebug
+> Task :tv:curtain:lint
+> Task :tv:curtain:bundleDebugClassesToRuntimeJar
+> Task :tv:curtain:compileDebugUnitTestKotlin NO-SOURCE
+> Task :tv:curtain:javaPreCompileDebugUnitTest FROM-CACHE
+> Task :tv:curtain:compileDebugUnitTestJavaWithJavac FROM-CACHE
+> Task :tv:curtain:generateDebugAssets UP-TO-DATE
+> Task :tv:curtain:mergeDebugAssets
+> Task :tv:curtain:packageDebugUnitTestForUnitTest
+> Task :tv:curtain:mergeDebugUnitTestManifest
+> Task :tv:curtain:processDebugUnitTestManifest
+> Task :tv:curtain:generateDebugUnitTestConfig
+> Task :tv:curtain:processDebugJavaRes NO-SOURCE
+> Task :tv:curtain:processDebugUnitTestJavaRes NO-SOURCE
+> Task :tv:curtain:testDebugUnitTest FROM-CACHE
+> Task :tv:curtain:test UP-TO-DATE
+> Task :tv:curtain:check
+> Task :ui:design:preReleaseBuild UP-TO-DATE
+> Task :ui:design:generateReleaseResources FROM-CACHE
+> Task :ui:design:packageReleaseResources FROM-CACHE
+> Task :ui:design:processReleaseNavigationResources FROM-CACHE
+> Task :ui:design:parseReleaseLocalResources FROM-CACHE
+> Task :ui:design:generateReleaseRFile FROM-CACHE
+
+> Task :ui:design:compileReleaseKotlin
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/ui/design/src/main/kotlin/tv/cleanyour/ui/design/component/Rows.kt:198:36 Condition is always 'false'.
+
+> Task :ui:design:checkComposeStability
+checkComposeStability: 1 report(s), no unstable classes
+
+> Task :ui:design:generateDebugLintReportModel
+
+> Task :ui:design:lintReportDebug
+Wrote HTML report to file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/ui/design/build/reports/lint-results-debug.html
+Wrote SARIF report to file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/ui/design/build/reports/lint-results-debug.sarif
+
+> Task :ui:design:lintDebug
+> Task :ui:design:lint
+> Task :ui:design:checkDebugUnitTestAarMetadata
+> Task :ui:design:mapDebugUnitTestSourceSetPaths
+> Task :ui:design:generateDebugUnitTestResources FROM-CACHE
+> Task :ui:design:mergeDebugUnitTestResources FROM-CACHE
+> Task :ui:design:mergeDebugUnitTestManifest
+> Task :ui:design:processDebugUnitTestManifest
+> Task :ui:design:processDebugUnitTestResources FROM-CACHE
+
+> Task :ui:design:compileDebugUnitTestKotlin
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/ui/design/src/test/kotlin/tv/cleanyour/ui/design/MotionAndBehaviourTest.kt:50:19 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/ui/design/src/test/kotlin/tv/cleanyour/ui/design/ObscuredTouchTest.kt:49:19 'fun <reified A : ComponentActivity> createAndroidComposeRule(effectContext: CoroutineContext = ...): AndroidComposeTestRule<ActivityScenarioRule<A>, A>' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createAndroidComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/ui/design/src/test/kotlin/tv/cleanyour/ui/design/shots/ComponentScreenshotTest.kt:28:19 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/ui/design/src/test/kotlin/tv/cleanyour/ui/design/shots/LookSampleShots.kt:47:19 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/ui/design/src/test/kotlin/tv/cleanyour/ui/design/shots/TvPreviewScreenshotTest.kt:58:19 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+
+> Task :ui:design:javaPreCompileDebugUnitTest FROM-CACHE
+> Task :ui:design:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :ui:design:generateDebugUnitTestAssets UP-TO-DATE
+> Task :ui:design:mergeDebugUnitTestAssets
+> Task :ui:design:packageDebugUnitTestForUnitTest
+> Task :ui:design:generateDebugUnitTestConfig
+> Task :ui:design:processDebugUnitTestJavaRes
+> Task :ui:design:testDebugUnitTest
+> Task :feature:setup:finalizeTestRoborazziDebug SKIPPED
+> Task :feature:setup:test
+> Task :feature:setup:check
+> Task :ui:design:finalizeTestRoborazziDebug SKIPPED
+> Task :ui:design:test
+> Task :ui:design:check
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run-1794655952071.json
+
+[Incubating] Problems report is available at: file:///home/runner/work/upgrade-your-tv/upgrade-your-tv/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.7.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 9m 45s
+663 actionable tasks: 481 executed, 182 from cache
+Configuration cache entry stored.

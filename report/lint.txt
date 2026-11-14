@@ -1,0 +1,686 @@
+== ./ui/design/build/reports/lint-results-debug.txt
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/ui/design/src/main/kotlin/tv/cleanyour/ui/design/component/LookEditor.kt:249: Warning: Using Configuration.screenHeightDp instead of LocalWindowInfo.current.containerSize [ConfigurationScreenWidthHeight from androidx.compose.ui]
+    val windowPx = with(density) { LocalConfiguration.current.screenHeightDp.dp.toPx() }
+                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/ui/design/src/main/kotlin/tv/cleanyour/ui/design/component/PinnedPreview.kt:77: Warning: Using Configuration.screenHeightDp instead of LocalWindowInfo.current.containerSize [ConfigurationScreenWidthHeight from androidx.compose.ui]
+    val window = LocalConfiguration.current.screenHeightDp.dp
+                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "ConfigurationScreenWidthHeight":
+   Configuration.screenWidthDp and Configuration.screenHeightDp have different
+   insets behaviour depending on target SDK version, and are rounded to the
+   nearest Dp. This means that using these values in composition to size a
+   layout can result in issues, as these values do not accurately represent
+   the actual available window size. Instead it is recommended to use
+   WindowInfo.containerSize which accurately represents the window size.
+
+   Vendor: Jetpack Compose
+   Identifier: androidx.compose.ui
+   Feedback: https://issuetracker.google.com/issues/new?component=612128
+
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/ui/design/src/main/kotlin/tv/cleanyour/ui/design/component/LookEditor.kt:233: Warning: Modifier parameter should be the first optional parameter [ModifierParameter from androidx.compose.ui]
+    modifier: Modifier = Modifier,
+    ~~~~~~~~
+
+   Explanation for issues of type "ModifierParameter":
+   The first (or only) Modifier parameter in a Composable function should
+   follow the following rules:
+   - Be named modifier
+   - Have a type of Modifier
+   - Either have no default value, or have a default value of Modifier
+   - If optional, be the first optional parameter in the parameter list
+
+   Vendor: Jetpack Compose
+   Identifier: androidx.compose.ui
+   Feedback: https://issuetracker.google.com/issues/new?component=612128
+
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/ui/design/src/main/res/values/strings.xml:80: Warning: Formatting %d followed by words ("removed"): This should probably be a plural rather than a string [PluralsCandidate]
+    <string name="cyt_dock_row_removed">Row %1$d removed. Its apps are back under Other apps.</string>
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "PluralsCandidate":
+   This lint check looks for potential errors in internationalization where
+   you have translated a message which involves a quantity and it looks like
+   other parts of the string may need grammatical changes.
+
+   For example, rather than something like this:
+     <string name="try_again">Try again in %d seconds.</string>
+   you should be using a plural:
+      <plurals name="try_again">
+           <item quantity="one">Try again in %d second</item>
+           <item quantity="other">Try again in %d seconds</item>
+       </plurals>
+   This will ensure that in other languages the right set of translations are
+   provided for the different quantity classes.
+
+   (This check depends on some heuristics, so it may not accurately determine
+   whether a string really should be a quantity. You can use tools:ignore to
+   filter out false positives.
+
+   https://developer.android.com/guide/topics/resources/string-resource.html#Plurals
+
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/ui/design/src/main/kotlin/tv/cleanyour/ui/design/component/LookEditor.kt:268: Warning: Reading a value annotated with @FrequentlyChangingValue inside composition [FrequentlyChangingValue from androidx.compose.runtime]
+                val collapse = with(density) { (scrolls.getValue(LookPage.MAIN).value / 140.dp.toPx()).coerceIn(0f, 1f) }
+                                                                                ~~~~~
+
+   Explanation for issues of type "FrequentlyChangingValue":
+   Reading a value annotated with @FrequentlyChangingValue inside composition
+   can cause performance issues due to frequent recompositions. To avoid
+   frequent recompositions, instead consider:
+
+   - Using derivedStateOf to filter state changes based on a provided
+   calculation. For example, rather than recomposing on every scroll position
+   change, only recomposing if the scroll position changes from 0 (at the top
+   of the list) to greater than 0 (not at the top of the list), and vice
+   versa.
+   - Using snapshotFlow to create a flow of changes from a provided state.
+   This can then be collected inside a LaunchedEffect, and used to make
+   changes without needing to recompose.
+   - If using Compose UI, read this value inside measure / layout / draw,
+   depending on where it is needed. This will cause invalidation of the
+   corresponding phase, instead of a recomposition. See developer.android.com
+   for more information on Jetpack Compose phases.
+
+   Vendor: Jetpack Compose
+   Identifier: androidx.compose.runtime
+   Feedback: https://issuetracker.google.com/issues/new?component=612128
+
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/ui/design/src/main/kotlin/tv/cleanyour/ui/design/component/SegmentedChoice.kt:83: Hint: Prefer mutableIntStateOf instead of mutableStateOf [AutoboxingStateCreation from androidx.compose.runtime]
+    var height by remember { mutableStateOf(0) }
+                             ~~~~~~~~~~~~~~
+
+   Explanation for issues of type "AutoboxingStateCreation":
+   Calling mutableStateOf<T>() when T is either backed by a primitive type on
+   the JVM or is a value class results in a state implementation that requires
+   all state values to be boxed. This usually causes an additional allocation
+   for each state write, and adds some additional work to auto-unbox values
+   when reading the value of the state. Instead, prefer to use a specialized
+   primitive state implementation for Int, Long, Float, and Double when the
+   state does not need to track null values and does not override the default
+   SnapshotMutationPolicy. See mutableIntStateOf(), mutableLongStateOf(),
+   mutableFloatStateOf(), and mutableDoubleStateOf() for more information.
+
+   Vendor: Jetpack Compose
+   Identifier: androidx.compose.runtime
+   Feedback: https://issuetracker.google.com/issues/new?component=612128
+
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/ui/design/src/main/res/values/strings.xml:136: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="cyt_look_preview_drawing">Drawing the preview...</string>
+                                            ~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "TypographyEllipsis":
+   You can replace the string "..." with a dedicated ellipsis character,
+   ellipsis character (u2026, &#8230;). This can help make the text more
+   readable.
+
+   https://en.wikipedia.org/wiki/Ellipsis
+
+0 errors, 6 warnings, 1 hint
+== ./tv/curtain/build/reports/lint-results-debug.txt
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/tv/curtain/src/main/AndroidManifest.xml:24: Warning: Fixed screen orientations will be ignored in most cases, starting from Android 16. Android is moving toward a model where apps are expected to adapt to various orientations, display sizes, and aspect ratios. [DiscouragedApi]
+            android:screenOrientation="landscape"
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "DiscouragedApi":
+   Discouraged APIs are allowed and are not deprecated, but they may be unfit
+   for common use (e.g. due to slow performance or subtle behavior).
+
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/tv/curtain/src/main/res/values/strings.xml:15: Warning: Formatting %d followed by words ("switched"): This should probably be a plural rather than a string [PluralsCandidate]
+    <string name="stage_group_done">%1$d switched off</string>
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "PluralsCandidate":
+   This lint check looks for potential errors in internationalization where
+   you have translated a message which involves a quantity and it looks like
+   other parts of the string may need grammatical changes.
+
+   For example, rather than something like this:
+     <string name="try_again">Try again in %d seconds.</string>
+   you should be using a plural:
+      <plurals name="try_again">
+           <item quantity="one">Try again in %d second</item>
+           <item quantity="other">Try again in %d seconds</item>
+       </plurals>
+   This will ensure that in other languages the right set of translations are
+   provided for the different quantity classes.
+
+   (This check depends on some heuristics, so it may not accurately determine
+   whether a string really should be a quantity. You can use tools:ignore to
+   filter out false positives.
+
+   https://developer.android.com/guide/topics/resources/string-resource.html#Plurals
+
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/tv/curtain/src/main/AndroidManifest.xml:11: Warning: The attribute android:allowBackup is deprecated from Android 12 and higher and may be removed in future versions. Consider adding the attribute android:dataExtractionRules specifying an @xml resource which configures cloud backups and device transfers on Android 12 and higher. [DataExtractionRules]
+        android:allowBackup="false"
+                             ~~~~~
+
+   Explanation for issues of type "DataExtractionRules":
+   Before Android 12, the attributes android:allowBackup and
+   android:fullBackupContent were used to configure all forms of backup,
+   including cloud backups, device-to-device transfers and adb backup.
+
+   In Android 12 and higher, these attributes have been deprecated and will
+   only apply to cloud backups. You should instead use the attribute
+   android:dataExtractionRules, specifying an @xml resource that configures
+   which files to back up, for cloud backups and for device-to-device
+   transfers, separately. If your minSdkVersion supports older versions,
+   you'll still want to specify an android:fullBackupContent resource if the
+   default behavior is not right for your app.
+
+   https://developer.android.com/about/versions/12/backup-restore#xml-changes
+   https://goo.gle/DataExtractionRules
+
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/tv/curtain/src/main/res/values/strings.xml:11: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="stage_scan">Saving a restore point...</string>
+                              ~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/tv/curtain/src/main/res/values/strings.xml:13: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="stage_off">Switching things off: %1$d of %2$d...</string>
+                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/tv/curtain/src/main/res/values/strings.xml:14: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="stage_off_group">%1$s: %2$d of %3$d...</string>
+                                   ~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "TypographyEllipsis":
+   You can replace the string "..." with a dedicated ellipsis character,
+   ellipsis character (u2026, &#8230;). This can help make the text more
+   readable.
+
+   https://en.wikipedia.org/wiki/Ellipsis
+
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/tv/curtain/src/main/AndroidManifest.xml:10: Warning: Should explicitly set android:icon, there is no default [MissingApplicationIcon]
+    <application
+     ~~~~~~~~~~~
+
+   Explanation for issues of type "MissingApplicationIcon":
+   You should set an icon for the application as whole because there is no
+   default. This attribute must be set as a reference to a drawable resource
+   containing the image (for example @drawable/icon).
+
+   https://developer.android.com/studio/publish/preparing#publishing-configure
+
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/tv/curtain/src/main/java/tv/cleanyour/curtain/CurtainView.java:22: Warning: Custom view CurtainView is missing constructor used by tools: (Context) or (Context,AttributeSet) or (Context,AttributeSet,int) [ViewConstructor]
+final class CurtainView extends View {
+            ~~~~~~~~~~~
+
+   Explanation for issues of type "ViewConstructor":
+   Some layout tools (such as the Android layout editor) need to find a
+   constructor with one of the following signatures:
+   * View(Context context)
+   * View(Context context, AttributeSet attrs)
+   * View(Context context, AttributeSet attrs, int defStyle)
+
+   If your custom view needs to perform initialization which does not apply
+   when used in a layout editor, you can surround the given code with a check
+   to see if View#isInEditMode() is false, since that method will return false
+   at runtime but true within a user interface editor.
+
+0 errors, 8 warnings
+== ./android/work/build/reports/lint-results-debug.txt
+No issues found.
+== ./android/platform/build/reports/lint-results-debug.txt
+No issues found.
+== ./feature/setup/build/reports/lint-results-debug.txt
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/setup/src/main/kotlin/tv/cleanyour/feature/setup/SetupScreens.kt:688: Warning: Modifier parameter should be the first optional parameter [ModifierParameter from androidx.compose.ui]
+    modifier: Modifier = Modifier, nav: LookEditorNav = rememberLookEditorNav()) {
+    ~~~~~~~~
+
+   Explanation for issues of type "ModifierParameter":
+   The first (or only) Modifier parameter in a Composable function should
+   follow the following rules:
+   - Be named modifier
+   - Have a type of Modifier
+   - Either have no default value, or have a default value of Modifier
+   - If optional, be the first optional parameter in the parameter list
+
+   Vendor: Jetpack Compose
+   Identifier: androidx.compose.ui
+   Feedback: https://issuetracker.google.com/issues/new?component=612128
+
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/setup/src/main/res/values/strings.xml:36: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="probing_line">Reading what\'s on the TV...</string>
+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/setup/src/main/res/values/strings.xml:220: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="working_step_restore_active">Saving a restore point...</string>
+                                               ~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/setup/src/main/res/values/strings.xml:227: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="working_step_group_active">{total, plural, other {{group}: {done} of #...}}</string>
+                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/setup/src/main/res/values/strings.xml:242: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="working_putting_back">Putting the TV\'s own home screen back...</string>
+                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/setup/src/main/res/values/strings.xml:243: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="working_stopping">Stopping and undoing what we did...</string>
+                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/setup/src/main/res/values/strings.xml:294: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="stop_home_timed_out_body">Putting the TV\'s own home screen back... Done. Your TV is as it was. To try again later, open Home screen for this TV.</string>
+                                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/setup/src/main/res/values/strings.xml:295: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="stop_home_timed_out_body_off">{count, plural, one {Putting the TV\'s own home screen back... Done. # thing is still switched off, and the home screen is as it was. To try again later, open Home screen for this TV.} other {Putting the TV\'s own home screen back... Done. # things are still switched off, and the home screen is as it was. To try again later, open Home screen for this TV.}}</string>
+                                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/setup/src/main/res/values/strings.xml:310: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="stop_connection_lost_reconnecting">Reconnecting...</string>
+                                                     ~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/setup/src/main/res/values/strings.xml:384: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="done_finishing">Switching debugging off...</string>
+                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/setup/src/main/res/values/strings.xml:385: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="done_finished">Switching debugging off... done.</string>
+                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/setup/src/main/res/values/strings.xml:392: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="restart_getting_ready">{seconds, plural, other {Getting ready... # s}}</string>
+                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/setup/src/main/res/values/strings.xml:394: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="restart_progress_off">TV off...</string>
+                                        ~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/setup/src/main/res/values/strings.xml:395: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="restart_progress_starting">Starting...</string>
+                                             ~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/setup/src/main/res/values/strings.xml:396: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="restart_progress_found">Found it at {time}...</string>
+                                          ~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "TypographyEllipsis":
+   You can replace the string "..." with a dedicated ellipsis character,
+   ellipsis character (u2026, &#8230;). This can help make the text more
+   readable.
+
+   https://en.wikipedia.org/wiki/Ellipsis
+
+0 errors, 15 warnings
+== ./feature/launcher/build/reports/lint-results-debug.txt
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/launcher/src/main/res/values/strings.xml:36: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="home_applying">Updating the home screen on the TV...</string>
+                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/launcher/src/main/res/values/strings.xml:101: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="home_row_look_sending">Sending...</string>
+                                         ~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/launcher/src/main/res/values/strings.xml:118: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="home_stock_working">Putting the TV\'s own home screen back...</string>
+                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "TypographyEllipsis":
+   You can replace the string "..." with a dedicated ellipsis character,
+   ellipsis character (u2026, &#8230;). This can help make the text more
+   readable.
+
+   https://en.wikipedia.org/wiki/Ellipsis
+
+0 errors, 3 warnings
+== ./feature/manage/build/reports/lint-results-debug.txt
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/manage/src/main/kotlin/tv/cleanyour/feature/manage/AllAppsScreen.kt:108: Hint: Prefer mutableIntStateOf instead of mutableStateOf [AutoboxingStateCreation from androidx.compose.runtime]
+        var shown by rememberSaveable(state.filter, state.showSystem, state.query) { mutableStateOf(PAGE) }
+                                                                                     ~~~~~~~~~~~~~~
+
+   Explanation for issues of type "AutoboxingStateCreation":
+   Calling mutableStateOf<T>() when T is either backed by a primitive type on
+   the JVM or is a value class results in a state implementation that requires
+   all state values to be boxed. This usually causes an additional allocation
+   for each state write, and adds some additional work to auto-unbox values
+   when reading the value of the state. Instead, prefer to use a specialized
+   primitive state implementation for Int, Long, Float, and Double when the
+   state does not need to track null values and does not override the default
+   SnapshotMutationPolicy. See mutableIntStateOf(), mutableLongStateOf(),
+   mutableFloatStateOf(), and mutableDoubleStateOf() for more information.
+
+   Vendor: Jetpack Compose
+   Identifier: androidx.compose.runtime
+   Feedback: https://issuetracker.google.com/issues/new?component=612128
+
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/manage/src/main/res/values/strings.xml:65: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="manage_reconnecting">Reconnecting...</string>
+                                       ~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/manage/src/main/res/values/strings.xml:80: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="debugstep_waiting">Waiting for the TV...</string>
+                                     ~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/manage/src/main/res/values/strings.xml:81: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="debugstep_connecting">Connecting...</string>
+                                        ~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/manage/src/main/res/values/strings.xml:89: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="debugstep_allow_waiting">Waiting for your tap on the TV...</string>
+                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/manage/src/main/res/values/strings.xml:105: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="debugstep_checking">Checking...</string>
+                                      ~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/manage/src/main/res/values/strings.xml:114: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="details_collecting">Looking at the Wi-Fi and your TVs...</string>
+                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/manage/src/main/res/values/strings.xml:127: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="openwrite_busy">Working on it...</string>
+                                  ~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/manage/src/main/res/values/strings.xml:169: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="leftovers_checking">Checking...</string>
+                                      ~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/manage/src/main/res/values/strings.xml:211: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="appsettings_checking">Checking...</string>
+                                        ~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/manage/src/main/res/values/strings.xml:259: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="manage_wizard_home_working">Switching the TV\'s own home screen back on...</string>
+                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "TypographyEllipsis":
+   You can replace the string "..." with a dedicated ellipsis character,
+   ellipsis character (u2026, &#8230;). This can help make the text more
+   readable.
+
+   https://en.wikipedia.org/wiki/Ellipsis
+
+0 errors, 10 warnings, 1 hint
+== ./feature/modules/build/reports/lint-results-debug.txt
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/modules/src/main/res/values/strings.xml:58: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="addmodule_loading">Loading the list...</string>
+                                     ~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/modules/src/main/res/values/strings.xml:88: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="module_install_adding">Adding {name}...</string>
+                                         ~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/modules/src/main/res/values/strings.xml:89: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="module_install_downloading">{size, plural, other {Downloading (# MB)...}}</string>
+                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/modules/src/main/res/values/strings.xml:90: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="module_install_checking">Checking it matches the author\'s copy...</string>
+                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/modules/src/main/res/values/strings.xml:91: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="module_install_installing">Installing on the TV...</string>
+                                             ~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/modules/src/main/res/values/strings.xml:92: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="module_install_asking">Asking the TV to show its question...</string>
+                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/modules/src/main/res/values/strings.xml:101: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="cardprompt_waiting">Waiting for your answer on the TV...</string>
+                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "TypographyEllipsis":
+   You can replace the string "..." with a dedicated ellipsis character,
+   ellipsis character (u2026, &#8230;). This can help make the text more
+   readable.
+
+   https://en.wikipedia.org/wiki/Ellipsis
+
+0 errors, 7 warnings
+== ./feature/backup/build/reports/lint-results-debug.txt
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/backup/src/main/res/values/strings.xml:57: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="restore_working_things">{total, plural, other {Turning things back on: {done} of #...}}</string>
+                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/backup/src/main/res/values/strings.xml:58: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="restore_working_home">Putting the TV\'s own home screen back...</string>
+                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/backup/src/main/res/values/strings.xml:59: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="restore_working_wizard">Switching the setup wizard back on...</string>
+                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/backup/src/main/res/values/strings.xml:68: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="restore_factory_working">Switching the setup wizard back on...</string>
+                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "TypographyEllipsis":
+   You can replace the string "..." with a dedicated ellipsis character,
+   ellipsis character (u2026, &#8230;). This can help make the text more
+   readable.
+
+   https://en.wikipedia.org/wiki/Ellipsis
+
+0 errors, 4 warnings
+== ./feature/connect/build/reports/lint-results-debug.txt
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/connect/src/main/res/values/strings.xml:22: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="welcome_looking">Looking for TVs on your Wi-Fi...</string>
+                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/connect/src/main/res/values/strings.xml:35: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="picker_name_with_suffix">{name} ...{suffix}</string>
+                                           ~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/connect/src/main/res/values/strings.xml:52: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="door_waiting">Waiting for the TV...</string>
+                                ~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/connect/src/main/res/values/strings.xml:53: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="door_connecting">Connecting...</string>
+                                   ~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/connect/src/main/res/values/strings.xml:126: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="allow_waiting">Waiting for your tap on the TV...</string>
+                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/feature/connect/src/main/res/values/strings.xml:138: Warning: Replace "..." with ellipsis character (…, &#8230;) ? [TypographyEllipsis]
+    <string name="notseen_asking">Asking the TV again...</string>
+                                  ~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "TypographyEllipsis":
+   You can replace the string "..." with a dedicated ellipsis character,
+   ellipsis character (u2026, &#8230;). This can help make the text more
+   readable.
+
+   https://en.wikipedia.org/wiki/Ellipsis
+
+0 errors, 6 warnings
+== ./app/build/reports/lint-results-fullDebug.txt
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/app/src/main/kotlin/tv/cleanyour/app/AppRoot.kt:465: Warning: This OutputStream should be freed up after use with #close() [Recycle]
+                            withContext(Dispatchers.IO) { context.contentResolver.openOutputStream(uri) }?.use { out -> m.writeBundle(out) }
+                                                                                  ~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "Recycle":
+   Many resources, such as TypedArrays, VelocityTrackers, etc., should be
+   recycled (with a recycle() call) after use. This lint check looks for
+   missing recycle() calls.
+
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/app/src/main/res/values/strings.xml:11: Warning: The resource R.string.app_channel_setup_description appears to be unused [UnusedResources]
+    <string name="app_channel_setup_description">Shows progress while the phone changes things on your TV, and tells you when to look at the TV.</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/app/src/main/res/values/strings.xml:12: Warning: The resource R.string.app_restore_read_failed appears to be unused [UnusedResources]
+    <string name="app_restore_read_failed">Something went wrong reading the restore point</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "UnusedResources":
+   Unused resources make applications larger and slow down builds.
+
+
+   The unused resource check can ignore tests. If you want to include
+   resources that are only referenced from tests, consider packaging them in a
+   test source set instead.
+
+   You can include test sources in the unused resource check by setting the
+   system property lint.unused-resources.include-tests=true, and to exclude
+   them (usually for performance reasons), use
+   lint.unused-resources.exclude-tests=true.
+
+   Available options:
+
+   **skip-libraries** (default is true):
+   Whether the unused resource check should skip reporting unused resources in libraries.
+
+   Many libraries will declare resources that are part of the library surface; other modules depending on the library will also reference the resources. To avoid reporting all these resources as unused (in the context of a library), the unused resource check normally skips reporting unused resources in libraries. Instead, run the unused resource check on the consuming app module (along with `checkDependencies=true`).
+
+   However, there are cases where you want to check that all the resources declared in a library are used; in that case, you can disable the skip option.
+
+   To configure this option, use a `lint.xml` file with an <option> like this:
+
+   ```xml
+   <lint>
+       <issue id="UnusedResources">
+           <option name="skip-libraries" value="true" />
+       </issue>
+   </lint>
+   ```
+
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/app/src/main/kotlin/tv/cleanyour/app/AndroidPhoneFiles.kt:20: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+            val uri = Uri.parse(ref)
+                      ~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/app/src/main/kotlin/tv/cleanyour/app/AndroidPhoneFiles.kt:36: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+    override fun open(ref: String): InputStream? = runCatching { resolver.openInputStream(Uri.parse(ref)) }.getOrNull()
+                                                                                          ~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/app/src/main/kotlin/tv/cleanyour/app/AppRoot.kt:213: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+                val opened = runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(r.link.url))) }.isSuccess
+                                                                                            ~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/app/src/main/kotlin/tv/cleanyour/app/AppRoot.kt:285: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+            is ManageEffect.OpenUrl -> runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(e.url))) }
+                                                                                                      ~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "UseKtx":
+   The Android KTX libraries decorates the Android platform SDK as well as
+   various libraries with more convenient extension functions available from
+   Kotlin, allowing you to use default parameters, named parameters, and
+   more.
+
+   Available options:
+
+   **remove-defaults** (default is true):
+   Whether to skip arguments that match the defaults provided by the extension.
+
+   Extensions often provide default values for some of the parameters. For example:
+   ```kotlin
+   fun Path.readLines(charset: Charset = Charsets.UTF_8): List<String> { return Files.readAllLines(this, charset) }
+   ```
+   This lint check will by default automatically omit parameters that match the default, so if your code was calling
+
+   ```kotlin
+   Files.readAllLines(file, Charset.UTF_8)
+   ```
+   lint would replace this with
+   ```kotlin
+   file.readLines()
+   ```
+   rather than
+
+   ```kotlin
+   file.readLines(Charset.UTF_8
+   ```
+   You can turn this behavior off using this option.
+
+   To configure this option, use a `lint.xml` file with an <option> like this:
+
+   ```xml
+   <lint>
+       <issue id="UseKtx">
+           <option name="remove-defaults" value="true" />
+       </issue>
+   </lint>
+   ```
+
+   **require-present** (default is true):
+   Whether to only offer extensions already available.
+
+   This option lets you only have lint suggest extension replacements if those extensions are already available on the class path (in other words, you're already depending on the library containing the extension method.)
+
+   To configure this option, use a `lint.xml` file with an <option> like this:
+
+   ```xml
+   <lint>
+       <issue id="UseKtx">
+           <option name="require-present" value="true" />
+       </issue>
+   </lint>
+   ```
+
+0 errors, 7 warnings
+== ./app/build/reports/lint-results-playDebug.txt
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/app/src/main/kotlin/tv/cleanyour/app/AppRoot.kt:465: Warning: This OutputStream should be freed up after use with #close() [Recycle]
+                            withContext(Dispatchers.IO) { context.contentResolver.openOutputStream(uri) }?.use { out -> m.writeBundle(out) }
+                                                                                  ~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "Recycle":
+   Many resources, such as TypedArrays, VelocityTrackers, etc., should be
+   recycled (with a recycle() call) after use. This lint check looks for
+   missing recycle() calls.
+
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/app/src/main/res/values/strings.xml:11: Warning: The resource R.string.app_channel_setup_description appears to be unused [UnusedResources]
+    <string name="app_channel_setup_description">Shows progress while the phone changes things on your TV, and tells you when to look at the TV.</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/app/src/main/res/values/strings.xml:12: Warning: The resource R.string.app_restore_read_failed appears to be unused [UnusedResources]
+    <string name="app_restore_read_failed">Something went wrong reading the restore point</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "UnusedResources":
+   Unused resources make applications larger and slow down builds.
+
+
+   The unused resource check can ignore tests. If you want to include
+   resources that are only referenced from tests, consider packaging them in a
+   test source set instead.
+
+   You can include test sources in the unused resource check by setting the
+   system property lint.unused-resources.include-tests=true, and to exclude
+   them (usually for performance reasons), use
+   lint.unused-resources.exclude-tests=true.
+
+   Available options:
+
+   **skip-libraries** (default is true):
+   Whether the unused resource check should skip reporting unused resources in libraries.
+
+   Many libraries will declare resources that are part of the library surface; other modules depending on the library will also reference the resources. To avoid reporting all these resources as unused (in the context of a library), the unused resource check normally skips reporting unused resources in libraries. Instead, run the unused resource check on the consuming app module (along with `checkDependencies=true`).
+
+   However, there are cases where you want to check that all the resources declared in a library are used; in that case, you can disable the skip option.
+
+   To configure this option, use a `lint.xml` file with an <option> like this:
+
+   ```xml
+   <lint>
+       <issue id="UnusedResources">
+           <option name="skip-libraries" value="true" />
+       </issue>
+   </lint>
+   ```
+
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/app/src/main/kotlin/tv/cleanyour/app/AndroidPhoneFiles.kt:20: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+            val uri = Uri.parse(ref)
+                      ~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/app/src/main/kotlin/tv/cleanyour/app/AndroidPhoneFiles.kt:36: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+    override fun open(ref: String): InputStream? = runCatching { resolver.openInputStream(Uri.parse(ref)) }.getOrNull()
+                                                                                          ~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/app/src/main/kotlin/tv/cleanyour/app/AppRoot.kt:213: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+                val opened = runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(r.link.url))) }.isSuccess
+                                                                                            ~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/upgrade-your-tv/upgrade-your-tv/app/src/main/kotlin/tv/cleanyour/app/AppRoot.kt:285: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+            is ManageEffect.OpenUrl -> runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(e.url))) }
+                                                                                                      ~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "UseKtx":
+   The Android KTX libraries decorates the Android platform SDK as well as
+   various libraries with more convenient extension functions available from
+   Kotlin, allowing you to use default parameters, named parameters, and
+   more.
+
+   Available options:
+
+   **remove-defaults** (default is true):
+   Whether to skip arguments that match the defaults provided by the extension.
+
+   Extensions often provide default values for some of the parameters. For example:
+   ```kotlin
+   fun Path.readLines(charset: Charset = Charsets.UTF_8): List<String> { return Files.readAllLines(this, charset) }
+   ```
+   This lint check will by default automatically omit parameters that match the default, so if your code was calling
+
+   ```kotlin
+   Files.readAllLines(file, Charset.UTF_8)
+   ```
+   lint would replace this with
+   ```kotlin
+   file.readLines()
+   ```
+   rather than
+
+   ```kotlin
+   file.readLines(Charset.UTF_8
+   ```
+   You can turn this behavior off using this option.
+
+   To configure this option, use a `lint.xml` file with an <option> like this:
+
+   ```xml
+   <lint>
+       <issue id="UseKtx">
+           <option name="remove-defaults" value="true" />
+       </issue>
+   </lint>
+   ```
+
+   **require-present** (default is true):
+   Whether to only offer extensions already available.
+
+   This option lets you only have lint suggest extension replacements if those extensions are already available on the class path (in other words, you're already depending on the library containing the extension method.)
+
+   To configure this option, use a `lint.xml` file with an <option> like this:
+
+   ```xml
+   <lint>
+       <issue id="UseKtx">
+           <option name="require-present" value="true" />
+       </issue>
+   </lint>
+   ```
+
+0 errors, 7 warnings
