@@ -447,7 +447,7 @@ fun AppRoot(graph: AppGraph, start: Dest, onExit: () -> Unit) {
                     HomeScreen(state, m::dispatch, onBack = { go("back") }, photos = photoPicker, onReport = { lead ->
                         go(IssueRoute.of(TvId(key.tvId), ReportContext("Home screen", ReportContext.named(lead, state.tvName), "HOME_BLOCKED_${state.notOnTv?.reason ?: "NONE"}")))
                     }, onOpenUrl = { url -> scope.launch { onManageEffect(ManageEffect.OpenUrl(url)) } },
-                        layout = { HomeExtrasSection(extras, x::dispatch, inPage = true) })
+                        layout = { HomeExtrasSection(extras, x::dispatch, inPage = true, onInstallAsApp = { go("video/${key.tvId}") }) })
                 }
                 entry<Dest.Modules> { key ->
                     val m = rememberMachine("modules:${key.tvId}") { graph.modules(it, TvId(key.tvId)) }

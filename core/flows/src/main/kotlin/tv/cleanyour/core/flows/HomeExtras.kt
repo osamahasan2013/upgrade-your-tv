@@ -69,7 +69,7 @@ data class HomeExtras(
         // The helper back after power-off, Style reachable with Left (patches/launcher/0011).
         const val LAUNCHER_VERSION_11 = 1011L
         // The date under the clock never cut after midnight (patches/launcher/0012).
-        const val LAUNCHER_VERSION_12 = 1012L
+        const val LAUNCHER_VERSION_12 = 1013L   // uytv12 withdrawn: uytv13 is uytv11 again
         // The launcher that reads them (patches/launcher/0002-home-choices.patch).
         const val LAUNCHER_VERSION = 1002L
         // The launcher that reads names, side and dock only (patches/launcher/0003).
