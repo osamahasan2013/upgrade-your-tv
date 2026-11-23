@@ -1,0 +1,120 @@
+diff --git a/launcher/app/build.gradle b/launcher/app/build.gradle
+index d179ce50..1e50943e 100644
+--- a/launcher/app/build.gradle
++++ b/launcher/app/build.gradle
+@@ -12,8 +12,8 @@ android {
+         minSdk 26
+         targetSdk 34
+         // Upgrade Your TV: launcher 3.0 with the video background, dot type, sidebar and Continue card; above upstream's 9.
+-        versionCode 1013
+-        versionName '3.0-uytv13'
++        versionCode 1014
++        versionName '3.0-uytv14'
+     }
+ 
+     buildTypes {
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/AppLibraryDialog.java b/launcher/app/src/main/java/com/gathin/tvhome/AppLibraryDialog.java
+index e62db463..0e739341 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/AppLibraryDialog.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/AppLibraryDialog.java
+@@ -437,7 +437,28 @@ final class AppLibraryDialog {
+         });
+     }
+ 
++    /**
++     * Upgrade Your TV (3.0-uytv14): puts a package straight into the dock (MainActivity.uytvAddToDock), set while
++     * Home is alive. With "dock only" Home shows nothing but the dock, so "Add to Home" showed nothing.
++     */
++    static java.util.function.Consumer<String> uytvDock;
++
++    private void uytvToDock(ResolveInfo app, boolean onHomeAlready) {
++        String pkg = app.activityInfo.packageName;
++        if (!onHomeAlready && !LibraryApps.save(activity, pkg, true)) {
++            Toast.makeText(activity, R.string.library_save_failed, Toast.LENGTH_LONG).show();
++            return;
++        }
++        changed.run();
++        close();
++        if (uytvDock != null) uytvDock.accept(pkg);
++    }
++
+     private void changeHome(ResolveInfo app, boolean add) {
++        if (add && !selectionMode && uytvDock != null && UytvHome.dockOnly(activity)) {
++            uytvToDock(app, false);
++            return;
++        }
+         if (!LibraryApps.save(activity, app.activityInfo.packageName, add)) {
+             Toast.makeText(activity, R.string.library_save_failed, Toast.LENGTH_LONG).show();
+             return;
+@@ -525,6 +546,7 @@ final class AppLibraryDialog {
+         });
+         addAction(rows, R.string.library_open, () -> open(app));
+         boolean home = onHome.test(pkg);
++        if (uytvDock != null && !selectionMode) addAction(rows, R.string.tile_add_to_dock, () -> uytvToDock(app, home));
+         addAction(rows, home ? R.string.library_remove_shortcut : R.string.library_add_home,
+                 () -> changeHome(app, !home));
+         Intent info = SystemSettings.appInfo(activity, pkg);
+@@ -639,7 +661,8 @@ final class AppLibraryDialog {
+             TextView status = holder.itemView.findViewById(R.id.status);
+             boolean home = onHome.test(pkg);
+             boolean recent = !selectionMode && LibraryApps.recent(installTimes.getOrDefault(pkg, 0L), catalogTime);
+-            status.setText(home ? R.string.library_on_home : recent ? R.string.library_recent : R.string.library_add_home);
++            status.setText(home ? R.string.library_on_home : uytvDock != null && UytvHome.dockOnly(activity) ? R.string.tile_add_to_dock
++                    : recent ? R.string.library_recent : R.string.library_add_home);
+             status.setVisibility(home || !okOpens ? View.VISIBLE : View.INVISIBLE);
+             holder.itemView.setBackground(surface(home ? 0x1475BBA4 : 0x0CFFFFFF, 18));
+             View check = holder.itemView.findViewById(R.id.dot);
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java b/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
+index 698abc9f..23dd17c9 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
+@@ -1452,6 +1452,41 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+         }
+     }
+ 
++    /**
++     * Upgrade Your TV (3.0-uytv14): an app from the App library straight into the dock. The dock holds as many
++     * apps as the look's "apps in a row" (COLUMNS): with a free place the app takes the next one; with the dock
++     * full, the launcher's own "Add to dock" starts, where the place to replace is picked.
++     */
++    void uytvAddToDock(String pkg) {
++        try {
++            if (!dockRow || pkg == null || reordering) return;
++            if (!beginReorder()) return;   // every app is a tile now; dockInSession holds the dock's
++            int at = -1;
++            for (int i = 0; i < adapter.movableCount(); i++) {
++                if (pkg.equals(adapter.packageAt(i))) { at = i; break; }
++            }
++            String key = at < 0 ? null : adapter.keyAt(at);
++            if (key == null || dockInSession.contains(key)) {
++                endReorder();
++                reloadTiles();
++                return;
++            }
++            if (dockInSession.size() >= COLUMNS) {
++                endReorder();
++                startDockEditFor(key, false);
++                return;
++            }
++            int slot = Math.min(dockInSession.size(), adapter.movableCount() - 1);
++            if (at != slot) adapter.move(at, slot);
++            dockInSession.add(key);
++            endReorder();
++            reloadTiles();
++            focusTile(Math.max(0, adapter.positionOf(key)));
++        } catch (RuntimeException e) {
++            android.util.Log.w("TvHome.Uytv", "not added to the dock: " + e);
++        }
++    }
++
+     /** Puts the app at pos into dock place slot, and the app that was there where the chosen one was; then saves. */
+     private void swapIntoDock(int slot, int pos) {
+         String slotKey = adapter.keyAt(slot);
+@@ -1613,6 +1648,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+         libraryFocusPending = false;
+         libraryFromTopBar = false;
+         libraryFromVpnPill = false;
++        AppLibraryDialog.uytvDock = dockRow ? pkg -> grid.post(() -> uytvAddToDock(pkg)) : null;   // Upgrade Your TV
+         appLibrary = new AppLibraryDialog(this, animations, reducedMotion, appLibrarySelection, libraryOkOpens, adapter::containsPackage, () -> reloadApps(false), () -> {
+             appLibrary = null;
+             openPopup = null;

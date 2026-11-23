@@ -1,0 +1,148 @@
+# Upgrade Your TV: a signed release APK (full flavour, R8).
+#
+# Releases are automatic: when a push to main carries a versionName (app/build.gradle.kts) that has no
+# Release yet, this builds the APK and publishes Release v<versionName> with it, which the app's
+# update check finds. A push that keeps the same versionName builds nothing here.
+# Also: Run workflow (Actions tab) builds the APK as the artifact "upgrade-your-tv-apk"; a tag v1.2.3
+# pushed by hand, or a Release made on GitHub's page, gets the APK added to it.
+#
+# Signing: two repository secrets (Settings > Secrets and variables > Actions > New repository secret):
+#   KEYSTORE_B64       the keystore (PKCS#12), base64 on one line
+#   KEYSTORE_PASSWORD  its password
+# Every build must use the same key, or Android refuses to install it over the last one. A manual
+# run without the secrets makes a key and uploads it as the artifact "keystore-save-as-secrets";
+# a tag run without them stops, so a release is never signed with a throwaway key.
+name: apk
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    tags: ["v*"]
+
+permissions:
+  contents: write   # the Release
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.daemon=false
+
+jobs:
+  # On a push to main: is this versionName released already? Then nothing more runs.
+  decide:
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.d.outputs.build }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - id: d
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          name=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          if [ "${GITHUB_REF_TYPE}" = "branch" ] && [ "${GITHUB_EVENT_NAME}" = "push" ] && \
+             gh release view "v$name" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            echo "v$name is already released; nothing to build."
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  apk:
+    needs: decide
+    if: needs.decide.outputs.build == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          submodules: true   # third_party/cleanyourtv at the pinned launcher commit
+          persist-credentials: false
+
+      - uses: gradle/actions/wrapper-validation@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
+
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
+
+      - name: Version
+        id: v
+        run: |
+          name=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ] && [ "${GITHUB_REF_NAME}" != "v$name" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match versionName $name in app/build.gradle.kts"; exit 1
+          fi
+
+      - name: Signing key
+        id: key
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/key"
+          ks="$RUNNER_TEMP/key/release.p12"
+          if [ -n "$KEYSTORE_B64" ] && [ -n "$KEYSTORE_PASSWORD" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$ks"
+            pw="$KEYSTORE_PASSWORD"
+            echo "generated=false" >> "$GITHUB_OUTPUT"
+          else
+            if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+              echo "::error::Add the KEYSTORE_B64 and KEYSTORE_PASSWORD secrets before publishing a release."; exit 1
+            fi
+            pw="$(head -c 32 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 24)"
+            keytool -genkeypair -keystore "$ks" -storetype PKCS12 -storepass "$pw" -keypass "$pw" \
+              -alias cleanyourtv -keyalg RSA -keysize 4096 -validity 10000 -dname "CN=Upgrade Your TV"
+            base64 -w0 "$ks" > "$RUNNER_TEMP/key/KEYSTORE_B64.txt"
+            printf '%s' "$pw" > "$RUNNER_TEMP/key/KEYSTORE_PASSWORD.txt"
+            echo "generated=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::No signing secrets: a new key was made. Save the keystore-save-as-secrets artifact as the two secrets, then delete the artifact."
+          fi
+          printf '%s' "$pw" > "$RUNNER_TEMP/key/pw.txt"
+          echo "CYT_RELEASE_KEYSTORE=$ks" >> "$GITHUB_ENV"
+          echo "CYT_RELEASE_KEYSTORE_PASSWORD_FILE=$RUNNER_TEMP/key/pw.txt" >> "$GITHUB_ENV"
+
+      - name: Build
+        run: ./gradlew :app:assembleFullRelease --console=plain
+
+      - name: Name the APK
+        run: |
+          mkdir -p out
+          cp "$(ls app/build/outputs/apk/full/release/*.apk | head -n 1)" "out/upgrade-your-tv-${{ steps.v.outputs.name }}.apk"
+          (cd out && sha256sum *.apk | tee SHA256SUMS)
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: upgrade-your-tv-apk
+          path: out/
+          retention-days: 30
+
+      - name: The new key, to save as secrets
+        if: steps.key.outputs.generated == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: keystore-save-as-secrets
+          path: |
+            ${{ runner.temp }}/key/KEYSTORE_B64.txt
+            ${{ runner.temp }}/key/KEYSTORE_PASSWORD.txt
+          retention-days: 3
+
+      - name: Release
+        if: github.ref_type == 'tag' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # A Release made on GitHub's page ("Create a new release" with a new tag) already exists when
+        # its tag starts this run: the APK is added to it. A tag pushed from git gets a new Release.
+        # On main the tag is made here, on this commit.
+        run: |
+          tag="v${{ steps.v.outputs.name }}"
+          if gh release view "$tag" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release upload "$tag" out/*.apk out/SHA256SUMS --repo "${GITHUB_REPOSITORY}" --clobber
+          else
+            gh release create "$tag" out/*.apk out/SHA256SUMS --target "${GITHUB_SHA}" \
+              --repo "${GITHUB_REPOSITORY}" --title "Upgrade Your TV ${{ steps.v.outputs.name }}" --generate-notes
+          fi

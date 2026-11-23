@@ -1,0 +1,185 @@
+diff --git a/launcher/app/build.gradle b/launcher/app/build.gradle
+index 11a4398c..de245be0 100644
+--- a/launcher/app/build.gradle
++++ b/launcher/app/build.gradle
+@@ -12,8 +12,8 @@ android {
+         minSdk 26
+         targetSdk 34
+         // Upgrade Your TV: launcher 3.0 with the video background, dot type, sidebar and Continue card; above upstream's 9.
+-        versionCode 1006
+-        versionName '3.0-uytv6'
++        versionCode 1007
++        versionName '3.0-uytv7'
+     }
+ 
+     buildTypes {
+diff --git a/launcher/app/proguard-rules.pro b/launcher/app/proguard-rules.pro
+index 7bb3d36e..a1eb511b 100644
+--- a/launcher/app/proguard-rules.pro
++++ b/launcher/app/proguard-rules.pro
+@@ -2,3 +2,6 @@
+ # AndroidX code, not from renaming, and readable stack traces matter more in a sideloaded app
+ # where crash reports arrive as screenshots.
+ -dontobfuscate
++
++# Upgrade Your TV: started by the phone with app_process (UytvKeys), so R8 sees no caller.
++-keep class com.gathin.tvhome.UytvKeys { public static void main(java.lang.String[]); }
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/UytvHome.java b/launcher/app/src/main/java/com/gathin/tvhome/UytvHome.java
+index a1cc4c08..2a1e23ed 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/UytvHome.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/UytvHome.java
+@@ -293,6 +293,8 @@ final class UytvHome {
+         connector = new View(activity);
+         connector.setBackgroundColor(theme != null ? theme.ink : 0xE6FFFFFF);
+         connector.setVisibility(View.INVISIBLE);
++        // 3.0-uytv7: one pixel tall, stretched with scaleY from its top, so following the row never asks for a layout.
++        connector.setPivotY(0f);
+         root.addView(connector, new FrameLayout.LayoutParams(Math.max(2, dp(1.5f)), 1));
+         connectorDot = new View(activity);
+         GradientDrawable dot = new GradientDrawable();
+@@ -301,8 +303,9 @@ final class UytvHome {
+         connectorDot.setBackground(dot);
+         connectorDot.setVisibility(View.INVISIBLE);
+         root.addView(connectorDot, new FrameLayout.LayoutParams(dp(9), dp(9)));
+-        root.getViewTreeObserver().addOnGlobalFocusChangeListener((oldFocus, newFocus) -> root.postDelayed(this::placeConnector, 120));
+-        root.getViewTreeObserver().addOnGlobalLayoutListener(this::placeConnector);
++        // 3.0-uytv7: placed on every frame drawn, not 120 ms after the focus moved, so it follows the row while it
++        // scrolls and the app while it grows; before, it stopped where the row was mid-scroll.
++        root.getViewTreeObserver().addOnPreDrawListener(() -> { placeConnector(); return true; });
+     }
+ 
+     private void placeConnector() {
+@@ -313,8 +316,7 @@ final class UytvHome {
+         View hero = activity.findViewById(R.id.hero);
+         if (focus == null || grid == null || name == null || hero == null || hero.getVisibility() != View.VISIBLE
+                 || !isInside(focus, grid) || name.getText().length() == 0) {
+-            connector.setVisibility(View.INVISIBLE);
+-            connectorDot.setVisibility(View.INVISIBLE);
++            hideConnector();
+             return;
+         }
+         int[] f = new int[2], n = new int[2], r = new int[2];
+@@ -325,23 +327,32 @@ final class UytvHome {
+         float top = n[1] - r[1] + name.getHeight() + dp(6);
+         float bottom = f[1] - r[1] - dp(6);
+         if (bottom - top < dp(8)) {
+-            connector.setVisibility(View.INVISIBLE);
+-            connectorDot.setVisibility(View.INVISIBLE);
++            hideConnector();
+             return;
+         }
+-        // The name moves over the focused app, its start on the line.
+-        name.setTranslationX(name.getTranslationX() + (x - (n[0] - r[0])) - dp(1));
+-        ViewGroup.LayoutParams lp = connector.getLayoutParams();
+-        if (lp.height != (int) (bottom - top)) {
+-            lp.height = (int) (bottom - top);
+-            connector.setLayoutParams(lp);
+-        }
+-        connector.setX(x - connector.getWidth() / 2f);
+-        connector.setY(top);
+-        connectorDot.setX(x - dp(4.5f));
+-        connectorDot.setY(top - dp(4.5f));
+-        connector.setVisibility(View.VISIBLE);
+-        connectorDot.setVisibility(View.VISIBLE);
++        // The name moves over the focused app, its start on the line; near the right edge its end is on the line.
++        View parent = (View) connector.getParent();
++        float base = n[0] - r[0] - name.getTranslationX();
++        float want = x - dp(1);
++        if (want + name.getWidth() > parent.getWidth() - dp(40)) want = x - name.getWidth() + dp(1);
++        if (want < dp(24)) want = dp(24);
++        float tx = Math.round(want - base);
++        if (Math.abs(name.getTranslationX() - tx) >= 1f) name.setTranslationX(tx);
++        float len = Math.round(bottom - top);
++        if (connector.getScaleY() != len) connector.setScaleY(len);
++        float cx = Math.round(x - connector.getWidth() / 2f);
++        if (connector.getX() != cx) connector.setX(cx);
++        if (connector.getY() != Math.round(top)) connector.setY(Math.round(top));
++        float dx = Math.round(x - dp(4.5f)), dy = Math.round(top - dp(4.5f));
++        if (connectorDot.getX() != dx) connectorDot.setX(dx);
++        if (connectorDot.getY() != dy) connectorDot.setY(dy);
++        if (connector.getVisibility() != View.VISIBLE) connector.setVisibility(View.VISIBLE);
++        if (connectorDot.getVisibility() != View.VISIBLE) connectorDot.setVisibility(View.VISIBLE);
++    }
++
++    private void hideConnector() {
++        if (connector.getVisibility() != View.INVISIBLE) connector.setVisibility(View.INVISIBLE);
++        if (connectorDot.getVisibility() != View.INVISIBLE) connectorDot.setVisibility(View.INVISIBLE);
+     }
+ 
+     private View row(Drawable art, String label, int iconDp, View.OnClickListener click) {
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/UytvKeys.java b/launcher/app/src/main/java/com/gathin/tvhome/UytvKeys.java
+new file mode 100644
+index 00000000..cd677e40
+--- /dev/null
++++ b/launcher/app/src/main/java/com/gathin/tvhome/UytvKeys.java
+@@ -0,0 +1,70 @@
++package com.gathin.tvhome;
++
++import android.os.SystemClock;
++import android.view.InputDevice;
++import android.view.InputEvent;
++import android.view.KeyCharacterMap;
++import android.view.KeyEvent;
++import android.view.ViewConfiguration;
++
++import java.io.BufferedReader;
++import java.io.InputStreamReader;
++import java.lang.reflect.Method;
++
++/**
++ * Upgrade Your TV (3.0-uytv7): the phone's remote, fast. Not part of the home screen: the phone starts it over ADB as
++ * the shell user, from this APK, with
++ * {@code CLASSPATH=<this apk> app_process / com.gathin.tvhome.UytvKeys}, and keeps that shell open while its Remote
++ * page is. It reads one line per press on stdin ("k 20" a press, "l 23" a long press) and injects the key as
++ * {@code input keyevent} does, but without starting a new Java process for every press (the half second to a
++ * second and a half each press took on a TV). It answers "ok" per line, and "ready" once, first. Ends with stdin.
++ * Only key codes 1 to 400; nothing else is read. Shell may inject keys (INJECT_EVENTS); an app may not, so this
++ * does nothing when the home screen itself runs.
++ */
++public final class UytvKeys {
++    private UytvKeys() {}
++
++    public static void main(String[] args) throws Exception {
++        Object im = Class.forName("android.hardware.input.InputManager").getMethod("getInstance").invoke(null);
++        Method inject = im.getClass().getMethod("injectInputEvent", InputEvent.class, int.class);
++        BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
++        System.out.println("ready");
++        System.out.flush();
++        String line;
++        while ((line = in.readLine()) != null) {
++            line = line.trim();
++            if (line.length() < 3 || line.length() > 6 || line.charAt(1) != ' ') { answer("bad"); continue; }
++            char kind = line.charAt(0);
++            int code;
++            try { code = Integer.parseInt(line.substring(2)); } catch (NumberFormatException e) { answer("bad"); continue; }
++            if (code < 1 || code > 400 || (kind != 'k' && kind != 'l')) { answer("bad"); continue; }
++            try {
++                press(im, inject, code, kind == 'l');
++                answer("ok");
++            } catch (Throwable t) {
++                answer("fail " + t.getClass().getSimpleName());
++            }
++        }
++    }
++
++    // As `input keyevent [--longpress]`: down, (for a long press, a repeat flagged long press after the long-press
++    // time), up. Mode 0: asynchronous, as the shell's `input` waits for nothing either.
++    private static void press(Object im, Method inject, int code, boolean longPress) throws Exception {
++        long now = SystemClock.uptimeMillis();
++        KeyEvent down = new KeyEvent(now, now, KeyEvent.ACTION_DOWN, code, 0, 0, KeyCharacterMap.VIRTUAL_KEYBOARD, 0, 0,
++                InputDevice.SOURCE_KEYBOARD);
++        inject.invoke(im, down, 0);
++        if (longPress) {
++            Thread.sleep(ViewConfiguration.getLongPressTimeout());
++            long t = SystemClock.uptimeMillis();
++            inject.invoke(im, KeyEvent.changeTimeRepeat(down, t, 1, down.getFlags() | KeyEvent.FLAG_LONG_PRESS), 0);
++        }
++        long up = SystemClock.uptimeMillis();
++        inject.invoke(im, KeyEvent.changeTimeRepeat(KeyEvent.changeAction(down, KeyEvent.ACTION_UP), up, 0), 0);
++    }
++
++    private static void answer(String s) {
++        System.out.println(s);
++        System.out.flush();
++    }
++}

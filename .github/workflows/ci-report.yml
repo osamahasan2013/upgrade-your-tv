@@ -1,0 +1,69 @@
+# CI report: runs the pr workflow's checks and pushes the failing tests and lint findings, as text,
+# to the ci-report-out branch, so they can be read without signing in. Push to ci-report to run it.
+name: ci-report
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["ci-report"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ci-report
+  cancel-in-progress: true
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.daemon=false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          submodules: true
+
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
+
+      - name: Unit tests and Android Lint
+        continue-on-error: true
+        run: ./gradlew check --continue --console=plain 2>&1 | tee gradle.log
+
+      - name: Collect the failures
+        run: |
+          mkdir -p report
+          grep -E "FAILED|BUILD|What went wrong|e: |error:|Lint found" gradle.log > report/gradle-summary.txt || true
+          tail -n 300 gradle.log > report/gradle-tail.txt
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET, os
+          out = []
+          for f in glob.glob("**/build/test-results/**/*.xml", recursive=True):
+              try:
+                  root = ET.parse(f).getroot()
+              except Exception:
+                  continue
+              for tc in root.iter("testcase"):
+                  for fail in list(tc.findall("failure")) + list(tc.findall("error")):
+                      text = (fail.text or fail.get("message") or "")[:4000]
+                      out.append(f"== {f}\n{tc.get('classname')}.{tc.get('name')}\n{text}\n")
+          open("report/failed-tests.txt", "w").write("\n".join(out) or "no failing tests\n")
+          PY
+          for f in $(find . -path '*/build/reports/lint-results-*.txt'); do echo "== $f"; cat "$f"; done > report/lint.txt || true
+
+      - name: Push the report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan ci-report-out
+          git rm -rq --cached . || true
+          git add -f report
+          git commit -q -m "CI report of ${GITHUB_SHA::8}"
+          git push -f origin ci-report-out

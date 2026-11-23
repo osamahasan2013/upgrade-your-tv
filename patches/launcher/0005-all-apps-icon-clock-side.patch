@@ -1,0 +1,187 @@
+diff --git a/launcher/app/build.gradle b/launcher/app/build.gradle
+index 4e90e609..395d2799 100644
+--- a/launcher/app/build.gradle
++++ b/launcher/app/build.gradle
+@@ -12,8 +12,8 @@ android {
+         minSdk 26
+         targetSdk 34
+         // Upgrade Your TV: launcher 3.0 with the video background, dot type, sidebar and Continue card; above upstream's 9.
+-        versionCode 1004
+-        versionName '3.0-uytv4'
++        versionCode 1005
++        versionName '3.0-uytv5'
+     }
+ 
+     buildTypes {
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/UytvChoices.java b/launcher/app/src/main/java/com/gathin/tvhome/UytvChoices.java
+index 6a40746e..5b013a2d 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/UytvChoices.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/UytvChoices.java
+@@ -25,6 +25,7 @@ final class UytvChoices {
+     String names = "large";
+     boolean dockOnly;
+     boolean continueCard;
++    boolean clockOpposite = true;
+ 
+     boolean any() {
+         return !"none".equals(theme) || signal || sidebar || rightSide || !"large".equals(names) || dockOnly || continueCard;
+@@ -42,6 +43,7 @@ final class UytvChoices {
+             c.names = names(json.optString("uytv_names", "large"));
+             c.dockOnly = json.optBoolean("uytv_dock_only", false);
+             c.continueCard = json.optBoolean("uytv_continue", false);
++            c.clockOpposite = json.optBoolean("uytv_clock_opposite", true);
+         }
+         SharedPreferences p = prefs(ctx);
+         if (p.getInt(BASE, 0) != base() || p.getAll().size() <= 1) return c;
+@@ -53,6 +55,7 @@ final class UytvChoices {
+         c.names = names(p.getString("names", c.names));
+         c.dockOnly = p.getBoolean("dock_only", c.dockOnly);
+         c.continueCard = p.getBoolean("continue", c.continueCard);
++        c.clockOpposite = p.getBoolean("clock_opposite", c.clockOpposite);
+         return c;
+     }
+ 
+@@ -61,7 +64,7 @@ final class UytvChoices {
+         SharedPreferences.Editor e = prefs(ctx).edit().clear().putInt(BASE, base())
+                 .putString("theme", theme).putBoolean("theme_bg", themeBg).putBoolean("signal", signal)
+                 .putBoolean("sidebar", sidebar).putBoolean("right", rightSide).putString("names", names)
+-                .putBoolean("dock_only", dockOnly).putBoolean("continue", continueCard);
++                .putBoolean("dock_only", dockOnly).putBoolean("continue", continueCard).putBoolean("clock_opposite", clockOpposite);
+         e.apply();
+         // Home rebuilds on its next resume (MainActivity compares the launcher settings revision).
+         SharedPreferences s = ctx.getSharedPreferences(Config.SETTINGS_NAME, Context.MODE_PRIVATE);
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/UytvHome.java b/launcher/app/src/main/java/com/gathin/tvhome/UytvHome.java
+index 6515d141..022d012b 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/UytvHome.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/UytvHome.java
+@@ -56,6 +56,7 @@ final class UytvHome {
+     final boolean continueCard;
+     final String names;        // large, small, hidden
+     final boolean rightSide;
++    final boolean clockOpposite;   // the clock across from a left sidebar (3.0-uytv5)
+ 
+     final UytvTheme theme;      // null: no theme
+     final boolean themeBg;
+@@ -82,6 +83,7 @@ final class UytvHome {
+         this.continueCard = c.continueCard;
+         this.names = c.names;
+         this.rightSide = c.rightSide;
++        this.clockOpposite = c.clockOpposite;
+     }
+ 
+     /** Null when none of the three is on. */
+@@ -131,6 +133,7 @@ final class UytvHome {
+             if ("hidden".equals(names)) heroName.setAlpha(0f);
+         }
+         if (!sidebar && signal && !"hidden".equals(names)) addConnector(root);
++        if (sidebar && !rightSide && clockOpposite) moveClockRight();
+         if (sidebar) {
+             View grid = activity.findViewById(R.id.grid);
+             if (grid != null && grid.getParent() instanceof View) ((View) grid.getParent()).setVisibility(View.GONE);
+@@ -270,22 +273,12 @@ final class UytvHome {
+         return adapter.iconAt(position);
+     }
+ 
++    /** Four rounded squares in the theme's ink (3.0-uytv5: the drawn one ran past its own edges). */
+     private Drawable allAppsIcon() {
+-        android.graphics.drawable.ShapeDrawable d = new android.graphics.drawable.ShapeDrawable(new android.graphics.drawable.shapes.Shape() {
+-            @Override
+-            public void draw(android.graphics.Canvas c, android.graphics.Paint p) {
+-                p.setColor(ink());
+-                p.setStyle(android.graphics.Paint.Style.STROKE);
+-                p.setStrokeWidth(getWidth() / 16f);
+-                float s = getWidth() / 2f - getWidth() / 10f, g = getWidth() / 10f;
+-                for (int i = 0; i < 4; i++) {
+-                    float x = (i % 2) * (s + 2 * g) + g / 2, y = (i / 2) * (s + 2 * g) + g / 2;
+-                    c.drawRoundRect(x, y, x + s, y + s, g, g, p);
+-                }
+-            }
+-        });
+-        d.setIntrinsicWidth(dp(28));
+-        d.setIntrinsicHeight(dp(28));
++        Drawable d = activity.getDrawable(R.drawable.uytv_ic_all_apps);
++        if (d == null) return null;
++        d = d.mutate();
++        d.setTint(ink());
+         return d;
+     }
+ 
+@@ -414,6 +407,34 @@ final class UytvHome {
+     }
+ 
+ 
++    /** With the sidebar on the left, the clock and the date move to the right and the top buttons to the left. */
++    private void moveClockRight() {
++        View block = activity.findViewById(R.id.leftBlock);
++        View buttons = activity.findViewById(R.id.topButtons);
++        if (block == null || buttons == null || !(block.getLayoutParams() instanceof android.widget.RelativeLayout.LayoutParams)
++                || !(buttons.getLayoutParams() instanceof android.widget.RelativeLayout.LayoutParams)) return;
++        android.widget.RelativeLayout.LayoutParams bl = (android.widget.RelativeLayout.LayoutParams) block.getLayoutParams();
++        bl.removeRule(android.widget.RelativeLayout.ALIGN_PARENT_START);
++        bl.removeRule(android.widget.RelativeLayout.START_OF);
++        bl.addRule(android.widget.RelativeLayout.ALIGN_PARENT_END);
++        bl.addRule(android.widget.RelativeLayout.END_OF, R.id.topButtons);
++        bl.setMarginEnd(0);
++        bl.setMarginStart(dp(16));
++        block.setLayoutParams(bl);
++        android.widget.RelativeLayout.LayoutParams tl = (android.widget.RelativeLayout.LayoutParams) buttons.getLayoutParams();
++        tl.removeRule(android.widget.RelativeLayout.ALIGN_PARENT_END);
++        tl.addRule(android.widget.RelativeLayout.ALIGN_PARENT_START);
++        buttons.setLayoutParams(tl);
++        if (block instanceof LinearLayout) ((LinearLayout) block).setGravity(Gravity.RIGHT);
++        TextView greeting = activity.findViewById(R.id.greeting);
++        if (greeting != null) greeting.setGravity(Gravity.RIGHT);
++        View clock = activity.findViewById(R.id.clock);
++        if (clock != null && clock.getParent() instanceof LinearLayout) {
++            LinearLayout row = (LinearLayout) clock.getParent();
++            row.setGravity(Gravity.RIGHT | Gravity.BOTTOM);
++        }
++    }
++
+     private int ink() { return theme != null ? theme.ink : Color.WHITE; }
+     private int subInk() { return theme != null ? theme.subInk : 0xB3FFFFFF; }
+     private int panelFill() { return theme != null ? theme.panelFill : 0x2EFFFFFF; }
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/UytvSettingsActivity.java b/launcher/app/src/main/java/com/gathin/tvhome/UytvSettingsActivity.java
+index 25d13a3e..52ad1f51 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/UytvSettingsActivity.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/UytvSettingsActivity.java
+@@ -68,6 +68,7 @@ public final class UytvSettingsActivity extends Activity {
+         row(list, R.string.uytv_row_theme_bg, () -> onOff(choices.themeBg), () -> choices.themeBg = !choices.themeBg);
+         row(list, R.string.uytv_row_layout, () -> getString(choices.sidebar ? R.string.uytv_sidebar : R.string.uytv_row), () -> choices.sidebar = !choices.sidebar);
+         row(list, R.string.uytv_row_side, () -> getString(choices.rightSide ? R.string.uytv_right : R.string.uytv_left), () -> choices.rightSide = !choices.rightSide);
++        row(list, R.string.uytv_row_clock_opposite, () -> onOff(choices.clockOpposite), () -> choices.clockOpposite = !choices.clockOpposite);
+         row(list, R.string.uytv_row_names, () -> getString("hidden".equals(choices.names) ? R.string.uytv_hidden
+                 : "small".equals(choices.names) ? R.string.uytv_small : R.string.uytv_large), () -> choices.names =
+                 "large".equals(choices.names) ? "small" : "small".equals(choices.names) ? "hidden" : "large");
+diff --git a/launcher/app/src/main/res/drawable/uytv_ic_all_apps.xml b/launcher/app/src/main/res/drawable/uytv_ic_all_apps.xml
+new file mode 100644
+index 00000000..9a1a25cc
+--- /dev/null
++++ b/launcher/app/src/main/res/drawable/uytv_ic_all_apps.xml
+@@ -0,0 +1,14 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!-- Upgrade Your TV: the sidebar's All apps button with names hidden, four rounded squares. -->
++<vector xmlns:android="http://schemas.android.com/apk/res/android"
++    android:width="28dp"
++    android:height="28dp"
++    android:viewportWidth="24"
++    android:viewportHeight="24">
++    <path
++        android:fillColor="#00000000"
++        android:strokeColor="#FFFFFFFF"
++        android:strokeWidth="1.8"
++        android:strokeLineJoin="round"
++        android:pathData="M5,3h4a2,2 0 0 1 2,2v4a2,2 0 0 1 -2,2h-4a2,2 0 0 1 -2,-2v-4a2,2 0 0 1 2,-2z M15,3h4a2,2 0 0 1 2,2v4a2,2 0 0 1 -2,2h-4a2,2 0 0 1 -2,-2v-4a2,2 0 0 1 2,-2z M5,13h4a2,2 0 0 1 2,2v4a2,2 0 0 1 -2,2h-4a2,2 0 0 1 -2,-2v-4a2,2 0 0 1 2,-2z M15,13h4a2,2 0 0 1 2,2v4a2,2 0 0 1 -2,2h-4a2,2 0 0 1 -2,-2v-4a2,2 0 0 1 2,-2z" />
++</vector>
+diff --git a/launcher/app/src/main/res/values/strings.xml b/launcher/app/src/main/res/values/strings.xml
+index 1753472f..a6bcf042 100644
+--- a/launcher/app/src/main/res/values/strings.xml
++++ b/launcher/app/src/main/res/values/strings.xml
+@@ -160,6 +160,7 @@
+     <string name="uytv_row_theme_bg">Theme picture</string>
+     <string name="uytv_row_layout">Apps</string>
+     <string name="uytv_row_side">Sidebar side</string>
++    <string name="uytv_row_clock_opposite">Clock across from the sidebar</string>
+     <string name="uytv_row_names">App names</string>
+     <string name="uytv_row_dock_only">Only the dock, with All apps</string>
+     <string name="uytv_row_continue">Continue card</string>
