@@ -1,0 +1,64 @@
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java b/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
+index 7b2e8b89..9f6fb980 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
+@@ -1503,6 +1503,36 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+         }
+     }
+ 
++    /** Upgrade Your TV (3.0-uytv17): takes an app out of the dock; the dock is saved one app shorter. */
++    void uytvRemoveFromDock(String key) {
++        try {
++            if (!dockRow || key == null || reordering) return;
++            if (!beginReorder()) return;
++            int at = adapter.positionOf(key);
++            if (at < 0 || !dockInSession.contains(key)) {
++                endReorder();
++                reloadTiles();
++                return;
++            }
++            dockInSession.remove(key);
++            // Just after the apps that stay in the dock, so nothing else moves.
++            int to = Math.min(dockInSession.size(), adapter.movableCount() - 1);
++            if (at != to) adapter.move(at, to);
++            boolean leaves = fillDockLeavesSlots;
++            fillDockLeavesSlots = true;
++            try {
++                endReorder();
++            } finally {
++                fillDockLeavesSlots = leaves;
++            }
++            reloadTiles();
++            focusTile(0);
++            Toast.makeText(this, R.string.uytv_removed_from_dock, Toast.LENGTH_SHORT).show();
++        } catch (RuntimeException e) {
++            android.util.Log.w("TvHome.Uytv", "not taken out of the dock: " + e);
++        }
++    }
++
+     /** Puts the app at pos into dock place slot, and the app that was there where the chosen one was; then saves. */
+     private void swapIntoDock(int slot, int pos) {
+         String slotKey = adapter.keyAt(slot);
+@@ -3365,6 +3395,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+             boolean inDock = position < COLUMNS;
+             addSettingsMenuRow(rows, popup, inDock ? R.string.tile_replace_in_dock : R.string.tile_add_to_dock,
+                     () -> startDockEditFor(key, inDock));
++            // Upgrade Your TV (3.0-uytv17): out of the dock with the remote; the app stays in the App library.
++            if (inDock && position < adapter.dockFilled()) addSettingsMenuRow(rows, popup, R.string.uytv_remove_from_dock,
++                    () -> grid.post(() -> uytvRemoveFromDock(key)));
+         }
+         if (position < adapter.movableCount()) addSettingsMenuRow(rows, popup, R.string.tile_move, () -> {
+             if (!beginReorder()) return;
+diff --git a/launcher/app/src/main/res/values/strings.xml b/launcher/app/src/main/res/values/strings.xml
+index 51282a4a..c8bcfcf2 100644
+--- a/launcher/app/src/main/res/values/strings.xml
++++ b/launcher/app/src/main/res/values/strings.xml
+@@ -155,6 +155,8 @@
+     <string name="uytv_all_apps">All apps</string>
+     <string name="uytv_style">Style</string>
+     <string name="uytv_added_to_dock">Added to the dock</string>
++    <string name="uytv_remove_from_dock">Remove from dock</string>
++    <string name="uytv_removed_from_dock">Removed from the dock (still in the App library)</string>
+     <string name="uytv_style_row">Style: theme, layout and picture</string>
+     <string name="uytv_style_sub">Theme, layout and picture for this home screen. OK changes a row; the phone app can change them too.</string>
+     <string name="uytv_row_theme">Theme</string>
