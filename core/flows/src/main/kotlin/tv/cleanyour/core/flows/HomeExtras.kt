@@ -74,6 +74,8 @@ data class HomeExtras(
         const val LAUNCHER_VERSION_14 = 1014L
         // The helper kept on after power-off, Home's tap with a hold entry (patches/launcher/0014).
         const val LAUNCHER_VERSION_15 = 1015L
+        // Add to dock from the App library with only the dock shown (patches/launcher/0015).
+        const val LAUNCHER_VERSION_16 = 1016L
         // The launcher that reads them (patches/launcher/0002-home-choices.patch).
         const val LAUNCHER_VERSION = 1002L
         // The launcher that reads names, side and dock only (patches/launcher/0003).
@@ -198,7 +200,7 @@ class HomeExtrasMachine(
             HomeExtrasIntent.SetUpAgain -> effect(ManageEffect.Navigate("setup/${tvId.value}"))
             HomeExtrasIntent.Reload -> scope.launch {
                 val ours = attempt { d.snapshots.latest(tvId) }.getOrNull()?.packages?.get(SwitchOffRule.OUR_LAUNCHER)
-                send(OnTv(ours != null, ours != null && ours.versionCode < HomeExtras.LAUNCHER_VERSION_15))
+                send(OnTv(ours != null, ours != null && ours.versionCode < HomeExtras.LAUNCHER_VERSION_16))
             }
             else -> {}
         }
@@ -210,6 +212,6 @@ class HomeExtrasMachine(
         val snap = attempt { d.snapshots.latest(tvId) }.getOrNull()
         val ours = snap?.packages?.get(SwitchOffRule.OUR_LAUNCHER)
         send(Loaded(HomeExtrasState(tvName = tv?.nickname.orEmpty(), loading = false, extras = saved, saved = saved,
-            launcherOn = ours != null, launcherOld = ours != null && ours.versionCode < HomeExtras.LAUNCHER_VERSION_15)))
+            launcherOn = ours != null, launcherOld = ours != null && ours.versionCode < HomeExtras.LAUNCHER_VERSION_16)))
     }
 }

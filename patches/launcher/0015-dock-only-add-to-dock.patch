@@ -1,0 +1,118 @@
+diff --git a/launcher/app/build.gradle b/launcher/app/build.gradle
+index 03d849ba..4bf5ba96 100644
+--- a/launcher/app/build.gradle
++++ b/launcher/app/build.gradle
+@@ -12,8 +12,8 @@ android {
+         minSdk 26
+         targetSdk 34
+         // Upgrade Your TV: launcher 3.0 with the video background, dot type, sidebar and Continue card; above upstream's 9.
+-        versionCode 1015
+-        versionName '3.0-uytv15'
++        versionCode 1016
++        versionName '3.0-uytv16'
+     }
+ 
+     buildTypes {
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/AppAdapter.java b/launcher/app/src/main/java/com/gathin/tvhome/AppAdapter.java
+index 197a5b9a..c02897ec 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/AppAdapter.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/AppAdapter.java
+@@ -334,8 +334,10 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+         emptySlots = dockRow && !reordering ? DockSlots.empty(docked, dockSize, fresh.size(), fillDock) : 0;
+         // Upgrade Your TV (uytv_dock_only): Home shows the dock alone; the rest are in All apps (the library pill).
+         // Without a dock recorded yet, the first row of apps stands for it.
++        dockOnlyKept = -1;
+         if (UytvHome.dockOnly(ctx) && !reordering) {
+             int keep = docked > 0 ? docked : Math.min(dockSize, fresh.size());
++            dockOnlyKept = keep;
+             Entry homeSettings = !fresh.isEmpty() && fresh.get(fresh.size() - 1).kind == Entry.HOME_SETTINGS ? fresh.get(fresh.size() - 1) : null;
+             while (fresh.size() > keep) fresh.remove(fresh.size() - 1);
+             if (homeSettings != null && !fresh.contains(homeSettings)) fresh.add(homeSettings);
+@@ -638,9 +640,19 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+ 
+     /** Dock slots that hold an app: the whole dock unless some slots are empty. */
+     int dockFilled() {
++        // Upgrade Your TV (3.0-uytv16): with only the dock shown there are no empty slots drawn, but the dock is
++        // still the apps kept, not a full row: before, a 4-app dock in a 6-app row counted as full.
++        if (dockOnlyKept >= 0) return dockOnlyKept;
+         return emptySlots > 0 ? docked : dockSize;
+     }
+ 
++    /** True when the last reload cut Home down to the dock (uytv_dock_only): the other apps are not tiles. */
++    boolean dockOnlyCut() {
++        return dockOnlyKept >= 0;
++    }
++
++    private int dockOnlyKept = -1;
++
+     /** A position focus can land on: an empty dock slot gives the last dock app. */
+     int focusablePosition(int position) {
+         return DockSlots.focusable(position, docked, emptySlots);
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java b/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
+index 2245d7bd..7b2e8b89 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
+@@ -1361,7 +1361,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+         dockedAtStart = adapter.dockFilled();
+         for (int i = 0; i < Math.min(dockedAtStart, adapter.movableCount()); i++) dockInSession.add(adapter.keyAt(i));
+         adapter.setReordering(true);
+-        if (adapter.hasEmptySlots()) reloadTiles();   // every position must hold a tile that can move
++        // Upgrade Your TV (3.0-uytv16): also with only the dock shown, where the other apps are not tiles at all:
++        // an app from the App library (or any app for Edit dock) could not be found, so nothing happened.
++        if (adapter.hasEmptySlots() || adapter.dockOnlyCut()) reloadTiles();   // every position must hold a tile that can move
+         reordering = true;
+         orderAtStart = adapter.movableKeys();
+         glass.setAccent(REORDER_ACCENT);
+@@ -1470,8 +1472,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+             }
+             String key = at < 0 ? null : adapter.keyAt(at);
+             if (key == null || dockInSession.contains(key)) {
++                android.util.Log.i("TvHome.Uytv", key == null ? "not a tile: " + pkg : "already in the dock: " + pkg);
+                 endReorder();
+                 reloadTiles();
++                if (key != null) focusTile(Math.max(0, adapter.positionOf(key)));
++                else Toast.makeText(this, R.string.reorder_not_saved, Toast.LENGTH_SHORT).show();
+                 return;
+             }
+             if (dockInSession.size() >= COLUMNS) {
+@@ -1482,9 +1487,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+             int slot = Math.min(dockInSession.size(), adapter.movableCount() - 1);
+             if (at != slot) adapter.move(at, slot);
+             dockInSession.add(key);
+-            endReorder();
++            // Saved as a dock of its own size even with fill_dock on (no empty places drawn then): the app stays.
++            boolean leaves = fillDockLeavesSlots;
++            fillDockLeavesSlots = true;
++            try {
++                endReorder();
++            } finally {
++                fillDockLeavesSlots = leaves;
++            }
+             reloadTiles();
+             focusTile(Math.max(0, adapter.positionOf(key)));
++            Toast.makeText(this, R.string.uytv_added_to_dock, Toast.LENGTH_SHORT).show();
+         } catch (RuntimeException e) {
+             android.util.Log.w("TvHome.Uytv", "not added to the dock: " + e);
+         }
+@@ -1564,7 +1577,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+                 Toast.makeText(this, R.string.reorder_not_saved, Toast.LENGTH_SHORT).show();
+             }
+         }
+-        if (fillDockLeavesSlots) reloadTiles();   // the empty dock slots left out while reordering come back
++        // the empty dock slots left out while reordering come back; with only the dock shown, the rest go again
++        if (fillDockLeavesSlots || UytvHome.dockOnly(this)) reloadTiles();
+     }
+ 
+     /**
+diff --git a/launcher/app/src/main/res/values/strings.xml b/launcher/app/src/main/res/values/strings.xml
+index a6bcf042..51282a4a 100644
+--- a/launcher/app/src/main/res/values/strings.xml
++++ b/launcher/app/src/main/res/values/strings.xml
+@@ -154,6 +154,7 @@
+     <!-- Upgrade Your TV (UytvHome) -->
+     <string name="uytv_all_apps">All apps</string>
+     <string name="uytv_style">Style</string>
++    <string name="uytv_added_to_dock">Added to the dock</string>
+     <string name="uytv_style_row">Style: theme, layout and picture</string>
+     <string name="uytv_style_sub">Theme, layout and picture for this home screen. OK changes a row; the phone app can change them too.</string>
+     <string name="uytv_row_theme">Theme</string>
