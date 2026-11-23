@@ -78,6 +78,8 @@ data class HomeExtras(
         const val LAUNCHER_VERSION_16 = 1016L
         // The home screen zoomed out: row, sidebar, Continue card under the top bar (patches/launcher/0016).
         const val LAUNCHER_VERSION_17 = 1017L
+        // The zoomed-out row with tiles the right size (patches/launcher/0018).
+        const val LAUNCHER_VERSION_18 = 1018L
         // The launcher that reads them (patches/launcher/0002-home-choices.patch).
         const val LAUNCHER_VERSION = 1002L
         // The launcher that reads names, side and dock only (patches/launcher/0003).
@@ -202,7 +204,7 @@ class HomeExtrasMachine(
             HomeExtrasIntent.SetUpAgain -> effect(ManageEffect.Navigate("setup/${tvId.value}"))
             HomeExtrasIntent.Reload -> scope.launch {
                 val ours = attempt { d.snapshots.latest(tvId) }.getOrNull()?.packages?.get(SwitchOffRule.OUR_LAUNCHER)
-                send(OnTv(ours != null, ours != null && ours.versionCode < HomeExtras.LAUNCHER_VERSION_17))
+                send(OnTv(ours != null, ours != null && ours.versionCode < HomeExtras.LAUNCHER_VERSION_18))
             }
             else -> {}
         }
@@ -214,6 +216,6 @@ class HomeExtrasMachine(
         val snap = attempt { d.snapshots.latest(tvId) }.getOrNull()
         val ours = snap?.packages?.get(SwitchOffRule.OUR_LAUNCHER)
         send(Loaded(HomeExtrasState(tvName = tv?.nickname.orEmpty(), loading = false, extras = saved, saved = saved,
-            launcherOn = ours != null, launcherOld = ours != null && ours.versionCode < HomeExtras.LAUNCHER_VERSION_17)))
+            launcherOn = ours != null, launcherOld = ours != null && ours.versionCode < HomeExtras.LAUNCHER_VERSION_18)))
     }
 }
