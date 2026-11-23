@@ -1,0 +1,138 @@
+diff --git a/launcher/app/build.gradle b/launcher/app/build.gradle
+index 4bf5ba96..7ca9bd4e 100644
+--- a/launcher/app/build.gradle
++++ b/launcher/app/build.gradle
+@@ -12,8 +12,8 @@ android {
+         minSdk 26
+         targetSdk 34
+         // Upgrade Your TV: launcher 3.0 with the video background, dot type, sidebar and Continue card; above upstream's 9.
+-        versionCode 1016
+-        versionName '3.0-uytv16'
++        versionCode 1017
++        versionName '3.0-uytv17'
+     }
+ 
+     buildTypes {
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/UytvHome.java b/launcher/app/src/main/java/com/gathin/tvhome/UytvHome.java
+index 25a9b1f3..ad4ed197 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/UytvHome.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/UytvHome.java
+@@ -134,6 +134,8 @@ final class UytvHome {
+             if ("hidden".equals(names)) heroName.setAlpha(0f);
+         }
+         if (!sidebar && signal && !"hidden".equals(names)) addConnector(root);
++        if (!sidebar) zoomOutRow();
++        raiseTopButtons();
+         if (sidebar && !rightSide && clockOpposite) moveClockRight();
+         if (sidebar) {
+             View grid = activity.findViewById(R.id.grid);
+@@ -142,14 +144,15 @@ final class UytvHome {
+             if (hero != null) hero.setVisibility(View.GONE);
+             panel = new LinearLayout(activity);
+             panel.setOrientation(LinearLayout.VERTICAL);
+-            panel.setPadding(dp(10), dp(10), dp(10), dp(10));
++            panel.setPadding(dp(8), dp(8), dp(8), dp(8));
+             panel.setBackground(glass(theme != null ? (int) theme.panelRadius : 28, panelFill()));
+-            int width = "hidden".equals(names) ? dp(84) : "small".equals(names) ? dp(260) : dp(330);
++            // 3.0-uytv17: zoomed out, so nine apps fit on a 1080p TV with room above and below.
++            int width = "hidden".equals(names) ? dp(68) : "small".equals(names) ? dp(210) : dp(260);
+             FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(width, ViewGroup.LayoutParams.WRAP_CONTENT,
+                     (rightSide ? Gravity.END : Gravity.START) | Gravity.CENTER_VERTICAL);
+             if (rightSide) lp.setMarginEnd(dp(56)); else lp.setMarginStart(dp(56));
+-            lp.topMargin = dp(120);
+-            lp.bottomMargin = dp(40);
++            lp.topMargin = dp(100);
++            lp.bottomMargin = dp(32);
+             root.addView(panel, lp);
+         }
+         if (continueCard) {
+@@ -167,12 +170,60 @@ final class UytvHome {
+             FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                     ViewGroup.LayoutParams.WRAP_CONTENT, (cardLeft ? Gravity.START : Gravity.END) | (sidebar ? Gravity.BOTTOM : Gravity.CENTER_VERTICAL));
+             if (cardLeft) lp.setMarginStart(dp(56)); else lp.setMarginEnd(dp(56));
+-            // The row runs along the bottom and the clock's buttons along the top: the card sits between, at the side.
++            // 3.0-uytv17: with the row, top right just under the top bar's buttons (placed from where they are, so it
++            // never covers them), clear of the dock along the bottom however many apps it holds.
+             if (sidebar) lp.bottomMargin = dp(40);
++            else {
++                lp.gravity = Gravity.END | Gravity.TOP;
++                lp.topMargin = dp(150);
++                placeCardUnderTopBar();
++            }
+             root.addView(card, lp);
+         }
+     }
+ 
++    /** The zoomed-out row: the dock and grid take ROW_ZOOM of the width, cells and tiles shrinking together. */
++    static final float ROW_ZOOM = 0.78f;
++    private boolean rowZoomed;
++
++    private void zoomOutRow() {
++        View grid = activity.findViewById(R.id.grid);
++        if (grid == null) return;
++        grid.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
++            if (rowZoomed || r - l <= 0) return;
++            rowZoomed = true;
++            int extra = Math.round((r - l) * (1f - ROW_ZOOM));
++            v.post(() -> v.setPaddingRelative(v.getPaddingStart(), v.getPaddingTop(), v.getPaddingEnd() + extra, v.getPaddingBottom()));
++        });
++    }
++
++    /** The top bar's buttons a little higher; the clock stays where it is. */
++    private void raiseTopButtons() {
++        View bar = activity.findViewById(R.id.topButtons);
++        if (bar == null || !(bar.getLayoutParams() instanceof ViewGroup.MarginLayoutParams)) return;
++        ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) bar.getLayoutParams();
++        lp.bottomMargin += dp(34);
++        bar.setLayoutParams(lp);
++    }
++
++    private void placeCardUnderTopBar() {
++        View bar = activity.findViewById(R.id.topButtons);
++        if (bar == null) return;
++        bar.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
++            if (card == null || !(card.getParent() instanceof View) || !(card.getLayoutParams() instanceof FrameLayout.LayoutParams)) return;
++            int[] at = new int[2];
++            v.getLocationInWindow(at);
++            int[] rootAt = new int[2];
++            ((View) card.getParent()).getLocationInWindow(rootAt);
++            int want = at[1] - rootAt[1] + v.getHeight() + dp(22);
++            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) card.getLayoutParams();
++            if (want > 0 && lp.topMargin != want) {
++                lp.topMargin = want;
++                card.post(() -> card.setLayoutParams(lp));
++            }
++        });
++    }
++
+     /** After the tiles were loaded again, and on every return to Home. */
+     void refresh() {
+         try {
+@@ -359,12 +410,12 @@ final class UytvHome {
+         LinearLayout row = new LinearLayout(activity);
+         row.setOrientation(LinearLayout.HORIZONTAL);
+         row.setGravity(Gravity.CENTER_VERTICAL);
+-        row.setPadding(dp(12), dp(9), dp(12), dp(9));
++        row.setPadding(dp(10), dp(6), dp(10), dp(6));
+         row.setFocusable(true);
+         row.setClickable(true);
+         row.setBackground(focusable(18, 0x00FFFFFF, focusFill()));
+         if (art != null) {
+-            row.addView(icon(art, "small".equals(names) ? 34 : 40));
++            row.addView(icon(art, "small".equals(names) ? 26 : 32));
+         }
+         row.setOnClickListener(click);
+         if (label == null) {
+@@ -372,9 +423,9 @@ final class UytvHome {
+             row.setContentDescription(art != null ? null : activity.getString(R.string.uytv_all_apps));
+             return finish(row);
+         }
+-        TextView name = text(label, "small".equals(names) ? (signal ? 14 : 15) : (signal ? 18 : 20), ink());
+-        name.setPadding(dp(art != null ? 14 : 6), 0, 0, 0);
+-        if (art == null) name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
++        TextView name = text(label, "small".equals(names) ? (signal ? 12 : 13) : (signal ? 15 : 16), ink());
++        name.setPadding(dp(art != null ? 12 : 6), 0, 0, 0);
++        if (art == null) name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+         row.addView(name, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+         row.setOnFocusChangeListener((v, has) -> name.setTextColor(has ? focusInk() : ink()));
+         return finish(row);
